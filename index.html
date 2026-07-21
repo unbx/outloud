@@ -433,23 +433,25 @@
   .dropzone .ic { width: 26px; height: 26px; color: var(--accent); }
   .dropzone .dz-main { font-weight: 600; color: var(--text); font-size: 14px; }
   .dropzone .dz-sub { font-size: 12px; color: var(--faint); }
-  .dz-file { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px;
-    padding: 9px 12px; border: 1px solid var(--line-2); border-radius: 10px; background: var(--panel-2); font-size: 13px; }
+  /* File chip: name + attached sections (TRIM, then ✕) divided by hairlines, sharing the pill */
+  .dz-file { display: flex; align-items: stretch; margin-top: 10px; overflow: hidden;
+    border: 1px solid var(--line-2); border-radius: 10px; background: var(--panel-2); font-size: 13px; }
   .dz-file[hidden] { display: none; } /* display:flex above would otherwise defeat the hidden attribute */
-  .dz-file .dz-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dz-file .dz-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 9px 12px; align-self: center; }
   .dz-trim {
-    font: inherit; font-size: 11.5px; font-weight: 600; color: var(--accent-2); cursor: pointer;
-    background: none; border: 1px solid var(--line-2); border-radius: 8px; padding: 3px 10px;
-    white-space: nowrap; transition: border-color .16s, color .16s;
+    font: inherit; font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+    color: var(--accent-2); cursor: pointer; font-variant-numeric: tabular-nums;
+    background: none; border: none; border-left: 1px solid var(--line-2); padding: 0 13px;
+    white-space: nowrap; transition: background .16s, color .16s;
   }
-  .dz-trim:hover { border-color: var(--accent); color: var(--accent); }
-  .dz-trim.on { color: var(--good); border-color: rgba(95,210,164,0.45); background: rgba(95,210,164,0.08); }
+  .dz-trim:hover { color: var(--accent); background: rgba(196,167,231,0.07); }
+  .dz-trim.on { color: var(--good); background: rgba(95,210,164,0.08); }
 
   /* Trim modal: keep-selection handles (QuickTime model) over a waveform (Voice Memos model) */
   .trim-card { max-width: 560px; }
   .trim-strip {
     position: relative; height: 84px; margin: 16px 0 12px; border-radius: 10px; overflow: hidden;
-    background: rgba(5,5,9,0.65); border: 1px solid var(--line-2);
+    background: rgba(5,5,9,0.65); border: 1px solid var(--line-2); cursor: pointer; touch-action: none;
   }
   .trim-strip canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
   .trim-shade { position: absolute; top: 0; bottom: 0; background: rgba(3,3,6,0.72); pointer-events: none; }
@@ -460,7 +462,8 @@
     touch-action: none;
   }
   .trim-handle::after { content: ""; position: absolute; left: 5px; right: 5px; top: 30%; bottom: 30%; border-left: 1.5px solid rgba(10,8,16,0.55); border-right: 1.5px solid rgba(10,8,16,0.55); }
-  .trim-playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: #fff; box-shadow: 0 0 6px rgba(255,255,255,0.8); pointer-events: none; }
+  .trim-playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: #fff; box-shadow: 0 0 6px rgba(255,255,255,0.85); pointer-events: none; z-index: 3; }
+  .trim-playhead::before { content: ""; position: absolute; top: -5px; left: 50%; transform: translateX(-50%); width: 12px; height: 12px; border-radius: 50%; background: #fff; box-shadow: 0 0 7px rgba(255,255,255,0.85); }
   .trim-times { display: flex; align-items: flex-end; gap: 12px; }
   .trim-times label { flex: 1; margin: 0; }
   .trim-times input { text-align: center; font-variant-numeric: tabular-nums; }
@@ -469,8 +472,8 @@
   .trim-fit.over { color: var(--warn); }
   .trim-foot { display: flex; justify-content: space-between; margin-top: 12px; }
   .dz-file .dz-name { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
-  .dz-file button { flex: none; background: none; border: none; color: var(--muted); cursor: pointer; font-size: 18px; line-height: 1; padding: 0 2px; }
-  .dz-file button:hover { color: var(--warn); }
+  .dz-file #dubFileClear { flex: none; background: none; border: none; border-left: 1px solid var(--line-2); color: var(--muted); cursor: pointer; font-size: 17px; line-height: 1; padding: 0 12px; transition: background .16s, color .16s; }
+  .dz-file #dubFileClear:hover { color: var(--warn); background: rgba(255,138,138,0.07); }
 
   /* Modal */
   .modal { position: fixed; inset: 0; background: rgba(4,4,6,0.78); backdrop-filter: blur(6px); display: none; place-items: center; z-index: 60; padding: 20px; }
@@ -1060,9 +1063,9 @@
       <div class="trim-handle" id="handleR" title="Selection end"></div>
     </div>
     <div class="trim-times">
-      <label>Start<input id="trimStartIn" type="text" inputmode="numeric" placeholder="0:00" /></label>
+      <label>Start<input id="trimStartIn" type="text" inputmode="decimal" placeholder="0:00.0" /></label>
       <button type="button" class="btn secondary trim-preview" id="trimPreview"><span class="ic" data-icon="play"></span><span class="lbl">Preview</span></button>
-      <label>End<input id="trimEndIn" type="text" inputmode="numeric" placeholder="0:00" /></label>
+      <label>End<input id="trimEndIn" type="text" inputmode="decimal" placeholder="0:00.0" /></label>
     </div>
     <p class="trim-fit" id="trimFit"></p>
     <button class="btn" id="trimUse" style="margin-top:14px;">Use trim</button>
@@ -1488,7 +1491,8 @@
   // so transcription, dubbing, playback, and the duration gates all see just the selection.
   let trimStart = null, trimEnd = null;   // applied selection, in seconds
   let trimDur = 0, trimPeaks = null, trimFileRef = null;
-  let selL = 0, selR = 0;                 // working selection while the modal is open
+  let selL = 0, selR = 0, phTime = 0;     // working selection + playhead, while the modal is open
+  let selDirty = false;                   // user touched the selection this session (don't clobber it)
   const trimActive = () => trimStart != null && trimEnd != null && trimEnd > trimStart + 0.05;
   const trimModal = $("#trimModal"), trimStrip = $("#trimStrip"), trimWave = $("#trimWave");
   const handleL = $("#handleL"), handleR = $("#handleR"), shadeL = $("#shadeL"), shadeR = $("#shadeR");
@@ -1498,11 +1502,18 @@
   let trimUrl = null, trimRaf = 0;
 
   const fmtT = (s) => { s = Math.max(0, s || 0); return Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart(2, "0"); };
+  // tenth-of-a-second variant for the trim UI, where exact in/out points matter (m:ss.t)
+  const fmtT1 = (s) => {
+    s = Math.max(0, s || 0);
+    let m = Math.floor(s / 60), sec = Math.round((s - m * 60) * 10) / 10;
+    if (sec >= 60) { m += 1; sec = 0; }
+    return m + ":" + (sec < 10 ? "0" : "") + sec.toFixed(1);
+  };
   const parseT = (v) => { const p = String(v).trim().split(":"); let s = 0; for (const x of p) { const n = parseFloat(x); if (!isFinite(n)) return NaN; s = s * 60 + n; } return s; };
 
   function refreshTrimBtn() {
     if (!trimBtn) return;
-    trimBtn.textContent = trimActive() ? fmtT(trimStart) + "–" + fmtT(trimEnd) : "Trim";
+    trimBtn.textContent = trimActive() ? fmtT(trimStart) + "–" + fmtT(trimEnd) : "Trim"; // chip stays simple; tenths live in the modal
     trimBtn.classList.toggle("on", trimActive());
   }
   function resetTrim() { trimStart = trimEnd = null; trimFileRef = null; trimPeaks = null; trimDur = 0; refreshTrimBtn(); }
@@ -1532,9 +1543,9 @@
     shadeR.style.right = "0"; shadeR.style.width = Math.max(0, w - xr) + "px";
     handleL.style.left = Math.max(0, xl - 7) + "px";
     handleR.style.left = Math.min(w - 7, xr - 7) + "px";
-    trimStartIn.value = fmtT(selL); trimEndIn.value = fmtT(selR);
+    trimStartIn.value = fmtT1(selL); trimEndIn.value = fmtT1(selR);
     const len = selR - selL;
-    let txt = "Selection: " + fmtT(len);
+    let txt = "Selection: " + fmtT1(len);
     let over = false;
     if (useProxy()) {
       const cap = captionOnly() ? 135 : 95;
@@ -1543,18 +1554,29 @@
     }
     trimFit.textContent = txt;
     trimFit.classList.toggle("over", over);
+    phTime = Math.max(selL, Math.min(phTime, selR)); // keep the playhead inside the selection
+    positionPlayhead();
+  }
+  function positionPlayhead() {
+    const w = trimStrip.clientWidth, d = Math.max(trimDur, 0.1);
+    trimPlayhead.hidden = false;
+    trimPlayhead.style.left = Math.round((Math.min(phTime, d) / d) * w) + "px";
   }
 
   async function openTrim() {
     if (!dubFile) return;
     trimModal.classList.add("open");
+    selDirty = false;
     const fresh = trimFileRef !== dubFile;
     if (fresh) {
       trimFileRef = dubFile; trimPeaks = null;
       trimDur = (await probeDuration(dubFile)) || 0;
     }
-    selL = trimActive() ? Math.min(trimStart, trimDur || trimStart) : 0;
-    selR = trimActive() ? Math.min(trimEnd, trimDur || trimEnd) : (trimDur || 60);
+    if (!selDirty) { // don't clobber edits made while we were probing
+      selL = trimActive() ? Math.min(trimStart, trimDur || trimStart) : 0;
+      selR = trimActive() ? Math.min(trimEnd, trimDur || trimEnd) : (trimDur || 60);
+      phTime = selL;
+    }
     drawTrimWave(); layoutTrim();
     if (fresh) {
       // decode for the real waveform (best-effort; some iOS videos can't decode → flat strip)
@@ -1572,7 +1594,8 @@
           out[i] = Math.min(1, mx * 1.4);
         }
         trimPeaks = out;
-        if (!trimActive()) selR = trimDur;
+        if (!selDirty && !trimActive()) selR = trimDur; // untouched selection tracks the real duration
+        selL = Math.min(selL, trimDur); selR = Math.min(selR, trimDur); // clamp any edit to the true length
         drawTrimWave(); layoutTrim();
       } catch (_) {}
     }
@@ -1584,17 +1607,19 @@
   function stopTrimPreview() {
     cancelAnimationFrame(trimRaf);
     try { trimAudio.pause(); } catch (_) {}
-    trimPlayhead.hidden = true;
+    if (isFinite(trimAudio.currentTime)) phTime = Math.max(selL, Math.min(trimAudio.currentTime, selR));
+    positionPlayhead(); // playhead stays where it stopped, so you can replay from there
     setBtn(trimPreviewBtn, "play", "Preview");
   }
   function closeTrim() { stopTrimPreview(); trimModal.classList.remove("open"); }
 
   function dragHandle(which) {
     return (e) => {
-      e.preventDefault();
+      e.preventDefault(); e.stopPropagation(); // don't also trigger the strip's scrub
       const el = which === "L" ? handleL : handleR;
       if (el.setPointerCapture) { try { el.setPointerCapture(e.pointerId); } catch (_) {} }
       const move = (ev) => {
+        selDirty = true;
         const r = trimStrip.getBoundingClientRect();
         const t = Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)) * Math.max(trimDur, 0.1);
         if (which === "L") selL = Math.max(0, Math.min(t, selR - 0.5));
@@ -1609,11 +1634,32 @@
   handleL.addEventListener("pointerdown", dragHandle("L"));
   handleR.addEventListener("pointerdown", dragHandle("R"));
 
+  // Click or drag anywhere on the strip to move the playhead (scrub) — live while playing, so
+  // you can fling to just before the end handle to hear where your clip ends.
+  function scrubTo(clientX) {
+    const r = trimStrip.getBoundingClientRect();
+    const t = Math.max(0, Math.min(1, (clientX - r.left) / r.width)) * Math.max(trimDur, 0.1);
+    phTime = Math.max(selL, Math.min(t, selR));
+    positionPlayhead();
+    if (!trimAudio.paused) { try { trimAudio.currentTime = phTime; } catch (_) {} }
+  }
+  trimStrip.addEventListener("pointerdown", (e) => {
+    if (e.target === handleL || e.target === handleR) return; // handles own their drag
+    e.preventDefault();
+    try { trimStrip.setPointerCapture(e.pointerId); } catch (_) {}
+    scrubTo(e.clientX);
+    const move = (ev) => scrubTo(ev.clientX);
+    const up = () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  });
+
   function applyTimeInput() {
+    selDirty = true;
     const a = parseT(trimStartIn.value), b = parseT(trimEndIn.value);
     if (isFinite(a)) selL = Math.max(0, Math.min(a, trimDur || a));
     if (isFinite(b)) selR = Math.max(selL + 0.5, Math.min(b, trimDur || b));
-    if (selL > selR - 0.5) selL = Math.max(0, selR - 0.5);
+    if (selR > 0.5 && selL > selR - 0.5) selL = Math.max(0, selR - 0.5); // don't zero a typed start against an empty end
     layoutTrim();
   }
   trimStartIn.addEventListener("change", applyTimeInput);
@@ -1621,13 +1667,13 @@
 
   trimPreviewBtn.addEventListener("click", () => {
     if (!trimAudio.paused) { stopTrimPreview(); return; }
-    trimAudio.currentTime = selL;
+    if (phTime >= selR - 0.05) phTime = selL; // at the end → replay the whole selection
+    trimAudio.currentTime = phTime;
     trimAudio.play().then(() => {
       setBtn(trimPreviewBtn, "pause", "Stop");
-      trimPlayhead.hidden = false;
       const tick = () => {
-        const d = Math.max(trimDur, 0.1);
-        trimPlayhead.style.left = Math.round((Math.min(trimAudio.currentTime, d) / d) * trimStrip.clientWidth) + "px";
+        phTime = trimAudio.currentTime;
+        positionPlayhead();
         if (trimAudio.currentTime >= selR || trimAudio.ended) { stopTrimPreview(); return; }
         trimRaf = requestAnimationFrame(tick);
       };
@@ -1642,10 +1688,10 @@
   $("#trimUse").addEventListener("click", () => {
     // selecting (nearly) the whole clip = no trim
     if (trimDur && selL <= 0.25 && selR >= trimDur - 0.25) { trimStart = trimEnd = null; }
-    else { trimStart = Math.round(selL * 100) / 100; trimEnd = Math.round(selR * 100) / 100; }
+    else { trimStart = Math.round(selL * 10) / 10; trimEnd = Math.round(selR * 10) / 10; } // stored at the precision we display
     refreshTrimBtn();
     closeTrim();
-    setStatus(trimActive() ? "Trim set: " + fmtT(trimStart) + "–" + fmtT(trimEnd) + " will be captioned." : "Trim removed. The full clip will be used.", "ok");
+    setStatus(trimActive() ? "Trim set: " + fmtT1(trimStart) + "–" + fmtT1(trimEnd) + " will be captioned." : "Trim removed. The full clip will be used.", "ok");
   });
   ["dragenter", "dragover"].forEach(ev => dropzone.addEventListener(ev, (e) => { e.preventDefault(); dropzone.classList.add("drag"); }));
   ["dragleave", "dragend"].forEach(ev => dropzone.addEventListener(ev, (e) => { e.preventDefault(); dropzone.classList.remove("drag"); }));
