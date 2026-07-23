@@ -3328,7 +3328,7 @@
     }
   });
 
-  let activeRec = null, recordCancelled = false, hiddenCancel = false;
+  let activeRec = null, recordCancelled = false, hiddenCancel = false, stallCancel = false;
   videoBtn.addEventListener("click", async () => {
     if (recording) {
       // second click cancels: stop playback + recorder, discard the file in onstop
@@ -3375,18 +3375,41 @@
     // redraw the canvas and push exactly that frame into the capture stream.
     const tickerSrc = "let id=null;onmessage=(e)=>{if(e.data&&e.data.start){clearInterval(id);id=setInterval(()=>postMessage(0)," + Math.round(1000 / FPS) + ");}else{clearInterval(id);id=null;}};";
     const ticker = new Worker(URL.createObjectURL(new Blob([tickerSrc], { type: "application/javascript" })));
+    let lastFrameTs = Date.now(), lastShownSec = -1;
     const drawFrame = () => {
+      lastFrameTs = Date.now();
       analyser.getByteFrequencyData(freqData);
       paintScene(freqData, activeWordIndex(player.currentTime));
-      setBtn(videoBtn, "x", "Cancel · " + fmtTime(player.currentTime) + " / " + fmtTime(player.duration));
-      updatePlaybar();
+      // DOM work only once per second — per-frame label/icon rewrites jank weaker machines
+      const sec = Math.floor(player.currentTime);
+      if (sec !== lastShownSec) {
+        lastShownSec = sec;
+        const lbl = videoBtn.querySelector(".lbl");
+        if (lbl) lbl.textContent = "Cancel · " + fmtTime(player.currentTime) + " / " + fmtTime(player.duration);
+        updatePlaybar();
+      }
       if (manualFrames) videoTrack.requestFrame();
     };
     ticker.onmessage = () => { if (recording) drawFrame(); };
+    // Stall watchdog: the audio clock ticks independently of our draw loop, so if audio is
+    // advancing while no frame has been drawn for a while, video capture has silently frozen
+    // (the exact corruption testers hit). Cancel with a diagnostic instead of saving a bad file.
+    const stallCheck = () => {
+      if (!recording) return;
+      if (Date.now() - lastFrameTs > 1600 && !player.paused && !player.ended) {
+        recordCancelled = true;
+        stallCancel = true;
+        player.onended = null;
+        player.pause();
+        try { if (activeRec && activeRec.state !== "inactive") activeRec.stop(); } catch (_) {}
+      }
+    };
+    player.addEventListener("timeupdate", stallCheck);
     const stopTicker = () => { recording = false; try { ticker.postMessage({ start: false }); ticker.terminate(); } catch (e) {} };
 
     rec.onstop = () => {
       stopTicker();
+      player.removeEventListener("timeupdate", stallCheck); // per-take watchdog, don't stack across takes
       dropWakeLock();
       drawPoster(); // the worker paints past the 'ended' redraw — reset to a clean poster
       activeRec = null;
@@ -3395,10 +3418,11 @@
       busyPanel(exportPanel, false);
       if (recordCancelled) {
         recordCancelled = false;
-        setStatus(hiddenCancel
-          ? "Recording cancelled: the browser stops video capture while this tab is hidden. Start again and keep OutLoud in front until it finishes."
-          : "Recording cancelled. Nothing saved.", hiddenCancel ? "err" : "ok");
-        hiddenCancel = false;
+        let msg = "Recording cancelled. Nothing saved.", kind = "ok";
+        if (hiddenCancel) { msg = "Recording cancelled: the browser stops video capture while this tab is hidden. Start again and keep OutLoud in front until it finishes."; kind = "err"; }
+        else if (stallCancel) { msg = "Recording cancelled: the browser stopped drawing video frames mid-take, which would have saved a frozen video. Try again; if it repeats, close other heavy tabs or check that Chrome's hardware acceleration is on."; kind = "err"; }
+        hiddenCancel = false; stallCancel = false;
+        setStatus(msg, kind);
         return;
       }
       const blob = new Blob(chunks, { type: isMp4 ? "video/mp4" : "video/webm" });
@@ -3416,7 +3440,7 @@
     busyPanel(exportPanel, true);
     cancelAnimationFrame(rafId); // stop the rAF loop; the Worker drives frames now
     drawFrame();                 // prime the first frame so the take never opens on a stale canvas
-    rec.start(1000);             // recorder is live BEFORE playback, so the first syllable is never clipped
+    rec.start();                 // recorder live BEFORE playback (no timeslice: chunked MP4 muxing is Chrome's flakiest path)
     await player.play();
     ticker.postMessage({ start: true });
     player.onended = () => { setTimeout(() => rec.stop(), 250); player.onended = null; };
