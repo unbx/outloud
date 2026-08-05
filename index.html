@@ -447,6 +447,48 @@
   .dz-trim:hover { color: var(--accent); background: rgba(196,167,231,0.07); }
   .dz-trim.on { color: var(--good); background: rgba(95,210,164,0.08); }
 
+  /* Voice-note recorder: mic → File → the same intake path as an upload */
+  .dz-rec { display: flex; justify-content: center; margin-top: 9px; }
+  .dz-rec button {
+    display: inline-flex; align-items: center; gap: 7px; font: inherit; font-size: 12.5px; font-weight: 600;
+    color: var(--muted); background: none; border: 1px dashed var(--line-2); border-radius: 999px;
+    padding: 7px 15px; cursor: pointer; transition: color .16s, border-color .16s, background .16s;
+  }
+  .dz-rec button:hover { color: var(--text); border-color: var(--accent); background: var(--panel); }
+  .dz-rec button .ic { width: 14px; height: 14px; color: var(--accent); }
+  .rec-bar {
+    display: flex; align-items: center; gap: 12px; margin-top: 10px; padding: 9px 10px 9px 16px;
+    background: var(--panel-2); border: 1px solid var(--line-2); border-radius: 10px;
+  }
+  .rec-bar[hidden] { display: none; }
+  .rec-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--warn); animation: recPulse 1.3s ease-in-out infinite; }
+  @keyframes recPulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(255,138,138,0.4); }
+    50% { opacity: 0.55; box-shadow: 0 0 0 7px rgba(255,138,138,0); }
+  }
+  .rec-time { flex: 1; font-weight: 700; font-size: 14px; color: var(--text); font-variant-numeric: tabular-nums; }
+  #recStop {
+    display: inline-flex; align-items: center; gap: 8px; font: inherit; font-size: 12px; font-weight: 700;
+    letter-spacing: 0.04em; color: #14121f; background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    border: none; border-radius: 999px; padding: 8px 15px; cursor: pointer; transition: filter .16s;
+  }
+  #recStop:hover { filter: brightness(1.08); }
+  .rec-sq { width: 9px; height: 9px; border-radius: 2px; background: currentColor; }
+  #recCancel { flex: none; background: none; border: none; color: var(--muted); cursor: pointer; font-size: 17px; line-height: 1; padding: 4px 8px; transition: color .16s; }
+  #recCancel:hover { color: var(--warn); }
+
+  /* Spoken-language footnote: From is auto-detect 99% of the time, so it lives under the
+     primary Language select as a one-line summary with an inline reveal — never competing
+     with the real decision (the target) for the first click. */
+  .src-line { display: flex; align-items: center; gap: 7px; margin-top: 8px; font-size: 12px; color: var(--faint); }
+  .src-line strong { color: var(--muted); font-weight: 600; }
+  .src-line button {
+    font: inherit; font-size: 12px; background: none; border: none; padding: 0; cursor: pointer;
+    color: var(--accent-2); text-decoration: underline; text-underline-offset: 2px; transition: color .16s;
+  }
+  .src-line button:hover { color: var(--accent); }
+  #srcWrap { margin-top: 6px; }
+
   /* Trim modal: keep-selection handles (QuickTime model) over a waveform (Voice Memos model) */
   .trim-card { max-width: 560px; }
   .trim-strip {
@@ -695,7 +737,7 @@
 
     <!-- CLIP MODE — caption in place, or dub into another language; original voice either way -->
     <div id="dubControls" hidden>
-      <p class="hint" style="margin:14px 0 0;">Upload a 30–60s audio or video clip. OutLoud renders a live-captioned audiogram that keeps the voice, intonation, and expression of the original. Or dub it into another language, <strong>still in the original speaker's voice</strong>.</p>
+      <p class="hint" style="margin:14px 0 0;">Upload a 30–60s audio or video clip, or record one right here. OutLoud renders a live-captioned audiogram that keeps the voice, intonation, and expression of the original. Or dub it into another language, <strong>still in the original speaker's voice</strong>.</p>
       <label for="dubFile">Clip</label>
       <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Upload a clip to dub">
         <span class="ic" data-icon="upload"></span>
@@ -703,19 +745,29 @@
         <span class="dz-sub">Audio or video · 30–60s works best</span>
       </div>
       <input type="file" id="dubFile" accept="audio/*,video/*" hidden />
+      <div class="dz-rec" id="recRow">
+        <button type="button" id="recBtn"><span class="ic" data-icon="mic"></span>or record a voice note</button>
+      </div>
+      <div class="rec-bar" id="recBar" hidden>
+        <span class="rec-dot"></span>
+        <span class="rec-time" id="recTime">0:00</span>
+        <button type="button" id="recStop"><span class="rec-sq"></span>Stop &amp; use</button>
+        <button type="button" id="recCancel" title="Discard recording" aria-label="Discard recording">&times;</button>
+      </div>
       <div class="dz-file" id="dubFileInfo" hidden>
         <span class="dz-name" id="dubFileName"></span>
         <button type="button" class="dz-trim" id="trimBtn" title="Caption only part of this clip">Trim</button>
         <button type="button" id="dubFileClear" title="Remove clip" aria-label="Remove clip">&times;</button>
       </div>
-      <div class="row">
-        <div>
-          <label for="dubSource">From <span class="sub">· spoken language</span></label>
-          <select id="dubSource"><option value="auto">Auto-detect</option></select>
+      <div>
+        <label for="dubTarget">Language <span class="sub">· captions, or a dub</span></label>
+        <select id="dubTarget"><option value="same" selected>Original · captions only</option></select>
+        <div class="src-line">
+          <span>Spoken language: <strong id="srcName">Auto-detect</strong></span>
+          <button type="button" id="srcToggle">change</button>
         </div>
-        <div>
-          <label for="dubTarget">To <span class="sub">· captions, or a dub</span></label>
-          <select id="dubTarget"><option value="same" selected>Original · captions only</option></select>
+        <div id="srcWrap" hidden>
+          <select id="dubSource" aria-label="Spoken language"><option value="auto">Auto-detect</option></select>
         </div>
       </div>
     </div>
@@ -1431,6 +1483,19 @@
   });
   dubTargetSel.addEventListener("change", () => { updateGenLabel(); if (mode === "dub") drawPoster(); }); // auto description + button label track the target
 
+  // Spoken-language footnote: summary line stays authoritative; the select reveals on demand.
+  const srcName = $("#srcName"), srcToggle = $("#srcToggle"), srcWrap = $("#srcWrap");
+  const syncSrcLine = () => {
+    srcName.textContent = dubSourceSel.value === "auto" ? "Auto-detect" : (LANG_NAMES[dubSourceSel.value] || dubSourceSel.value);
+    srcToggle.textContent = srcWrap.hidden ? "change" : "done";
+  };
+  srcToggle.addEventListener("click", () => {
+    srcWrap.hidden = !srcWrap.hidden;
+    if (!srcWrap.hidden) dubSourceSel.focus();
+    syncSrcLine();
+  });
+  dubSourceSel.addEventListener("change", syncSrcLine);
+
   function updateGenLabel() {
     const connected = isConnected();
     if (!connected) { genLbl.textContent = "Connect to generate"; genIc.innerHTML = ICONS["key-round"] || ""; return; }
@@ -1474,9 +1539,9 @@
     resetTrim(); // a new (or removed) clip invalidates any trim selection
     if (dubFile) {
       dubFileName.textContent = dubFile.name + " · " + (dubFile.size / 1e6).toFixed(1) + " MB";
-      dubFileInfo.hidden = false; dropzone.style.display = "none";
+      dubFileInfo.hidden = false; dropzone.style.display = "none"; recRow.style.display = "none";
     } else {
-      dubFileInput.value = ""; dubFileInfo.hidden = true; dropzone.style.display = "";
+      dubFileInput.value = ""; dubFileInfo.hidden = true; dropzone.style.display = ""; recRow.style.display = "";
     }
     if (mode === "dub") drawPoster();
   }
@@ -1701,6 +1766,99 @@
     if (f) setDubFile(f);
   });
 
+  // ---------- Voice-note recorder: mic → File → the same intake as an upload ----------
+  // The recording lands in setDubFile like any chosen file, so trim, compression, the
+  // duration gates, and transcription/dubbing all work on it unchanged. Safari records
+  // audio/mp4 (AAC), Chrome/Firefox audio/webm (Opus) — both decode and both are accepted
+  // upstream. A recorded webm reports no duration (probeDuration → null, gate skips it);
+  // trim recovers the real length from decodeAudioData.
+  const recRow = $("#recRow"), recBtn = $("#recBtn"), recBar = $("#recBar");
+  const recTimeEl = $("#recTime"), recStopBtn = $("#recStop"), recCancelBtn = $("#recCancel");
+  let recRec = null, recStream = null, recChunks = [], recTimer = 0, recT0 = 0, recDiscard = false;
+  const REC_MAX_S = 600; // safety auto-stop; the duration gates handle anything shorter
+
+  function recMimeType() {
+    for (const t of ["audio/mp4", "audio/webm;codecs=opus", "audio/webm"]) {
+      try { if (MediaRecorder.isTypeSupported(t)) return t; } catch (_) {}
+    }
+    return ""; // let the browser pick
+  }
+
+  async function startRec() {
+    if (recRec) return;
+    if (typeof MediaRecorder === "undefined" || !(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) {
+      setStatus("Recording isn't supported in this browser — upload a clip instead.", "err");
+      return;
+    }
+    try {
+      recStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+    } catch (e) {
+      setStatus(e && e.name === "NotFoundError"
+        ? "No microphone found on this device."
+        : "Mic access was blocked. Allow microphone access for this site and try again.", "err");
+      return;
+    }
+    const mime = recMimeType();
+    try {
+      recRec = new MediaRecorder(recStream, mime ? { mimeType: mime, audioBitsPerSecond: 96_000 } : undefined);
+    } catch (_) {
+      recStream.getTracks().forEach((t) => t.stop()); recStream = null;
+      setStatus("Couldn't start the recorder — upload a clip instead.", "err");
+      return;
+    }
+    recChunks = []; recDiscard = false;
+    recRec.ondataavailable = (e) => { if (e.data && e.data.size) recChunks.push(e.data); };
+    recRec.onstop = () => {
+      clearInterval(recTimer);
+      if (recStream) { recStream.getTracks().forEach((t) => t.stop()); recStream = null; }
+      const type = (recRec && recRec.mimeType) || mime || "audio/webm";
+      recRec = null;
+      recBar.hidden = true;
+      const secs = Math.max(1, Math.round((Date.now() - recT0) / 1000));
+      if (recDiscard || !recChunks.length) { recChunks = []; setDubFile(null); return; }
+      const ext = /mp4|aac/.test(type) ? "m4a" : "webm";
+      const name = "voice-note-" + Math.floor(secs / 60) + "m" + String(secs % 60).padStart(2, "0") + "s." + ext;
+      const f = new File([new Blob(recChunks, { type })], name, { type });
+      // MediaRecorder writes fragmented/duration-less containers that upstream ingest can
+      // reject — flag the file so upload always re-renders it to a clean WAV first.
+      f.isVoiceNote = true;
+      setDubFile(f);
+      recChunks = [];
+    };
+    recT0 = Date.now();
+    try {
+      recRec.start(); // single blob on stop — chunked recordings add nothing for voice notes
+    } catch (_) {
+      // e.g. the mic vanished between permission and start — reset instead of stranding
+      if (recStream) { recStream.getTracks().forEach((t) => t.stop()); recStream = null; }
+      recRec = null;
+      setStatus("Couldn't start the recorder — upload a clip instead.", "err");
+      return;
+    }
+    dropzone.style.display = "none"; recRow.style.display = "none"; recBar.hidden = false;
+    recTimeEl.textContent = "0:00";
+    recTimer = setInterval(() => {
+      const s = Math.floor((Date.now() - recT0) / 1000);
+      recTimeEl.textContent = fmtT(s);
+      if (s >= REC_MAX_S) stopRec(false);
+    }, 250);
+  }
+
+  function stopRec(discard) {
+    if (!recRec) return;
+    recDiscard = !!discard;
+    try { recRec.stop(); } catch (_) {
+      // recorder already dead — clean up as a discard so the UI can't strand
+      clearInterval(recTimer);
+      if (recStream) { recStream.getTracks().forEach((t) => t.stop()); recStream = null; }
+      recRec = null; recBar.hidden = true; setDubFile(null);
+    }
+  }
+
+  recBtn.addEventListener("click", startRec);
+  recStopBtn.addEventListener("click", () => stopRec(false));
+  recCancelBtn.addEventListener("click", () => stopRec(true));
+
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
   async function dubError(resp, prefix) {
@@ -1886,10 +2044,12 @@
       // Vercel caps proxied request bodies at ~4.5 MB, so bigger tester clips are squeezed to a
       // compact mono 24 kHz WAV in the browser first — plenty of quality for dubbing.
       let upload = dubFile;
-      // Extract audio for any tester video (so it plays back on iOS too), any big clip, or
-      // whenever a trim is set (the trim is applied by rendering only the selection).
+      // Extract audio for any tester video (so it plays back on iOS too), any big clip,
+      // whenever a trim is set (the trim is applied by rendering only the selection), or for
+      // recorded voice notes (their MediaRecorder container lacks the duration metadata the
+      // dubbing ingest needs — re-rendering to WAV is what makes them accepted upstream).
       const trimmed = trimActive();
-      if (trimmed || (useProxy() && (dubFile.type.startsWith("video") || dubFile.size > 4_000_000))) {
+      if (trimmed || dubFile.isVoiceNote || (useProxy() && (dubFile.type.startsWith("video") || dubFile.size > 4_000_000))) {
         let usedFallback = false;
         setStatus(trimmed ? "Trimming the clip…" : "Compressing clip…");
         try {
