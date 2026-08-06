@@ -32,6 +32,11 @@
 <meta name="twitter:image" content="https://outloud.nana.works/outloud-og-v4.png" />
 <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
 <link href="https://api.fontshare.com/v2/css?f[]=clash-display@600,500,700&f[]=general-sans@500,600&display=swap" rel="stylesheet" />
+<!-- Geist Mono (SIL OFL) backs the SIGNAL theme: apefest.com loads it alongside three custom
+     faces that are licensed and not ours to ship, so this is the part of their stack we can use. -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <style>
   :root {
     --bg: #08080a;
@@ -202,12 +207,15 @@
     background: linear-gradient(135deg, var(--accent), var(--accent-2));
     min-width: 26px; height: 21px; padding: 0 6px; border-radius: 6px; display: grid; place-items: center;
   }
-  /* The preview isn't a numbered step, so it gets a mark instead of a number, sized to match. */
+  /* The preview isn't a numbered step, so it gets a mark instead of a number. Same 26x21 chip as
+     "01", and the glyph is filled rather than stroked at roughly the numeral's cap height — an
+     outlined mark spanning the whole chip reads far lighter than solid type beside it. */
   .preview-kicker .ic {
-    width: 21px; height: 21px; min-width: 26px; padding: 0 3px; border-radius: 6px;
+    width: 26px; height: 21px; border-radius: 6px;
     color: var(--ink); background: linear-gradient(135deg, var(--accent), var(--accent-2));
     display: grid; place-items: center;
   }
+  .preview-kicker .ic svg { width: 11px; height: 11px; fill: currentColor; stroke: none; }
   /* panel titles echo the live-caption type: bold Clash Display, uppercase */
   .kicker .ttl {
     font-family: var(--display); font-weight: 700; font-size: 21px;
@@ -644,14 +652,21 @@
   .swatch.custom-swatch { background: conic-gradient(from 0deg, #ff6b6b, #ffd166, #2ecc71, #36e0ff, #6c5ce7, #ff61d2, #ff6b6b); display: grid; place-items: center; }
   .swatch.custom-swatch::after { content: ""; width: 10px; height: 10px; border-radius: 3px; background: rgba(8,8,10,0.7); }
   /* Custom theme controls (primary + secondary hue sliders + shuffle) */
-  .custom-theme { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 9px 10px; margin-top: 10px; }
+  /* Custom theme: three real colour pickers rather than hue-only sliders, so muted and light
+     palettes are reachable, not just full-saturation pastels. */
+  .custom-theme { display: flex; align-items: flex-end; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
   .custom-theme[hidden] { display: none; }
   .ct-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
-  .custom-theme #hueShuffle { flex: none; height: 32px; width: 38px; }
-  .custom-theme input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 12px; border-radius: 999px; padding: 0; cursor: pointer; }
-  #hueRange, #hue2Range { background: linear-gradient(90deg, hsl(0 100% 60%), hsl(60 100% 60%), hsl(120 100% 60%), hsl(180 100% 60%), hsl(240 100% 60%), hsl(300 100% 60%), hsl(360 100% 60%)); }
-  .custom-theme input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 2px solid rgba(0,0,0,0.35); box-shadow: 0 1px 4px rgba(0,0,0,0.5); cursor: pointer; }
-  .custom-theme input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 2px solid rgba(0,0,0,0.35); cursor: pointer; }
+  .ct-pick { display: flex; flex-direction: column; gap: 5px; flex: 1 1 0; min-width: 74px; margin: 0; }
+  .ct-pick input[type="color"] {
+    width: 100%; height: 34px; padding: 0; cursor: pointer; background: none;
+    border: 1px solid var(--line-2); border-radius: 9px; transition: border-color .16s;
+  }
+  .ct-pick input[type="color"]:hover { border-color: var(--accent); }
+  .ct-pick input[type="color"]::-webkit-color-swatch-wrapper { padding: 3px; }
+  .ct-pick input[type="color"]::-webkit-color-swatch { border: none; border-radius: 6px; }
+  .ct-pick input[type="color"]::-moz-color-swatch { border: none; border-radius: 6px; }
+  .custom-theme #hueShuffle { flex: none; height: 34px; width: 38px; }
   .bg-tools { display: flex; gap: 10px; margin-top: 12px; }
   .bg-tools .btn { margin-top: 0; }
 
@@ -1052,11 +1067,13 @@
         <label>Theme <span class="sub">· background + waveform colors</span></label>
         <div class="theme-row" id="themes"></div>
         <div class="custom-theme" id="customTheme" hidden>
-          <span class="ct-label">Primary</span>
-          <input type="range" id="hueRange" min="0" max="360" value="280" aria-label="Primary hue" />
-          <button type="button" class="icon-btn" id="hueShuffle" title="Shuffle both hues" aria-label="Shuffle hues"><span class="ic" data-icon="shuffle"></span></button>
-          <span class="ct-label">Secondary</span>
-          <input type="range" id="hue2Range" min="0" max="360" value="190" aria-label="Secondary hue" />
+          <label class="ct-pick"><span class="ct-label">Primary</span>
+            <input type="color" id="cPrimary" value="#c0a0e0" aria-label="Primary color" /></label>
+          <label class="ct-pick"><span class="ct-label">Accent</span>
+            <input type="color" id="cAccent" value="#88c8e8" aria-label="Accent color" /></label>
+          <label class="ct-pick"><span class="ct-label">Background</span>
+            <input type="color" id="cBg" value="#0a0a0a" aria-label="Background color" /></label>
+          <button type="button" class="icon-btn" id="hueShuffle" title="Shuffle the palette" aria-label="Shuffle the palette"><span class="ic" data-icon="shuffle"></span></button>
         </div>
 
         <label>Background image</label>
@@ -1071,7 +1088,7 @@
         <input type="file" id="bgFile" accept="image/*" hidden />
         <div id="bgControls" style="display:none;">
           <label for="bgDark">Image darken (for text legibility)</label>
-          <input type="range" id="bgDark" min="10" max="85" value="52" />
+          <input type="range" id="bgDark" min="10" max="96" value="52" />
         </div>
       </div>
     </details>
@@ -1403,9 +1420,15 @@
   // a = highlight/accent, b = handle/right-of-gradient, stops = waveform gradient (holo = multi-stop),
   // glow2 = optional second background glow, ink = text color on the highlight pill.
   const THEMES = [
-    // — NANA holo (iridescent), inspired by nana.works (#c0a0e0 lavender / NANA-Holo) —
-    { name: "NANA Holo",   a: "#c0a0e0", b: "#9fd6ff", bg1: "#160a26", bg2: "#0a0a1c",
-      stops: ["#a0e8ff", "#c0a0e0", "#ffb3e6", "#b8a0ff"], glow2: "#7fe0ff", ink: "#1a0f2e" },
+    // — NANA Holo: the actual nana.works palette. Its .holo-text gradient runs amber → pink →
+    //   purple → blue → green over a near-black page, so the waveform carries all five while
+    //   purple and blue (the two Sean kept for OutLoud's own chrome) stay the accents. —
+    { name: "NANA Holo",   a: "#c0a0e0", b: "#88c8e8", bg1: "#0a0a0a", bg2: "#050506",
+      stops: ["#e8c878", "#f0a0c0", "#c0a0e0", "#88c8e8", "#b8ff5c"], glow2: "#88c8e8", ink: "#0a0a0a" },
+    // — RetroGleam: retrogleam.com's own tokens. Warm analog studio — cream type and a rust CTA
+    //   over near-black, so the waveform runs cream → amber → rust → deep red. —
+    { name: "RetroGleam", a: "#e66430", b: "#e9dac7", bg1: "#180304", bg2: "#121212",
+      stops: ["#e9dac7", "#ff9400", "#e66430", "#bd271f"], glow2: "#ff9400", ink: "#180304", fg: "#e9dac7" },
     { name: "Holo Aurora", a: "#7af5d0", b: "#a78bfa", bg1: "#04201c", bg2: "#0a0a22",
       stops: ["#7af5d0", "#76d7ff", "#a78bfa", "#ff9fe6"], glow2: "#a78bfa", ink: "#06231d" },
     { name: "Holo Sunset", a: "#ffb37a", b: "#c0a0e0", bg1: "#230c1e", bg2: "#120a22",
@@ -1413,13 +1436,58 @@
     // — Color-theory palettes —
     { name: "Nebula",   a: "#6c5ce7", b: "#00d2ff", bg1: "#13042b", bg2: "#04142b" },           // analogous violet→cyan
     { name: "Indigo/Gold", a: "#7c6cff", b: "#ffd166", bg1: "#0c0a2b", bg2: "#080614" },          // complementary
-    { name: "Teal/Coral",  a: "#2bd4c4", b: "#ff6b6b", bg1: "#042421", bg2: "#0a0a14" },          // complementary
     { name: "Ember",    a: "#ff6b6b", b: "#ffd166", bg1: "#2b0a04", bg2: "#1a0a02" },             // warm analogous
     { name: "Vaporwave",a: "#ff61d2", b: "#36e0ff", bg1: "#1c0726", bg2: "#070a1e" },             // pink↔cyan split
-    { name: "Forest",   a: "#2ecc71", b: "#00d2ff", bg1: "#04240f", bg2: "#04161f" },
-    { name: "Mono",     a: "#e8e8ee", b: "#9494a6", bg1: "#141414", bg2: "#070707" },
+    // ink is the text drawn inside the active caption pill, which is filled with `a`. A light
+    // `a` needs a dark ink or the current word disappears into its own highlight.
+    // — SIGNAL: an LED dot-matrix display. The first theme whose identity is texture rather
+    //   than palette: `fx` rasterises the glyphs through a dot grid, `frame` adds camera marks. —
+    // `b` also paints the creator name in layout 2, so it has to clear black on its own — the
+    // deep red this started as measured 1.9:1 and vanished.
+    { name: "SIGNAL", a: "#ff2a18", b: "#ff3b24", bg1: "#000000", bg2: "#000000",
+      stops: ["#ff3b24", "#c81006", "#ff3b24"], glow2: "#ff2a18", ink: "#000000",
+      // glow 0 on purpose. The header mesh is painted in bg1, so any accent wash behind it gets
+      // erased in a rectangle and the header reads as a black box. A pure black canvas also
+      // matches the look this is drawn from: all the light comes from the dots.
+      fg: "#ff2a18", fx: "dot", frame: true, glow: 0, font: '"Geist Mono", ui-monospace, monospace' },
+    { name: "Contrast", a: "#ffffff", b: "#d4d4d4", bg1: "#0a0a0a", bg2: "#000000", ink: "#000000" },
+    // The one light theme. `fg` flips the canvas text from white to ink; cream is NANA
+    // LIFESTYLE's --cream (#e1e0cc), the colour its own body copy and logo use.
+    { name: "Cream",    a: "#141414", b: "#4a4a42", bg1: "#e1e0cc", bg2: "#d6d5be", fg: "#141414", ink: "#e1e0cc" },
   ];
   let theme = THEMES[0];
+
+  // Small colour helpers, shared by the renderer, the swatches and the custom theme.
+  function hexToRgb(h) { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+  function rgbToHex(r, g, b) {
+    const c = (x) => Math.max(0, Math.min(255, Math.round(x))).toString(16).padStart(2, "0");
+    return "#" + c(r) + c(g) + c(b);
+  }
+  const relLum = (hex) => { const [r, g, b] = hexToRgb(hex); return 0.299 * r + 0.587 * g + 0.114 * b; };
+  const mixHex = (a, b, t) => {
+    const A = hexToRgb(a), B = hexToRgb(b);
+    return rgbToHex(A[0] + (B[0] - A[0]) * t, A[1] + (B[1] - A[1]) * t, A[2] + (B[2] - A[2]) * t);
+  };
+  const shadeHex = (hex, t) => mixHex(hex, t < 0 ? "#000000" : "#ffffff", Math.abs(t));
+  // A theme is "light" when its canvas is light — not when it defines `fg`, since a dark theme
+  // may set `fg` simply to tint its captions (RetroGleam uses cream rather than white).
+  const isLightTheme = (t) => relLum(t.bg1) > 140;
+
+  // Canvas foreground. Every theme used to be dark, so text was hardcoded white throughout the
+  // renderer; a light theme needs it inverted, so it now comes from the theme, defaulting to white.
+  const fgc = (alpha) => {
+    const hex = theme.fg || "#ffffff";
+    if (alpha >= 1) return hex;
+    const n = parseInt(hex.slice(1), 16);
+    return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
+  };
+  // The legibility shadow behind text sitting over a background photo has to invert too, or dark
+  // text on a light theme picks up a dark halo instead of separating from the image.
+  // A dark halo unless the text itself is genuinely dark. The threshold sits low because a
+  // saturated colour like Scoreboard's red reads as light against a photo but measures ~104 —
+  // at a midpoint threshold it was getting a white halo, which washed the red out badly.
+  const shadowCol = () =>
+    relLum(theme.fg || "#ffffff") > 70 ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.55)";
   let showWatermark = true; // NANA wordmark on the canvas (toggled in Customize)
 
   // ---------- State ----------
@@ -2732,7 +2800,12 @@
   THEMES.forEach((t, i) => {
     const sw = document.createElement("div");
     sw.className = "swatch" + (i === 0 ? " sel" : "");
-    sw.style.background = `linear-gradient(135deg, ${t.a}, ${t.b})`;
+    // Dark themes are recognised by their accent, so the swatch shows a → b. A light theme's
+    // accent is dark ink, so an accent-only swatch would read as a black chip and hide the very
+    // thing that makes it different — show its canvas colour with the ink cut into the corner.
+    sw.style.background = isLightTheme(t)
+      ? `linear-gradient(135deg, ${t.bg1} 58%, ${t.a} 58%)`
+      : `linear-gradient(135deg, ${t.a}, ${t.b})`;
     sw.title = t.name;
     sw.addEventListener("click", () => {
       theme = t;
@@ -2752,55 +2825,70 @@
     const h2 = (x) => x.toString(16).padStart(2, "0");
     return "#" + h2(f(0)) + h2(f(8)) + h2(f(4));
   }
-  // Duotone: primary + secondary hue. Stops interpolate along the SHORTER arc of the hue
-  // wheel between them, so any two hues blend cleanly (no muddy long-way-around midpoints).
-  function makeTheme(h1, h2) {
-    const pastel = (h, l) => hslToHex(h, 100, l == null ? 80 : l);
-    const d = ((h2 - h1 + 540) % 360) - 180; // signed shortest delta
-    const stops = [0, 1, 2, 3].map((i) => pastel(h1 + d * (i / 3)));
+  // Custom theme built from three picked colours. Hue-only sliders could never make a muted or
+  // light palette; real pickers can, and the light case now works because `fg` exists.
+
+  function makeTheme(primary, accent, bg) {
+    const lightBg = relLum(bg) > 140;
     return {
       name: "Custom",
-      stops,
-      a: pastel(h1), b: pastel(h2),
-      bg1: hslToHex(h1, 55, 9),
-      bg2: hslToHex(h2, 45, 6),
-      glow2: pastel(h2, 70),
-      ink: hslToHex(h1, 60, 10),
+      // four stops walking primary → accent keeps the waveform reading as one gradient
+      stops: [0, 1, 2, 3].map((i) => mixHex(primary, accent, i / 3)),
+      a: primary,
+      b: accent,
+      bg1: bg,
+      bg2: shadeHex(bg, lightBg ? -0.08 : -0.35), // a little depth without changing the colour
+      glow2: accent,
+      // text inside the active word's pill has to clear the pill itself
+      ink: relLum(primary) > 140 ? "#141414" : "#ffffff",
+      // and the captions themselves have to clear the background
+      fg: lightBg ? "#141414" : undefined,
     };
   }
-  const LS_HUE = "outloud_custom_hue", LS_HUE2 = "outloud_custom_hue2", LS_CUSTOM_ON = "outloud_theme_custom";
-  const customTheme = $("#customTheme"), hueRange = $("#hueRange"), hue2Range = $("#hue2Range"), hueShuffle = $("#hueShuffle");
-  // restore saved slider positions
-  const savedHue = localStorage.getItem(LS_HUE), savedHue2 = localStorage.getItem(LS_HUE2);
-  if (savedHue != null) hueRange.value = savedHue;
-  if (savedHue2 != null) hue2Range.value = savedHue2;
+
+  const LS_C1 = "outloud_custom_primary", LS_C2 = "outloud_custom_accent", LS_CBG = "outloud_custom_bg";
+  const LS_CUSTOM_ON = "outloud_theme_custom";
+  const customTheme = $("#customTheme"), hueShuffle = $("#hueShuffle");
+  const cPrimary = $("#cPrimary"), cAccent = $("#cAccent"), cBg = $("#cBg");
+  const savedC1 = localStorage.getItem(LS_C1), savedC2 = localStorage.getItem(LS_C2), savedCBg = localStorage.getItem(LS_CBG);
+  if (savedC1) cPrimary.value = savedC1;
+  if (savedC2) cAccent.value = savedC2;
+  if (savedCBg) cBg.value = savedCBg;
+
   const applyCustom = (persist) => {
-    theme = makeTheme(+hueRange.value, +hue2Range.value);
+    theme = makeTheme(cPrimary.value, cAccent.value, cBg.value);
     if (persist) {
-      localStorage.setItem(LS_HUE, hueRange.value);
-      localStorage.setItem(LS_HUE2, hue2Range.value);
+      localStorage.setItem(LS_C1, cPrimary.value);
+      localStorage.setItem(LS_C2, cAccent.value);
+      localStorage.setItem(LS_CBG, cBg.value);
       localStorage.setItem(LS_CUSTOM_ON, "1");
     }
+    if (customSwatch) customSwatch.style.background = `linear-gradient(135deg, ${cPrimary.value}, ${cAccent.value})`;
     drawPoster();
   };
+  // the custom entry sits at the end of the preset row and previews the current picks
   const customSwatch = document.createElement("div");
   customSwatch.className = "swatch custom-swatch";
-  customSwatch.title = "Custom — pick two hues";
+  customSwatch.title = "Custom — pick your own colors";
   customSwatch.addEventListener("click", () => {
     clearThemeSel(); customSwatch.classList.add("sel");
     customTheme.hidden = false;
     applyCustom(true);
   });
   themeRow.appendChild(customSwatch);
-  hueRange.addEventListener("input", () => applyCustom(true));
-  hue2Range.addEventListener("input", () => applyCustom(true));
+
   hueShuffle.addEventListener("click", () => {
-    // fresh duotone: random primary + a secondary a pleasing distance away
+    // fresh duotone: a random primary plus an accent a pleasing distance around the wheel,
+    // both kept light enough to read against the chosen background
     const h1 = Math.floor(Math.random() * 360);
     const h2 = Math.floor((h1 + 60 + Math.random() * 180) % 360);
-    hueRange.value = h1; hue2Range.value = h2;
+    const lightBg = relLum(cBg.value) > 140;
+    const L = lightBg ? 42 : 78;
+    cPrimary.value = hslToHex(h1, 82, L);
+    cAccent.value = hslToHex(h2, 82, L);
     applyCustom(true);
   });
+  [cPrimary, cAccent, cBg].forEach((el) => el.addEventListener("input", () => applyCustom(true)));
   // clear the "custom active" flag whenever a preset is chosen
   document.querySelectorAll(".theme-row .swatch").forEach(sw => {
     if (sw !== customSwatch) sw.addEventListener("click", () => localStorage.removeItem(LS_CUSTOM_ON));
@@ -2809,7 +2897,8 @@
   if (localStorage.getItem(LS_CUSTOM_ON) === "1") {
     clearThemeSel(); customSwatch.classList.add("sel");
     customTheme.hidden = false;
-    theme = makeTheme(+hueRange.value, +hue2Range.value);
+    theme = makeTheme(cPrimary.value, cAccent.value, cBg.value);
+    customSwatch.style.background = `linear-gradient(135deg, ${cPrimary.value}, ${cAccent.value})`;
   }
 
   // ---------- Aspect ratio / format ----------
@@ -3306,8 +3395,11 @@
     return { cw, ch, pad, cap, lh, bandTop, bandBottom, waveBase, waveMax, handleY, brandY };
   }
   const FB = `-apple-system, "Segoe UI", Roboto, sans-serif`;
-  const capFont   = (g) => `600 ${g.cap}px "Clash Display", "General Sans", ${FB}`;
-  const handleFont= (g) => `600 ${Math.round(g.cap * 0.62)}px "Clash Display", ${FB}`;
+  // A theme can name its own display face. Only the canvas type follows it — the app's own UI
+  // stays on Clash Display, so a theme changes the artwork, never the interface around it.
+  const face = () => theme.font || `"Clash Display", "General Sans", ${FB}`;
+  const capFont   = (g) => `600 ${g.cap}px ${face()}`;
+  const handleFont= (g) => `600 ${Math.round(g.cap * 0.62)}px ${face()}`;
   const brandFont = (g) => `500 ${Math.round(g.cap * 0.4)}px "General Sans", ${FB}`;
 
   // build the waveform / accent gradient (supports holo multi-stop)
@@ -3371,24 +3463,29 @@
       let dw, dh; if (ir > cr) { dh = ch; dw = ch * ir; } else { dw = cw; dh = cw / ir; }
       ctx.drawImage(bgImage, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
       const sc = ctx.createLinearGradient(0, 0, 0, ch);
-      sc.addColorStop(0, `rgba(0,0,0,${Math.min(0.9, bgDark + 0.12)})`);
+      // ceilings raised so a bright photo can actually be pushed back far enough to read over
+      sc.addColorStop(0, `rgba(0,0,0,${Math.min(0.98, bgDark + 0.12)})`);
       sc.addColorStop(0.45, `rgba(0,0,0,${bgDark})`);
-      sc.addColorStop(1, `rgba(0,0,0,${Math.min(0.92, bgDark + 0.28)})`);
+      sc.addColorStop(1, `rgba(0,0,0,${Math.min(0.99, bgDark + 0.28)})`);
       ctx.fillStyle = sc; ctx.fillRect(0, 0, cw, ch);
       return;
     }
     const g = ctx.createLinearGradient(0, 0, cw, ch);
     g.addColorStop(0, theme.bg1); g.addColorStop(1, theme.bg2);
     ctx.fillStyle = g; ctx.fillRect(0, 0, cw, ch);
-    // accent glow (top-right)
-    const rg = ctx.createRadialGradient(cw * 0.78, ch * 0.1, 20, cw * 0.78, ch * 0.1, cw * 0.62);
-    rg.addColorStop(0, theme.a + "55"); rg.addColorStop(1, "transparent");
-    ctx.fillStyle = rg; ctx.fillRect(0, 0, cw, ch);
-    // holo second glow (bottom-left)
-    if (theme.glow2) {
-      const rg2 = ctx.createRadialGradient(cw * 0.16, ch * 0.9, 20, cw * 0.16, ch * 0.9, cw * 0.6);
-      rg2.addColorStop(0, theme.glow2 + "40"); rg2.addColorStop(1, "transparent");
-      ctx.fillStyle = rg2; ctx.fillRect(0, 0, cw, ch);
+    // Accent glows. `glow` lets a theme dial them back — an emissive look wants its light coming
+    // from the type, not from a wash behind it.
+    const gm = theme.glow == null ? 1 : theme.glow;
+    const aHex = (base) => Math.round(base * gm).toString(16).padStart(2, "0");
+    if (gm > 0.02) {
+      const rg = ctx.createRadialGradient(cw * 0.78, ch * 0.1, 20, cw * 0.78, ch * 0.1, cw * 0.62);
+      rg.addColorStop(0, theme.a + aHex(0x55)); rg.addColorStop(1, "transparent");
+      ctx.fillStyle = rg; ctx.fillRect(0, 0, cw, ch);
+      if (theme.glow2) {
+        const rg2 = ctx.createRadialGradient(cw * 0.16, ch * 0.9, 20, cw * 0.16, ch * 0.9, cw * 0.6);
+        rg2.addColorStop(0, theme.glow2 + aHex(0x40)); rg2.addColorStop(1, "transparent");
+        ctx.fillStyle = rg2; ctx.fillRect(0, 0, cw, ch);
+      }
     }
   }
 
@@ -3495,7 +3592,7 @@
     const fCap = Math.round(g.cap * 1.5);
     const fLh = Math.round(fCap * 1.22);
     const maxW = g.cw - g.pad * 2;
-    const font = `800 ${fCap}px "Clash Display", "General Sans", ${FB}`;
+    const font = `800 ${fCap}px ${face()}`;
     ctx.font = font;
     const space = ctx.measureText(" ").width;
 
@@ -3516,7 +3613,7 @@
 
     const L = layerReady();
     L.textBaseline = "top";
-    if (bgImage) { L.shadowColor = "rgba(0,0,0,0.55)"; L.shadowBlur = fCap * 0.3; L.shadowOffsetY = 1; }
+    if (bgImage) { L.shadowColor = shadowCol(); L.shadowBlur = fCap * 0.3; L.shadowOffsetY = 1; }
     L.font = font;
     const padX = fCap * 0.2, rad = fCap * 0.2, pillH = Math.round(fCap * 1.16);
     for (const ln of lines) {
@@ -3528,15 +3625,22 @@
           L.fillStyle = theme.ink || "#ffffff";
         } else {
           // words already spoken in this chunk dim slightly; upcoming ones stay bright
-          L.fillStyle = (activeIdx >= 0 && w.i < activeIdx) ? "rgba(255,255,255,0.5)" : "#ffffff";
+          L.fillStyle = (activeIdx >= 0 && w.i < activeIdx) ? fgc(0.5) : fgc(1);
         }
         L.fillText(w.text, x, y);
         x += w.w + space;
       }
       y += fLh;
     }
+    applyFx(L);
     ctx.save();
     ctx.shadowColor = "transparent"; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+    if (theme.fx === "dot" && canFilter) { // bloom: the dots read as lit, not printed
+      ctx.save();
+      ctx.globalAlpha = 0.34; ctx.filter = "blur(" + Math.max(2, Math.round(fCap * 0.045)) + "px)";
+      ctx.drawImage(textLayer, 0, 0);
+      ctx.restore();
+    }
     ctx.drawImage(textLayer, 0, 0);
     ctx.restore();
   }
@@ -3552,7 +3656,117 @@
       textLayer.width = canvas.width; textLayer.height = canvas.height;
     }
     ltx.clearRect(0, 0, textLayer.width, textLayer.height);
+    // clearRect wipes pixels but NOT context state, so the legibility shadow set for a background
+    // photo survived into later frames after the photo was removed and quietly softened the
+    // captions. Only a resize used to reset it, which is why changing format appeared to fix it.
+    ltx.shadowColor = "transparent"; ltx.shadowBlur = 0; ltx.shadowOffsetX = 0; ltx.shadowOffsetY = 0;
     return ltx;
+  }
+
+  // ---------- Theme effects: texture, not just colour ----------
+  // A theme can carry an `fx`, which rasterises the finished text layer through a mask instead of
+  // changing what colour it is. "dot" punches an LED grid through the glyphs, so type and any
+  // future artwork share one dot pitch and read as a single emissive display.
+  const DOT_R = 0.34;                                          // dot radius as a share of pitch
+  // ONE pitch for the whole canvas, so every element sits on the same grid — deriving it per
+  // element once put the header on a 4px grid and the captions on a 5px one, which moiréd.
+  //
+  // Scaled off WIDTH, because that is what a viewer's screen fixes: a 1920-wide clip is shown at
+  // roughly the same width as a 1080-wide one, so a constant pitch would shrink to ~1px on
+  // widescreen and blur into mush while portrait stayed crisp. Tying it to width keeps the dots
+  // the same apparent size in every format. Portrait and square are unchanged at 5px.
+  const dotPitch = () => Math.max(5, Math.round(canvas.width * 0.0046));
+  let dotTile = null, dotTileKey = "";
+  // One tile builder for both uses: black dots when masking glyphs, coloured dots when the
+  // frame brackets are painted directly. Same pitch and same canvas origin either way, so the
+  // brackets land on the caption grid and the whole frame reads as one display.
+  function dotPattern(target, pitch, color) {
+    const key = pitch + "|" + color;
+    if (!dotTile || dotTileKey !== key) {
+      dotTile = document.createElement("canvas");
+      dotTile.width = dotTile.height = pitch;
+      const t = dotTile.getContext("2d");
+      t.fillStyle = color;
+      t.beginPath();
+      t.arc(pitch / 2, pitch / 2, Math.max(0.9, pitch * DOT_R), 0, Math.PI * 2);
+      t.fill();
+      dotTileKey = key;
+    }
+    return target.createPattern(dotTile, "repeat");
+  }
+  const dotMaskPattern = (target, pitch) => dotPattern(target, pitch, "#000");
+
+  // The inverse tile: solid background with the dot punched out. Painted OVER finished artwork
+  // it leaves only the dot centres showing, which is how a photo, the waveform bars and the
+  // creator name can join the grid without each being re-rendered through a layer.
+  let meshTile = null, meshTileKey = "";
+  function meshPattern(target, pitch, color) {
+    const key = pitch + "|" + color;
+    if (!meshTile || meshTileKey !== key) {
+      meshTile = document.createElement("canvas");
+      meshTile.width = meshTile.height = pitch;
+      const t = meshTile.getContext("2d");
+      t.fillStyle = color;
+      t.fillRect(0, 0, pitch, pitch);
+      t.globalCompositeOperation = "destination-out";
+      t.beginPath();
+      t.arc(pitch / 2, pitch / 2, Math.max(0.9, pitch * DOT_R), 0, Math.PI * 2);
+      t.fill();
+      meshTileKey = key;
+    }
+    return target.createPattern(meshTile, "repeat");
+  }
+  // Only valid over a flat backdrop — the mesh is painted in the background colour, so a photo
+  // behind it would show a grid of background squares instead of the photo.
+  function meshRegion(x, y, w, h) {
+    if (theme.fx !== "dot" || bgImage) return;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+    ctx.fillStyle = meshPattern(ctx, dotPitch(), theme.bg1);
+    ctx.fillRect(x, y, w, h);
+    ctx.restore();
+  }
+  // Applied while the layer still holds only text, so the dots cut the glyphs themselves. Runs
+  // before the liquid fade, and both being destination-in means they simply multiply.
+  function applyFx(L) {
+    if (theme.fx !== "dot") return;
+    const pitch = dotPitch();
+    L.save();
+    L.globalCompositeOperation = "destination-in";
+    L.fillStyle = dotMaskPattern(L, pitch);
+    L.fillRect(0, 0, textLayer.width, textLayer.height);
+    L.restore();
+  }
+
+  // Camera-style corner brackets with a registration mark at top centre. Purely decorative, so
+  // it draws straight to the canvas after everything else.
+  function paintFrameMarks(g) {
+    if (!theme.frame) return;
+    // Sits close to the edge on purpose: further in, the brackets crowded the watermark and the
+    // creator tile, which read as a collision rather than a frame.
+    //
+    // Scaled off the SHORTER side, not the width. Content is placed from height (the creator
+    // tile starts at ch * 0.055), so a width-derived inset grew on 16:9 while the tile stayed
+    // put, and the top-left bracket ran straight through it. Square and portrait are unaffected,
+    // since width is already their shorter side.
+    const base = Math.min(g.cw, g.ch);
+    const m = Math.round(base * 0.026);
+    const len = Math.round(base * 0.041); // short arms read as crop marks, not as a drawn box
+    const w = Math.max(3, Math.round(base * 0.007));
+    ctx.save();
+    ctx.shadowColor = "transparent"; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+    // painted with the same dot grid as the captions, so the frame belongs to the same display
+    ctx.fillStyle = theme.fx === "dot" ? dotPattern(ctx, dotPitch(), theme.a) : theme.a;
+    ctx.globalAlpha = 0.9;
+    const L = m, R = g.cw - m, T = m, B = g.ch - m;
+    // each corner is an L: one arm along the top/bottom, one down the side
+    ctx.fillRect(L, T, len, w);           ctx.fillRect(L, T, w, len);
+    ctx.fillRect(R - len, T, len, w);     ctx.fillRect(R - w, T, w, len);
+    ctx.fillRect(L, B - w, len, w);       ctx.fillRect(L, B - len, w, len);
+    ctx.fillRect(R - len, B - w, len, w); ctx.fillRect(R - w, B - len, w, len);
+    // No top-centre registration mark: the four corner brackets already say "framed shot", and a
+    // fifth element on the centre line kept drawing the eye away from the captions.
+    ctx.restore();
   }
   const canFilter = typeof ctx.filter === "string"; // canvas blur filter (no Safari < 18)
 
@@ -3572,7 +3786,7 @@
 
     // 1) draw the words onto the offscreen layer
     const L = layerReady();
-    if (bgImage) { L.shadowColor = "rgba(0,0,0,0.55)"; L.shadowBlur = g.cap * 0.32; L.shadowOffsetY = 1; }
+    if (bgImage) { L.shadowColor = shadowCol(); L.shadowBlur = g.cap * 0.32; L.shadowOffsetY = 1; }
     L.textBaseline = "top";
     const pillH = Math.round(g.cap * 1.2), padX = g.cap * 0.24, rad = g.cap * 0.22;
     for (const p of placed) {
@@ -3584,12 +3798,14 @@
         roundRect(L, p.x - padX, wy - g.cap * 0.13, p.w + padX * 2, pillH, rad); L.fill();
         L.fillStyle = theme.ink || "#ffffff";
       } else if (activeIdx >= 0 && p.i < activeIdx) {
-        L.fillStyle = "rgba(255,255,255,0.42)"; // already spoken
+        L.fillStyle = fgc(0.42); // already spoken
       } else {
-        L.fillStyle = "#ffffff";
+        L.fillStyle = fgc(1);
       }
       L.fillText(p.text, p.x, wy);
     }
+
+    applyFx(L); // texture the glyphs before the fade mask multiplies over them
 
     // 2) liquid edges — directional: fade the top only once lines have scrolled past it,
     //    fade the bottom only when more lines wait below ("there's more" cue)
@@ -3639,6 +3855,12 @@
       btx.restore();
       ctx.drawImage(blurLayer, 0, 0);
     }
+    if (theme.fx === "dot" && canFilter) { // bloom, so the dots read as lit rather than printed
+      ctx.save();
+      ctx.globalAlpha = 0.34; ctx.filter = "blur(" + Math.max(2, Math.round(g.cap * 0.045)) + "px)";
+      ctx.drawImage(textLayer, 0, 0);
+      ctx.restore();
+    }
     ctx.drawImage(textLayer, 0, 0);
     ctx.restore();
   }
@@ -3656,7 +3878,7 @@
   function paintText(activeIdx) {
     const g = geo();
 
-    if (bgImage) { ctx.shadowColor = "rgba(0,0,0,0.55)"; ctx.shadowBlur = g.cap * 0.32; ctx.shadowOffsetY = 1; }
+    if (bgImage) { ctx.shadowColor = shadowCol(); ctx.shadowBlur = g.cap * 0.32; ctx.shadowOffsetY = 1; }
 
     // subtle "Translated to X" label, top-center — only when actually translated
     if (translatedLang) {
@@ -3664,7 +3886,7 @@
       ctx.textAlign = "center";
       ctx.textBaseline = "top";
       ctx.font = `500 ${Math.round(g.cap * 0.32)}px "General Sans", ${FB}`;
-      ctx.fillStyle = "rgba(255,255,255,0.55)";
+      ctx.fillStyle = fgc(0.55);
       ctx.fillText("Translated to " + translatedLang, g.cw / 2, Math.round(g.ch * 0.026));
       ctx.restore();
     }
@@ -3693,7 +3915,7 @@
     ctx.fillStyle = theme.b;
     // same right edge as the description below, so a long name never reaches the watermark
     const nMaxW = (g.cw - g.pad - g.cap * 1.3) - tx;
-    const nFont = (px) => `600 ${px}px "Clash Display", ${FB}`;
+    const nFont = (px) => `600 ${px}px ${face()}`;
     const nFit = fitLine(handle.value || "@yourname", nMaxW, Math.round(tile * 0.40), Math.round(tile * 0.26), nFont);
     ctx.font = nFont(nFit.px);
     // with no description the name is the whole footer, so centre it on the tile
@@ -3701,7 +3923,7 @@
     ctx.fillText(nFit.text, tx, dl ? cy - Math.round(tile * 0.20) : cy);
     if (dl) {
       ctx.font = `500 ${Math.round(tile * 0.27)}px "General Sans", ${FB}`;
-      ctx.fillStyle = "rgba(255,255,255,0.62)";
+      ctx.fillStyle = fgc(0.62);
       // ellipsize so a long description never runs into the watermark, bottom-right
       const dMaxW = (g.cw - g.pad - g.cap * 1.3) - tx;
       while (ctx.measureText(dl).width > dMaxW && dl.length > 2) dl = dl.slice(0, -2).trimEnd() + "…";
@@ -3767,74 +3989,95 @@
     ctx.save();
     roundRect(ctx, tx, ty, tile, tile, rad); ctx.clip();
     if (pfpImage) drawCoverBox(pfpImage, tx, ty, tile, tile);
-    else {
+    else if (theme.fx === "dot") {
+      // On an LED theme the usual duotone placeholder becomes a solid block, because both theme
+      // colours are the same hue. Lay down a flat mid-tone panel and let meshRegion below do the
+      // dotting — painting dots here as well left two anti-aliased grids fighting each other, and
+      // at this pitch they cancelled on alternating rows.
+      ctx.fillStyle = mixHex(theme.bg1, theme.a, 0.45);
+      ctx.fillRect(tx, ty, tile, tile);
+    } else {
       const pg = ctx.createLinearGradient(tx, ty, tx + tile, ty + tile);
       pg.addColorStop(0, theme.a); pg.addColorStop(1, theme.b);
       ctx.fillStyle = pg; ctx.fillRect(tx, ty, tile, tile);
     }
     ctx.restore();
 
-    if (bgImage) { ctx.shadowColor = "rgba(0,0,0,0.55)"; ctx.shadowBlur = g.cap * 0.32; ctx.shadowOffsetY = 1; }
+    if (bgImage) { ctx.shadowColor = shadowCol(); ctx.shadowBlur = g.cap * 0.32; ctx.shadowOffsetY = 1; }
     ctx.textBaseline = "top";
 
     // name + description line, right of the tile
     const hx = tx + tile + Math.round(g.pad * 0.6);
     const hw = g.cw - g.pad - hx;
     const name = (handle.value || "@yourname").toUpperCase();
-    const hFont = (px) => `700 ${px}px "Clash Display", "General Sans", ${FB}`;
+    const hFont = (px) => `700 ${px}px ${face()}`;
     // shrink to fit the header, down to a still-legible floor; ellipsize only past that
     const nf = fitLine(name, hw, Math.round(tile * 0.3), Math.round(tile * 0.17), hFont);
     const hs = nf.px;
     ctx.font = hFont(hs);
-    ctx.fillStyle = "#ffffff";
+    ctx.fillStyle = fgc(1);
     ctx.fillText(nf.text, hx, ty);
 
-    // description (translated after a dub), only if the user wrote one.
-    // Too long for the header? It marquees during playback instead of getting cut off.
-    const ds = Math.round(tile * 0.155);
-    ctx.font = `500 ${ds}px "General Sans", ${FB}`;
-    ctx.fillStyle = "rgba(255,255,255,0.78)";
-    const dline = descLine();
-    const dy = ty + Math.round(hs * 1.2);
-    const dw = dline ? ctx.measureText(dline).width : 0;
-    if (!dline) {
-      /* nothing typed: leave the header as just the name */
-    } else if (dw <= hw) {
-      ctx.fillText(dline, hx, dy);
-    } else {
-      const gap = ds * 2.5, speed = ds * 1.6; // px/second — calm, readable drift
-      const moving = recording || (player && !player.paused && !player.ended);
-      const off = moving ? ((player.currentTime || 0) * speed) % (dw + gap) : 0;
-      // draw on the offscreen layer so the ends can fade out instead of cutting off
-      const L = layerReady();
-      L.textBaseline = "top";
-      L.font = `500 ${ds}px "General Sans", ${FB}`;
-      L.fillStyle = "rgba(255,255,255,0.78)";
-      if (bgImage) { L.shadowColor = "rgba(0,0,0,0.55)"; L.shadowBlur = ds * 0.3; L.shadowOffsetY = 1; }
-      L.fillText(dline, hx - off, dy);
-      L.fillText(dline, hx - off + dw + gap, dy); // seamless wrap-around copy
-      // directional fades: the right end always signals overflow; the left only once it has moved
-      const fw = Math.min(0.49 * hw, ds * 1.4); // fade width at each end
-      const fadeLeft = off > 0.5;
-      const gr = L.createLinearGradient(hx, 0, hx + hw, 0);
-      gr.addColorStop(0, fadeLeft ? "rgba(0,0,0,0)" : "rgba(0,0,0,1)");
-      gr.addColorStop(fw / hw, "rgba(0,0,0,1)");
-      gr.addColorStop(1 - fw / hw, "rgba(0,0,0,1)");
-      gr.addColorStop(1, "rgba(0,0,0,0)");
-      L.save();
-      L.globalCompositeOperation = "destination-in"; // doubles as the clip: erases outside the strip
-      L.shadowColor = "transparent";
-      L.fillStyle = gr;
-      L.fillRect(hx, dy - ds * 0.3, hw, Math.round(ds * 1.7));
-      L.restore();
-      ctx.save();
-      ctx.shadowColor = "transparent"; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
-      ctx.drawImage(textLayer, 0, 0);
-      ctx.restore();
-    }
+    // Drawn as a closure and called after the dot mesh below. At roughly 7.6 dots of
+    // height this line is the one element too small to survive the grid — the glyphs
+    // stop holding their shape — so on an fx theme it stays solid while everything
+    // around it is dotted.
+    const drawDescription = () => {
+      // description (translated after a dub), only if the user wrote one.
+      // Too long for the header? It marquees during playback instead of getting cut off.
+        // On a dotted theme this line is set larger so it clears roughly 10 dots of height —
+      // below that the glyphs stop holding their shape, which is why it used to be exempted
+      // from the grid entirely. Bigger is the better fix than excluded.
+      const ds = Math.round(tile * (theme.fx === "dot" ? 0.21 : 0.155));
+      ctx.font = `500 ${ds}px "General Sans", ${FB}`;
+      ctx.fillStyle = fgc(0.78);
+      const dline = descLine();
+      const dy = ty + Math.round(hs * 1.2);
+      const dw = dline ? ctx.measureText(dline).width : 0;
+      if (!dline) {
+        /* nothing typed: leave the header as just the name */
+      } else if (dw <= hw) {
+        ctx.fillText(dline, hx, dy);
+      } else {
+        const gap = ds * 2.5, speed = ds * 1.6; // px/second — calm, readable drift
+        const moving = recording || (player && !player.paused && !player.ended);
+        const off = moving ? ((player.currentTime || 0) * speed) % (dw + gap) : 0;
+        // draw on the offscreen layer so the ends can fade out instead of cutting off
+        const L = layerReady();
+        L.textBaseline = "top";
+        L.font = `500 ${ds}px "General Sans", ${FB}`;
+        L.fillStyle = fgc(0.78);
+        if (bgImage) { L.shadowColor = shadowCol(); L.shadowBlur = ds * 0.3; L.shadowOffsetY = 1; }
+        L.fillText(dline, hx - off, dy);
+        L.fillText(dline, hx - off + dw + gap, dy); // seamless wrap-around copy
+        // directional fades: the right end always signals overflow; the left only once it has moved
+        const fw = Math.min(0.49 * hw, ds * 1.4); // fade width at each end
+        const fadeLeft = off > 0.5;
+        const gr = L.createLinearGradient(hx, 0, hx + hw, 0);
+        gr.addColorStop(0, fadeLeft ? "rgba(0,0,0,0)" : "rgba(0,0,0,1)");
+        gr.addColorStop(fw / hw, "rgba(0,0,0,1)");
+        gr.addColorStop(1 - fw / hw, "rgba(0,0,0,1)");
+        gr.addColorStop(1, "rgba(0,0,0,0)");
+        L.save();
+        L.globalCompositeOperation = "destination-in"; // doubles as the clip: erases outside the strip
+        L.shadowColor = "transparent";
+        L.fillStyle = gr;
+        L.fillRect(hx, dy - ds * 0.3, hw, Math.round(ds * 1.7));
+        L.restore();
+        ctx.save();
+        ctx.shadowColor = "transparent"; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+        ctx.drawImage(textLayer, 0, 0);
+        ctx.restore();
+      }
+    };
+    drawDescription();
 
     // waveform under the name block, sharing the tile's baseline
     paintBarsIn(values, hx, g.cw - g.pad, ty + tile, Math.round(tile * 0.42));
+
+    // On an LED theme the whole header joins the grid: photo, name, description and waveform
+    // all get the same dot pitch as the captions, so the card reads as one display.
+    meshRegion(g.pad - 2, ty - 2, g.cw - g.pad * 2 + 4, tile + 4);
 
     // giant live captions — the dubbed transcript, karaoke-highlighted
     const cap2 = Math.round(Math.min(g.cw * 0.075, g.ch * 0.085));
@@ -3857,7 +4100,7 @@
       ctx.save();
       ctx.textBaseline = "alphabetic";
       ctx.font = `500 ${Math.max(14, Math.round(g.cw * 0.018))}px "General Sans", ${FB}`;
-      ctx.fillStyle = "rgba(255,255,255,0.45)";
+      ctx.fillStyle = fgc(0.45);
       ctx.fillText(note, g.pad, g.ch - Math.round(g.ch * 0.028));
       ctx.restore();
     }
@@ -3870,6 +4113,7 @@
     paintBackground();
     if (styleByMode[mode] === "cover") paintDub(values, activeIdx);
     else { paintText(activeIdx); paintBars(values); }
+    paintFrameMarks(geo()); // geo() carries cap, so the frame shares the caption dot pitch
   }
 
   // static poster (no audio playing)
@@ -4273,6 +4517,7 @@
   if (document.fonts && document.fonts.ready) {
     Promise.all([
       document.fonts.load('600 54px "Clash Display"').catch(() => {}),
+      document.fonts.load('700 54px "Geist Mono"').catch(() => {}),
       document.fonts.load('500 24px "General Sans"').catch(() => {}),
     ]).then(() => document.fonts.ready).then(() => drawPoster());
   }
