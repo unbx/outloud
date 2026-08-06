@@ -13,8 +13,10 @@ OutLoud turns any audio or video clip into a live-captioned audiogram that keeps
 - **Caption a clip.** Speech-to-text with true word-level timestamps drives karaoke-style captions, synced to the original audio.
 - **Dub a clip.** Translate and re-voice a clip through the ElevenLabs Dubbing API. The output speaks another language in the original speaker's voice, with translated captions.
 - **Write a script.** Eleven v3 narration with inline expression tags like `[whispers]` and `[laughs]`, inserted from a tag palette at the cursor.
+- **Three ways in.** Upload a file, record a voice note from the mic, or capture the audio playing in another browser tab. All three feed the same pipeline. Tab capture is how you clip something that can't be downloaded, like a podcast player or a recorded X Space, without scraping anything: the browser is already an authorized listener. On phones, where tab capture doesn't exist, the app explains how to use the OS screen recorder instead.
 - **Trim.** A waveform trim tool (keep-selection handles, numeric times, selection preview) so only the part you want is transcribed.
 - **Caption editor.** Fix wording or line breaks after generation. Edits are re-aligned to the original word timings with a longest-common-subsequence remap, so sync survives.
+- **Caption styles.** Flow (continuous), Sentences (a break per sentence, the default), or Focus (a few words at a time, advancing with the audio).
 - **Design system.** Two canvas layouts, themes, background art, creator handle and photo, with a live preview that is also the editor (click the canvas to edit what you see).
 - **Export.** MP4 video (canvas capture piped through MediaRecorder with a screen wake lock), MP3 audio, and SRT or VTT caption files that drop straight into Final Cut or YouTube.
 
@@ -34,7 +36,8 @@ Notes on the interesting parts:
 - **Canvas renderer.** The audiogram is drawn frame-by-frame on a single canvas: karaoke word band with liquid fade and blur edges, animated waveform, layout-aware creator header. The same paint path serves the live preview, playback, and video export, so what you see is exactly what renders.
 - **Video export.** Canvas frames are captured with `captureStream` and driven by a Web Worker timer so rendering survives background tabs. A screen wake lock keeps mobile exports from freezing when the display would otherwise sleep.
 - **Tester proxy.** The serverless proxy holds the ElevenLabs key server-side behind a shared tester password, forwards only an allowlist of endpoints, rate-limits spend, translates credit-cap errors into honest messages, and logs anonymous usage metadata (feature, language, country) for product analytics. Bring-your-own-key mode talks to ElevenLabs directly and skips the proxy entirely.
-- **Trim and compression.** Clips are decoded in the browser and re-rendered to compact mono WAV through an `OfflineAudioContext`, optionally slicing just the trimmed selection, sized to fit serverless body limits.
+- **Trim and compression.** Clips are decoded in the browser and re-rendered through an `OfflineAudioContext`, optionally slicing just the trimmed selection. Caption uploads are then encoded to Opus with WebCodecs and wrapped in a small hand-written Ogg muxer, roughly a tenth the size of the equivalent WAV. That matters because the serverless body limit is fixed, so the audio format is what decides how long a clip can be; encoding happens offline rather than in real time, so a long clip encodes in seconds. Browsers without `AudioEncoder` fall back to WAV automatically.
+- **Limits as guidance.** Transcription and dubbing differ in cost by roughly 9x per minute, so both are given the same per-generation credit budget and their duration caps are derived from it. The applicable limit is shown next to the language picker before it can be tripped over, and a clip that is too long to dub but fine to caption says exactly that.
 
 ## Privacy
 

@@ -423,16 +423,6 @@
   .mode-seg { display: flex; width: 100%; margin-top: 4px; }
   .mode-seg button { flex: 1; }
 
-  /* Dub: upload dropzone */
-  .dropzone {
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px;
-    text-align: center; border: 1.5px dashed var(--line-2); border-radius: 14px; padding: 26px 18px;
-    cursor: pointer; background: var(--panel-2); color: var(--muted); transition: border-color .16s, background .16s, color .16s;
-  }
-  .dropzone:hover, .dropzone.drag { border-color: var(--accent); background: var(--panel); color: var(--text); }
-  .dropzone .ic { width: 26px; height: 26px; color: var(--accent); }
-  .dropzone .dz-main { font-weight: 600; color: var(--text); font-size: 14px; }
-  .dropzone .dz-sub { font-size: 12px; color: var(--faint); }
   /* File chip: name + attached sections (TRIM, then ✕) divided by hairlines, sharing the pill */
   .dz-file { display: flex; align-items: stretch; margin-top: 10px; overflow: hidden;
     border: 1px solid var(--line-2); border-radius: 10px; background: var(--panel-2); font-size: 13px; }
@@ -447,15 +437,26 @@
   .dz-trim:hover { color: var(--accent); background: rgba(196,167,231,0.07); }
   .dz-trim.on { color: var(--good); background: rgba(95,210,164,0.08); }
 
-  /* Voice-note recorder: mic → File → the same intake path as an upload */
-  .dz-rec { display: flex; justify-content: center; margin-top: 9px; }
-  .dz-rec button {
-    display: inline-flex; align-items: center; gap: 7px; font: inherit; font-size: 12.5px; font-weight: 600;
-    color: var(--muted); background: none; border: 1px dashed var(--line-2); border-radius: 999px;
-    padding: 7px 15px; cursor: pointer; transition: color .16s, border-color .16s, background .16s;
+  /* Intake: upload, record, and capture presented as three peers — all equally good ways in */
+  .intake { display: flex; gap: 10px; margin-top: 2px; }
+  .intake.drag .intake-opt { border-color: var(--accent); background: var(--panel); }
+  .intake-opt {
+    flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 5px;
+    font: inherit; text-align: center; cursor: pointer; color: var(--muted);
+    background: var(--panel-2); border: 1px dashed var(--line-2); border-radius: 12px; padding: 18px 10px;
+    transition: color .16s, border-color .16s, background .16s, transform .16s;
   }
-  .dz-rec button:hover { color: var(--text); border-color: var(--accent); background: var(--panel); }
-  .dz-rec button .ic { width: 14px; height: 14px; color: var(--accent); }
+  .intake-opt[hidden] { display: none; } /* the flex rule above would defeat the hidden attribute */
+  .intake-opt:hover { color: var(--text); border-color: var(--accent); background: var(--panel); }
+  .intake-opt:active { transform: translateY(1px); }
+  .intake-opt .ic { width: 22px; height: 22px; color: var(--accent); }
+  .intake-opt .io-main { font-size: 13.5px; font-weight: 600; color: var(--text); }
+  .intake-opt .io-sub { font-size: 11.5px; color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+  @media (max-width: 480px) { /* stack rather than crush the labels */
+    .intake { flex-direction: column; gap: 8px; }
+    .intake-opt { flex-direction: row; justify-content: center; gap: 9px; padding: 13px 10px; }
+    .intake-opt .io-sub::before { content: "· "; }
+  }
   .rec-bar {
     display: flex; align-items: center; gap: 12px; margin-top: 10px; padding: 9px 10px 9px 16px;
     background: var(--panel-2); border: 1px solid var(--line-2); border-radius: 10px;
@@ -466,7 +467,23 @@
     0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(255,138,138,0.4); }
     50% { opacity: 0.55; box-shadow: 0 0 0 7px rgba(255,138,138,0); }
   }
-  .rec-time { flex: 1; font-weight: 700; font-size: 14px; color: var(--text); font-variant-numeric: tabular-nums; }
+  .rec-what { flex: 1; min-width: 0; font-size: 12.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rec-time { flex: none; font-weight: 700; font-size: 14px; color: var(--text); font-variant-numeric: tabular-nums; }
+  /* Mobile fallback: no getDisplayMedia on phones, so point at the OS screen recorder */
+  .rec-help { display: flex; align-items: flex-start; gap: 8px; margin-top: 10px; font-size: 12px; line-height: 1.5; color: var(--faint); }
+  .rec-help[hidden] { display: none; }
+  .rec-help .ic { flex: none; width: 14px; height: 14px; margin-top: 2px; color: var(--accent); }
+  .rec-help button {
+    font: inherit; font-size: 12px; background: none; border: none; padding: 0; cursor: pointer;
+    color: var(--accent-2); text-decoration: underline; text-underline-offset: 2px; transition: color .16s;
+  }
+  .rec-help button:hover { color: var(--accent); }
+  .howto-card { max-width: 480px; }
+  .howto-card ol { margin: 0 0 4px; padding-left: 20px; font-size: 13.5px; line-height: 1.65; color: var(--muted); }
+  .howto-card ol li + li { margin-top: 5px; }
+  .howto-card ol strong { color: var(--text); font-weight: 600; }
+  .howto-os { font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--accent-2); margin: 16px 0 7px; }
+  .howto-os:first-of-type { margin-top: 4px; }
   #recStop {
     display: inline-flex; align-items: center; gap: 8px; font: inherit; font-size: 12px; font-weight: 700;
     letter-spacing: 0.04em; color: #14121f; background: linear-gradient(135deg, var(--accent), var(--accent-2));
@@ -488,6 +505,14 @@
   }
   .src-line button:hover { color: var(--accent); }
   #srcWrap { margin-top: 6px; }
+  .capstyle-seg { width: 100%; margin-bottom: 4px; }
+  .capstyle-seg button { flex: 1 1 0; font-size: 12.5px; }
+  /* Length allowance, shown before you can trip over it */
+  .cap-note { margin: 9px 0 0; font-size: 12px; line-height: 1.5; color: var(--faint); }
+  .cap-note[hidden] { display: none; }
+  .cap-note.fits { color: var(--good); }
+  .cap-note.over { color: var(--warn); }
+  .cap-note b { font-weight: 600; font-variant-numeric: tabular-nums; }
 
   /* Trim modal: keep-selection handles (QuickTime model) over a waveform (Voice Memos model) */
   .trim-card { max-width: 560px; }
@@ -737,19 +762,33 @@
 
     <!-- CLIP MODE — caption in place, or dub into another language; original voice either way -->
     <div id="dubControls" hidden>
-      <p class="hint" style="margin:14px 0 0;">Upload a 30–60s audio or video clip, or record one right here. OutLoud renders a live-captioned audiogram that keeps the voice, intonation, and expression of the original. Or dub it into another language, <strong>still in the original speaker's voice</strong>.</p>
+      <p class="hint" style="margin:14px 0 0;">Upload a clip, record a voice note, or capture audio playing in another tab. OutLoud renders a live-captioned audiogram that keeps the voice, intonation, and expression of the original. Or dub it into another language, <strong>still in the original speaker's voice</strong>.</p>
       <label for="dubFile">Clip</label>
-      <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Upload a clip to dub">
-        <span class="ic" data-icon="upload"></span>
-        <span class="dz-main">Drop a clip here, or click to choose</span>
-        <span class="dz-sub">Audio or video · 30–60s works best</span>
+      <div class="intake" id="dropzone">
+        <button type="button" class="intake-opt" id="pickBtn">
+          <span class="ic" data-icon="upload"></span>
+          <span class="io-main">Upload</span>
+          <span class="io-sub">Audio or video</span>
+        </button>
+        <button type="button" class="intake-opt" id="recBtn">
+          <span class="ic" data-icon="mic"></span>
+          <span class="io-main">Record</span>
+          <span class="io-sub">Voice note</span>
+        </button>
+        <button type="button" class="intake-opt" id="tabBtn" hidden>
+          <span class="ic" data-icon="monitor"></span>
+          <span class="io-main">Capture</span>
+          <span class="io-sub">Tab audio</span>
+        </button>
       </div>
       <input type="file" id="dubFile" accept="audio/*,video/*" hidden />
-      <div class="dz-rec" id="recRow">
-        <button type="button" id="recBtn"><span class="ic" data-icon="mic"></span>or record a voice note</button>
+      <div class="rec-help" id="recHelpRow" hidden>
+        <span class="ic" data-icon="smartphone"></span>
+        <span>Grabbing a Space or video on your phone? <button type="button" id="recHelpBtn">Use screen recording</button></span>
       </div>
       <div class="rec-bar" id="recBar" hidden>
         <span class="rec-dot"></span>
+        <span class="rec-what" id="recWhat">Recording</span>
         <span class="rec-time" id="recTime">0:00</span>
         <button type="button" id="recStop"><span class="rec-sq"></span>Stop &amp; use</button>
         <button type="button" id="recCancel" title="Discard recording" aria-label="Discard recording">&times;</button>
@@ -769,6 +808,7 @@
         <div id="srcWrap" hidden>
           <select id="dubSource" aria-label="Spoken language"><option value="auto">Auto-detect</option></select>
         </div>
+        <p class="cap-note" id="capNote" hidden></p>
       </div>
     </div>
 
@@ -903,13 +943,13 @@
     <input type="file" id="pfpFile" accept="image/*" hidden />
 
     <div class="label-row">
-      <label for="dubDesc">Description</label>
+      <label for="dubDesc">Description <span class="sub">· optional</span></label>
       <label class="watermark-toggle" title="When you dub or translate, localize this line too. Turn off to keep it in your own language — handy for a fixed brand tagline.">
         <input type="checkbox" id="descTranslate" checked />
         <span>Translate</span>
       </label>
     </div>
-    <input id="dubDesc" type="text" placeholder="auto · your voice, captions, or dub language" />
+    <input id="dubDesc" type="text" placeholder="Show name, episode, or where the audio came from" />
 
     <!-- DESIGN: format, theme & background -->
     <details class="style-section" id="designSection">
@@ -930,6 +970,13 @@
             <input type="checkbox" id="watermark" checked />
             <span>Watermark</span>
           </label>
+        </div>
+
+        <label>Captions <span class="sub">· how the words are set</span></label>
+        <div class="seg capstyle-seg" id="capStyleSeg" role="group" aria-label="Caption style">
+          <button type="button" data-cap="flow" title="Continuous text, wrapping like a paragraph">Flow</button>
+          <button type="button" data-cap="sentence" class="sel" title="A line break at the end of every sentence">Sentences</button>
+          <button type="button" data-cap="focus" title="Only a few words on screen at a time, in step with the audio">Focus</button>
         </div>
 
         <label>Theme <span class="sub">· background + waveform colors</span></label>
@@ -1102,6 +1149,31 @@
 </div>
 
 <!-- Trim modal -->
+<!-- Screen-recording how-to: the mobile path, since getDisplayMedia is desktop-only -->
+<div class="modal" id="howtoModal">
+  <div class="card howto-card">
+    <h3>Capture audio on your phone</h3>
+    <p>Your phone can record whatever it is playing, including a Space replay in the X app. Record just the part you want, then upload the file here.</p>
+    <p class="howto-os">iPhone / iPad</p>
+    <ol>
+      <li>Add <strong>Screen Recording</strong> to Control Center once, in Settings, Control Center.</li>
+      <li>Open the Space replay and get it ready to play.</li>
+      <li>Swipe into Control Center and tap the <strong>record</strong> button. Leave the mic off, it records the app's own audio.</li>
+      <li>Play the part you want, then tap the red status bar to stop. The video lands in <strong>Photos</strong>.</li>
+      <li>Come back here, tap <strong>Clip</strong>, and pick that recording.</li>
+    </ol>
+    <p class="howto-os">Android</p>
+    <ol>
+      <li>Swipe down twice and tap <strong>Screen record</strong>.</li>
+      <li>Set audio to <strong>Device audio</strong>, then start.</li>
+      <li>Play the part you want, then stop from the notification shade.</li>
+      <li>Come back here, tap <strong>Clip</strong>, and pick the recording from your gallery.</li>
+    </ol>
+    <p class="hint" style="margin:14px 0 0;">OutLoud pulls the audio out of the video automatically, and Trim lets you tighten the selection after it loads.</p>
+    <button class="btn" id="howtoClose" style="margin-top:14px;">Got it</button>
+  </div>
+</div>
+
 <div class="modal" id="trimModal">
   <div class="card trim-card">
     <h3>Trim clip</h3>
@@ -1172,12 +1244,15 @@
 (() => {
   "use strict";
   const $ = (s) => document.querySelector(s);
+  const LS_CAPSTYLE = "postvoice_cap_style";
   const LS_KEY = "postvoice_eleven_key";
   const LS_PASS = "postvoice_tester_pass";
 
   // ---------- Lucide icons (MIT · lucide.dev) ----------
   const ICONS = {
     "mic": '<svg viewBox="0 0 24 24"><path d="M12 19v3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><rect x="9" y="2" width="6" height="13" rx="3"/></svg>',
+    "monitor": '<svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>',
+    "smartphone": '<svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>',
     "play": '<svg viewBox="0 0 24 24"><path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"/></svg>',
     "pause": '<svg viewBox="0 0 24 24"><rect x="14" y="3" width="5" height="18" rx="1"/><rect x="5" y="3" width="5" height="18" rx="1"/></svg>',
     "download": '<svg viewBox="0 0 24 24"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>',
@@ -1205,6 +1280,22 @@
   renderIcons();
 
   // ---------- Built-in premade ElevenLabs voices (always work on any account) ----------
+  // Scribe model ids. v1 was retired July 2026; the fallback covers keys/accounts that still
+  // resolve the old id, so a model rename can never take captioning down on its own.
+  const STT_MODEL = "scribe_v2", STT_MODEL_FALLBACK = "scribe_v1";
+
+  // Spend, not bytes, is what really limits a clip. ElevenLabs bills captions at ~330 credits
+  // per minute and an automatic dub at ~3,000, so a dubbed minute costs about nine captioned
+  // minutes. Both modes are given the same per-generation budget of ~4,500 credits and the caps
+  // fall out of that: 12 min of captions ≈ 3,960 credits, 90s of dub ≈ 4,500. That asymmetry is
+  // the point — captions can run long, dubs stay short, and spend per run barely moves.
+  //
+  // The uncompressed fallback has a second, harder ceiling: Vercel caps proxied bodies at 4.5MB,
+  // and WAV burns 32KB/s, so without Opus a caption clip can only be ~2 minutes.
+  const CAP_S = { caption: 720, dub: 90 };
+  const CAP_S_WAV = { caption: 135, dub: 90 };
+  const capFor = (isCaption) => (canOpus() ? CAP_S : CAP_S_WAV)[isCaption ? "caption" : "dub"];
+
   const FALLBACK_VOICES = [
     { voice_id: "21m00Tcm4TlvDq8ikWAM", name: "Rachel · calm narration" },
     { voice_id: "EXAVITQu4vr4xnSDxMaL", name: "Sarah · warm, social" },
@@ -1422,6 +1513,10 @@
   // Canvas layout per mode: "classic" (full-bleed karaoke + creator footer) or "cover"
   // (creator header + big captions). Each mode remembers its own choice.
   const styleByMode = { write: "classic", dub: "cover" };
+  // How the caption text is set: "flow" (continuous), "sentence" (break per sentence, the
+  // default — transcripts otherwise read as one undifferentiated wall), "focus" (a few words
+  // at a time, in step with the audio).
+  let capStyle = localStorage.getItem(LS_CAPSTYLE) || "sentence";
   let dubFile = null;
   const modeSeg = $("#modeSeg");
   const dubControls = $("#dubControls"), writeControls = $("#writeControls");
@@ -1481,7 +1576,38 @@
     if (!descTranslate.checked) { dubDescTr = null; drawPoster(); }
     else { dubDesc.dispatchEvent(new Event("input")); }
   });
-  dubTargetSel.addEventListener("change", () => { updateGenLabel(); if (mode === "dub") drawPoster(); }); // auto description + button label track the target
+  dubTargetSel.addEventListener("change", () => { updateGenLabel(); syncCapNote(); if (mode === "dub") drawPoster(); }); // auto description + button label track the target
+
+  // ---------- Length allowance, surfaced before it can bite ----------
+  // Captions and dubs get the same credit budget, so their caps differ by ~8x. Saying that up
+  // front (and, once a clip is loaded, saying whether THIS clip fits) turns the limit from a
+  // rejection into a choice between two products.
+  const capNote = $("#capNote");
+  let clipSeconds = 0; // best-known duration of the loaded clip, 0 until probed
+  function syncCapNote() {
+    if (!useProxy() || mode !== "dub") { capNote.hidden = true; return; }
+    const isCap = captionOnly();
+    const cap = capFor(isCap);
+    const len = trimActive() ? trimEnd - trimStart : clipSeconds;
+    capNote.hidden = false;
+    capNote.classList.remove("fits", "over");
+    if (!len) {
+      capNote.innerHTML = isCap
+        ? "Captions run up to <b>" + fmtT(cap) + "</b> per clip."
+        : "Dubs run up to <b>" + fmtT(cap) + "</b> per clip, since dubbing costs about nine times what captions do.";
+      return;
+    }
+    if (len <= cap) {
+      capNote.classList.add("fits");
+      capNote.innerHTML = "This clip is <b>" + fmtT(len) + "</b>, inside the <b>" + fmtT(cap) + "</b> limit for " + (isCap ? "captions" : "a dub") + ".";
+      return;
+    }
+    capNote.classList.add("over");
+    // The useful case: too long to dub, but perfectly fine to caption. Offer that door.
+    capNote.innerHTML = (!isCap && len <= capFor(true))
+      ? "This clip is <b>" + fmtT(len) + "</b>. That works for captions, but a dub is capped at <b>" + fmtT(cap) + "</b>. Trim it, or switch to captions only."
+      : "This clip is <b>" + fmtT(len) + "</b>, over the <b>" + fmtT(cap) + "</b> limit. Use Trim to shorten it.";
+  }
 
   // Spoken-language footnote: summary line stays authoritative; the select reveals on demand.
   const srcName = $("#srcName"), srcToggle = $("#srcToggle"), srcWrap = $("#srcWrap");
@@ -1514,9 +1640,23 @@
     else syncDubWords(); // restore dub captions (or the placeholder) for the captions visual
     refreshStyleSeg();   // the Style toggle shows this mode's remembered layout
     updateGenLabel();
+    syncCapNote();       // the length allowance only applies to the clip flow
     drawPoster();
   }
   modeSeg.querySelectorAll("button").forEach(b => b.addEventListener("click", () => setMode(b.dataset.mode)));
+
+  // Caption style: a design choice, so it persists and repaints immediately.
+  const capStyleSeg = $("#capStyleSeg");
+  const refreshCapStyleSeg = () =>
+    capStyleSeg.querySelectorAll("button").forEach(b => b.classList.toggle("sel", b.dataset.cap === capStyle));
+  capStyleSeg.querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
+    capStyle = b.dataset.cap;
+    try { localStorage.setItem(LS_CAPSTYLE, capStyle); } catch (_) {}
+    refreshCapStyleSeg();
+    scrollPos = 0; // line counts changed under the scroller
+    drawPoster();
+  }));
+  refreshCapStyleSeg();
 
   // Write mode's cover layout shows the voice name as its description line — track changes.
   voiceSel.addEventListener("change", () => { if (mode === "write" && styleByMode.write === "cover") drawPoster(); });
@@ -1539,14 +1679,19 @@
     resetTrim(); // a new (or removed) clip invalidates any trim selection
     if (dubFile) {
       dubFileName.textContent = dubFile.name + " · " + (dubFile.size / 1e6).toFixed(1) + " MB";
-      dubFileInfo.hidden = false; dropzone.style.display = "none"; recRow.style.display = "none";
+      dubFileInfo.hidden = false; dropzone.style.display = "none"; recHelpRow.style.display = "none";
     } else {
-      dubFileInput.value = ""; dubFileInfo.hidden = true; dropzone.style.display = ""; recRow.style.display = "";
+      dubFileInput.value = ""; dubFileInfo.hidden = true;
+      dropzone.style.display = ""; recHelpRow.style.display = "";
     }
+    // Probe in the background so the length note can say whether THIS clip fits. Recorded webm
+    // reports no duration; the note just stays generic in that case.
+    clipSeconds = 0;
+    syncCapNote();
+    if (dubFile) probeDuration(dubFile).then((d) => { clipSeconds = d || 0; syncCapNote(); });
     if (mode === "dub") drawPoster();
   }
-  dropzone.addEventListener("click", () => dubFileInput.click());
-  dropzone.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); dubFileInput.click(); } });
+  $("#pickBtn").addEventListener("click", () => dubFileInput.click());
   dubFileInput.addEventListener("change", () => setDubFile(dubFileInput.files[0]));
   dubFileClear.addEventListener("click", () => setDubFile(null));
 
@@ -1613,7 +1758,7 @@
     let txt = "Selection: " + fmtT1(len);
     let over = false;
     if (useProxy()) {
-      const cap = captionOnly() ? 135 : 95;
+      const cap = capFor(captionOnly());
       over = len > cap;
       txt += over ? " · over the ~" + fmtT(cap) + " tester limit, trim shorter" : " · fits the tester limit ✓";
     }
@@ -1755,6 +1900,7 @@
     if (trimDur && selL <= 0.25 && selR >= trimDur - 0.25) { trimStart = trimEnd = null; }
     else { trimStart = Math.round(selL * 10) / 10; trimEnd = Math.round(selR * 10) / 10; } // stored at the precision we display
     refreshTrimBtn();
+    syncCapNote(); // the note now reflects the selection, not the whole clip
     closeTrim();
     setStatus(trimActive() ? "Trim set: " + fmtT1(trimStart) + "–" + fmtT1(trimEnd) + " will be captioned." : "Trim removed. The full clip will be used.", "ok");
   });
@@ -1766,16 +1912,29 @@
     if (f) setDubFile(f);
   });
 
-  // ---------- Voice-note recorder: mic → File → the same intake as an upload ----------
-  // The recording lands in setDubFile like any chosen file, so trim, compression, the
-  // duration gates, and transcription/dubbing all work on it unchanged. Safari records
-  // audio/mp4 (AAC), Chrome/Firefox audio/webm (Opus) — both decode and both are accepted
-  // upstream. A recorded webm reports no duration (probeDuration → null, gate skips it);
-  // trim recovers the real length from decodeAudioData.
-  const recRow = $("#recRow"), recBtn = $("#recBtn"), recBar = $("#recBar");
-  const recTimeEl = $("#recTime"), recStopBtn = $("#recStop"), recCancelBtn = $("#recCancel");
+  // ---------- Recorders: mic or tab audio → File → the same intake as an upload ----------
+  // Both sources produce a MediaStream, so one recorder serves both. The recording lands in
+  // setDubFile like any chosen file, so trim, compression, the duration gates, and
+  // transcription/dubbing all work on it unchanged. Safari records audio/mp4 (AAC),
+  // Chrome/Firefox audio/webm (Opus) — both decode and both are accepted upstream. A recorded
+  // webm reports no duration (probeDuration → null, gate skips it); trim recovers the real
+  // length from decodeAudioData.
+  //
+  // Tab capture is the answer to sources that can't be fetched server-side (X Spaces, YouTube):
+  // the browser is already an authorized listener, so nothing needs to be scraped or proxied.
+  // It is desktop-Chromium only — phones get the OS screen-recorder how-to instead.
+  const recBtn = $("#recBtn"), tabBtn = $("#tabBtn"), recBar = $("#recBar");
+  const recTimeEl = $("#recTime"), recWhat = $("#recWhat"), recStopBtn = $("#recStop"), recCancelBtn = $("#recCancel");
+  const recHelpRow = $("#recHelpRow");
   let recRec = null, recStream = null, recChunks = [], recTimer = 0, recT0 = 0, recDiscard = false;
   const REC_MAX_S = 600; // safety auto-stop; the duration gates handle anything shorter
+
+  const isMobileUA = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform || "")); // iPadOS reports as Mac
+  const canTabCapture = !isMobileUA && typeof MediaRecorder !== "undefined" &&
+    !!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia);
+  tabBtn.hidden = !canTabCapture;
+  recHelpRow.hidden = canTabCapture; // phones (and anything without the API) get the how-to
 
   function recMimeType() {
     for (const t of ["audio/mp4", "audio/webm;codecs=opus", "audio/webm"]) {
@@ -1784,28 +1943,18 @@
     return ""; // let the browser pick
   }
 
-  async function startRec() {
-    if (recRec) return;
-    if (typeof MediaRecorder === "undefined" || !(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) {
-      setStatus("Recording isn't supported in this browser — upload a clip instead.", "err");
-      return;
-    }
-    try {
-      recStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
-    } catch (e) {
-      setStatus(e && e.name === "NotFoundError"
-        ? "No microphone found on this device."
-        : "Mic access was blocked. Allow microphone access for this site and try again.", "err");
-      return;
-    }
+  // Drive the recorder from any audio-bearing stream. `what` labels the bar, `prefix` names
+  // the file. Returns true if recording actually started.
+  function beginRecording(stream, what, prefix) {
     const mime = recMimeType();
     try {
-      recRec = new MediaRecorder(recStream, mime ? { mimeType: mime, audioBitsPerSecond: 96_000 } : undefined);
+      recRec = new MediaRecorder(stream, mime ? { mimeType: mime, audioBitsPerSecond: 96_000 } : undefined);
     } catch (_) {
-      recStream.getTracks().forEach((t) => t.stop()); recStream = null;
+      stream.getTracks().forEach((t) => t.stop());
       setStatus("Couldn't start the recorder — upload a clip instead.", "err");
-      return;
+      return false;
     }
+    recStream = stream;
     recChunks = []; recDiscard = false;
     recRec.ondataavailable = (e) => { if (e.data && e.data.size) recChunks.push(e.data); };
     recRec.onstop = () => {
@@ -1817,31 +1966,90 @@
       const secs = Math.max(1, Math.round((Date.now() - recT0) / 1000));
       if (recDiscard || !recChunks.length) { recChunks = []; setDubFile(null); return; }
       const ext = /mp4|aac/.test(type) ? "m4a" : "webm";
-      const name = "voice-note-" + Math.floor(secs / 60) + "m" + String(secs % 60).padStart(2, "0") + "s." + ext;
+      const name = prefix + "-" + Math.floor(secs / 60) + "m" + String(secs % 60).padStart(2, "0") + "s." + ext;
       const f = new File([new Blob(recChunks, { type })], name, { type });
       // MediaRecorder writes fragmented/duration-less containers that upstream ingest can
       // reject — flag the file so upload always re-renders it to a clean WAV first.
-      f.isVoiceNote = true;
+      f.isRecorded = true;
       setDubFile(f);
       recChunks = [];
     };
     recT0 = Date.now();
     try {
-      recRec.start(); // single blob on stop — chunked recordings add nothing for voice notes
+      recRec.start(); // single blob on stop — chunked recordings add nothing here
     } catch (_) {
-      // e.g. the mic vanished between permission and start — reset instead of stranding
+      // e.g. the source vanished between permission and start — reset instead of stranding
       if (recStream) { recStream.getTracks().forEach((t) => t.stop()); recStream = null; }
       recRec = null;
       setStatus("Couldn't start the recorder — upload a clip instead.", "err");
-      return;
+      return false;
     }
-    dropzone.style.display = "none"; recRow.style.display = "none"; recBar.hidden = false;
+    recWhat.textContent = what;
+    dropzone.style.display = "none"; recHelpRow.style.display = "none";
+    recBar.hidden = false;
     recTimeEl.textContent = "0:00";
     recTimer = setInterval(() => {
       const s = Math.floor((Date.now() - recT0) / 1000);
       recTimeEl.textContent = fmtT(s);
       if (s >= REC_MAX_S) stopRec(false);
     }, 250);
+    return true;
+  }
+
+  async function startMicRec() {
+    if (recRec) return;
+    if (typeof MediaRecorder === "undefined" || !(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) {
+      setStatus("Recording isn't supported in this browser — upload a clip instead.", "err");
+      return;
+    }
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+    } catch (e) {
+      setStatus(e && e.name === "NotFoundError"
+        ? "No microphone found on this device."
+        : "Mic access was blocked. Allow microphone access for this site and try again.", "err");
+      return;
+    }
+    beginRecording(stream, "Recording from mic", "voice-note");
+  }
+
+  async function startTabRec() {
+    if (recRec) return;
+    if (!canTabCapture) return;
+    let stream;
+    try {
+      // Chrome rejects an audio-only request, so video is asked for and dropped immediately.
+      // systemAudio/selfBrowserSurface steer the picker toward another tab's sound.
+      stream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+        systemAudio: "include",
+        selfBrowserSurface: "exclude",
+      });
+    } catch (e) {
+      if (e && (e.name === "NotAllowedError" || e.name === "AbortError")) return; // user dismissed the picker
+      setStatus("Couldn't start tab capture in this browser. Use Chrome or Edge on desktop, or upload a clip.", "err");
+      return;
+    }
+    stream.getVideoTracks().forEach((t) => t.stop()); // audio is all we keep
+    const audio = stream.getAudioTracks();
+    if (!audio.length) {
+      stream.getTracks().forEach((t) => t.stop());
+      // Only Chromium shares tab audio at all; elsewhere the checkbox advice would mislead.
+      const chromium = !!window.chrome && /Chrome|Chromium|Edg/.test(navigator.userAgent) &&
+        !/OPR\//.test(navigator.userAgent);
+      setStatus(chromium
+        ? "No audio came through. Pick the tab again and switch on “Also share tab audio” in the picker."
+        : "This browser doesn't share tab audio. Use Chrome or Edge on desktop for tab capture.", "err");
+      return;
+    }
+    const only = new MediaStream(audio);
+    // Chrome's own "Stop sharing" bar ends the track — treat that as Stop, not Discard.
+    audio[0].addEventListener("ended", () => { if (recRec) stopRec(false); });
+    if (beginRecording(only, "Recording tab audio", "tab-audio")) {
+      setStatus("Capturing. Play the part you want, then Stop & use.", "ok");
+    }
   }
 
   function stopRec(discard) {
@@ -1855,9 +2063,15 @@
     }
   }
 
-  recBtn.addEventListener("click", startRec);
+  recBtn.addEventListener("click", startMicRec);
+  tabBtn.addEventListener("click", startTabRec);
   recStopBtn.addEventListener("click", () => stopRec(false));
   recCancelBtn.addEventListener("click", () => stopRec(true));
+
+  const howtoModal = $("#howtoModal");
+  $("#recHelpBtn").addEventListener("click", () => howtoModal.classList.add("open"));
+  $("#howtoClose").addEventListener("click", () => howtoModal.classList.remove("open"));
+  howtoModal.addEventListener("click", (e) => { if (e.target === howtoModal) howtoModal.classList.remove("open"); });
 
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
@@ -1903,7 +2117,142 @@
   // Decode a clip (audio, or the audio track of a video) and re-render it as compact mono WAV
   // so it fits the proxy's body limit. Dubs use 24 kHz (voice cloning wants fidelity);
   // caption-only uses 16 kHz (plenty for transcription, fits ~2 minutes of clip).
-  async function compressForUpload(file, RATE = 24000, start = 0, end = null) {
+  // ---------- Opus encoding: WebCodecs + a minimal Ogg muxer ----------
+  // WAV is ~10x larger than it needs to be for speech, and the proxy body cap is fixed at
+  // 4.5MB, so the format is what decides how long a clip can be. Opus at 24 kbps fits ~24
+  // minutes in the same space that holds ~2 minutes of WAV. WebCodecs encodes offline (far
+  // faster than real time, unlike MediaRecorder), and its raw packets are wrapped in Ogg here
+  // rather than pulling in a muxer library, since the app has no build step.
+  function canOpus() {
+    return typeof AudioEncoder !== "undefined" && typeof AudioData !== "undefined";
+  }
+
+  // Ogg's CRC-32: poly 0x04c11db7, no input/output reflection, no final xor.
+  const OGG_CRC_TABLE = (() => {
+    const t = new Uint32Array(256);
+    for (let i = 0; i < 256; i++) {
+      let r = i << 24;
+      for (let j = 0; j < 8; j++) r = (r & 0x80000000) ? ((r << 1) ^ 0x04c11db7) : (r << 1);
+      t[i] = r >>> 0;
+    }
+    return t;
+  })();
+  function oggCrc(buf) {
+    let c = 0;
+    for (let i = 0; i < buf.length; i++) c = ((c << 8) ^ OGG_CRC_TABLE[((c >>> 24) & 0xff) ^ buf[i]]) >>> 0;
+    return c >>> 0;
+  }
+
+  // Build one Ogg page around a set of whole packets. Lacing: each packet becomes a run of
+  // 255-valued segments plus a final short one (a packet whose length is a multiple of 255
+  // therefore needs an explicit trailing zero, which this produces naturally).
+  function oggPage(serial, seq, headerType, granule, packets) {
+    const segs = [];
+    for (const p of packets) {
+      let n = p.length;
+      while (n >= 255) { segs.push(255); n -= 255; }
+      segs.push(n);
+    }
+    const bodyLen = packets.reduce((a, p) => a + p.length, 0);
+    const page = new Uint8Array(27 + segs.length + bodyLen);
+    const dv = new DataView(page.buffer);
+    page[0] = 0x4f; page[1] = 0x67; page[2] = 0x67; page[3] = 0x53; // "OggS"
+    page[4] = 0;            // stream structure version
+    page[5] = headerType;   // 0x02 BOS, 0x04 EOS
+    dv.setUint32(6, granule >>> 0, true);                             // granule, 64-bit LE
+    dv.setUint32(10, Math.floor(granule / 4294967296) >>> 0, true);
+    dv.setUint32(14, serial, true);
+    dv.setUint32(18, seq, true);
+    dv.setUint32(22, 0, true); // CRC is computed over the page with this field zeroed
+    page[26] = segs.length;
+    page.set(segs, 27);
+    let o = 27 + segs.length;
+    for (const p of packets) { page.set(p, o); o += p.length; }
+    dv.setUint32(22, oggCrc(page), true);
+    return page;
+  }
+
+  async function encodeOpusOgg(buf, bitrate = 24000) {
+    const RATE = 48000, CH = 1; // Opus is natively 48k; mono is plenty for speech
+    let src = buf;
+    if (buf.sampleRate !== RATE || buf.numberOfChannels !== CH) {
+      const OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      const off = new OAC(CH, Math.max(1, Math.ceil(buf.duration * RATE)), RATE);
+      const node = off.createBufferSource();
+      node.buffer = buf; node.connect(off.destination); node.start();
+      src = await off.startRendering();
+    }
+    const pcm = src.getChannelData(0);
+
+    const packets = [];
+    let encErr = null;
+    const enc = new AudioEncoder({
+      output: (chunk) => { const d = new Uint8Array(chunk.byteLength); chunk.copyTo(d); packets.push(d); },
+      error: (e) => { encErr = e; },
+    });
+    enc.configure({ codec: "opus", sampleRate: RATE, numberOfChannels: CH, bitrate });
+
+    const FRAME = 960; // 20ms — Opus's default frame size at 48kHz
+    for (let i = 0; i < pcm.length; i += FRAME) {
+      const slice = new Float32Array(FRAME); // last frame is zero-padded
+      slice.set(pcm.subarray(i, Math.min(i + FRAME, pcm.length)));
+      enc.encode(new AudioData({
+        format: "f32-planar", sampleRate: RATE, numberOfFrames: FRAME,
+        numberOfChannels: CH, timestamp: Math.round((i / RATE) * 1e6), data: slice,
+      }));
+    }
+    await enc.flush();
+    enc.close();
+    if (encErr) throw encErr;
+    if (!packets.length) throw new Error("Opus encoder produced no data");
+
+    // --- mux ---
+    const serial = (Math.floor(Math.random() * 0xffffffff) >>> 0);
+    const pages = [];
+    let seq = 0;
+
+    const head = new Uint8Array(19);
+    const hv = new DataView(head.buffer);
+    head.set([0x4f, 0x70, 0x75, 0x73, 0x48, 0x65, 0x61, 0x64], 0); // "OpusHead"
+    head[8] = 1;            // version
+    head[9] = CH;           // channel count
+    hv.setUint16(10, 0, true);       // pre-skip (0: a few ms of encoder priming is inaudible here)
+    hv.setUint32(12, RATE, true);    // original input rate
+    hv.setUint16(16, 0, true);       // output gain
+    head[18] = 0;                    // channel mapping family
+    pages.push(oggPage(serial, seq++, 0x02, 0, [head]));
+
+    const vendor = new TextEncoder().encode("OutLoud");
+    const tags = new Uint8Array(8 + 4 + vendor.length + 4);
+    const tv = new DataView(tags.buffer);
+    tags.set([0x4f, 0x70, 0x75, 0x73, 0x54, 0x61, 0x67, 0x73], 0); // "OpusTags"
+    tv.setUint32(8, vendor.length, true);
+    tags.set(vendor, 12);
+    tv.setUint32(12 + vendor.length, 0, true); // zero user comments
+    pages.push(oggPage(serial, seq++, 0, 0, [tags]));
+
+    // Data pages: pack packets until the segment table or the page body fills up. One page per
+    // packet would add ~11 kbps of header overhead, which would swamp a 24 kbps stream.
+    let batch = [], segCount = 0, byteCount = 0, frames = 0;
+    const flush = (last) => {
+      if (!batch.length) return;
+      frames += batch.length * FRAME;
+      pages.push(oggPage(serial, seq++, last ? 0x04 : 0, frames, batch));
+      batch = []; segCount = 0; byteCount = 0;
+    };
+    for (let i = 0; i < packets.length; i++) {
+      const p = packets[i];
+      const need = Math.floor(p.length / 255) + 1;
+      if (segCount + need > 255 || byteCount + p.length > 4000) flush(false);
+      batch.push(p); segCount += need; byteCount += p.length;
+    }
+    flush(true);
+
+    return new Blob(pages, { type: "audio/ogg" });
+  }
+
+  const OPUS_BITRATE = 24000; // Xiph's recommended floor for fullband mono speech
+  async function compressForUpload(file, RATE = 24000, start = 0, end = null, opus = false) {
     const AC = window.AudioContext || window.webkitAudioContext;
     const probe = new AC();
     let decoded;
@@ -1913,10 +2262,12 @@
     const s = Math.max(0, Math.min(start || 0, decoded.duration));
     const e = end == null ? decoded.duration : Math.max(s + 0.05, Math.min(end, decoded.duration));
     const OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
-    const off = new OAC(1, Math.ceil((e - s) * RATE), RATE);
+    const rate = opus ? 48000 : RATE; // Opus resamples to 48k anyway; bitrate sets the size
+    const off = new OAC(1, Math.ceil((e - s) * rate), rate);
     const src = off.createBufferSource();
     src.buffer = decoded; src.connect(off.destination); src.start(0, s, e - s);
-    return wavBlob(await off.startRendering());
+    const rendered = await off.startRendering();
+    return opus ? encodeOpusOgg(rendered, OPUS_BITRATE) : wavBlob(rendered);
   }
 
   // mono AudioBuffer → 16-bit PCM WAV blob
@@ -2025,15 +2376,16 @@
         return;
       }
       const clipDur = await probeDuration(dubFile);
-      // Caption-only compresses to 16 kHz, so ~2:15 fits under Vercel's body cap; dubs keep
-      // 24 kHz for voice-clone fidelity, so they stay at ~90s. A trim only sends the selection,
+      // The cap is a spend cap wearing a duration costume: same credit budget either way, so
+      // captions get minutes and dubs get seconds (see CAP_S). A trim only sends the selection,
       // so the gate checks the trimmed length, not the whole file.
       const effDur = trimActive() ? trimEnd - trimStart : clipDur;
-      const durCap = target === "same" ? 135 : 95;
+      const isCaption = target === "same";
+      const durCap = capFor(isCaption);
       if (effDur && effDur > durCap) {
-        setStatus(target === "same"
-          ? "In tester mode, caption clips must be about 2 minutes or less. Use Trim on your clip, or connect your own API key."
-          : "In tester mode, dub clips must be about 90 seconds or less. Use Trim on your clip, or connect your own API key.", "err");
+        setStatus(isCaption
+          ? "In tester mode, caption clips run up to " + fmtT(durCap) + ". Use Trim on your clip, or connect your own API key."
+          : "In tester mode, dubs run up to " + fmtT(durCap) + " because dubbing costs about nine times what captions do. Trim the clip, switch to captions only, or connect your own API key.", "err");
         return;
       }
     }
@@ -2046,16 +2398,32 @@
       let upload = dubFile;
       // Extract audio for any tester video (so it plays back on iOS too), any big clip,
       // whenever a trim is set (the trim is applied by rendering only the selection), or for
-      // recorded voice notes (their MediaRecorder container lacks the duration metadata the
-      // dubbing ingest needs — re-rendering to WAV is what makes them accepted upstream).
+      // anything recorded in-browser (mic or tab: their MediaRecorder container lacks the
+      // duration metadata the dubbing ingest needs — re-rendering to WAV is what makes them
+      // accepted upstream).
       const trimmed = trimActive();
-      if (trimmed || dubFile.isVoiceNote || (useProxy() && (dubFile.type.startsWith("video") || dubFile.size > 4_000_000))) {
+      if (trimmed || dubFile.isRecorded || (useProxy() && (dubFile.type.startsWith("video") || dubFile.size > 4_000_000))) {
         let usedFallback = false;
         setStatus(trimmed ? "Trimming the clip…" : "Compressing clip…");
         try {
           // own-key uploads have no body cap, so trims keep more fidelity there
-          const rate = target === "same" ? (useProxy() ? 16000 : 24000) : (useProxy() ? 24000 : 44100);
-          upload = new File([await compressForUpload(dubFile, rate, trimmed ? trimStart : 0, trimmed ? trimEnd : null)], "clip.wav", { type: "audio/wav" });
+          const isCap = target === "same";
+          const rate = isCap ? (useProxy() ? 16000 : 24000) : (useProxy() ? 24000 : 44100);
+          const s = trimmed ? trimStart : 0, e = trimmed ? trimEnd : null;
+          // Opus for captions in BOTH modes. It is what makes long clips fit under the proxy's
+          // body cap, and own-key uploads get the same speed-up — more importantly it means the
+          // locally testable path and the tester path are the same code, rather than shipping an
+          // encoder that only ever runs in production. Scribe documents Ogg/Opus support;
+          // dubbing's accepted formats aren't documented, so dubs stay on WAV until tested.
+          let blob = null, ext = "wav", mime = "audio/wav";
+          if (isCap && canOpus()) {
+            try {
+              blob = await compressForUpload(dubFile, rate, s, e, true);
+              ext = "ogg"; mime = "audio/ogg";
+            } catch (_) { blob = null; } // encoder missing or unhappy → plain WAV below
+          }
+          if (!blob) blob = await compressForUpload(dubFile, rate, s, e, false);
+          upload = new File([blob], "clip." + ext, { type: mime });
         } catch (_) {
           if (trimmed) throw new Error("Couldn't trim this clip on this device (its audio can't be decoded in the browser). Remove the trim, or try an audio file like mp3 or m4a.");
           // decodeAudioData can't demux some containers (esp. video on iOS Safari). Fall back
@@ -2076,11 +2444,19 @@
       // a dub's sentence-level transcript) and play the ORIGINAL clip's audio untouched.
       if (target === "same") {
         setStatus("Transcribing clip…");
-        const sf = new FormData();
-        sf.append("file", upload);
-        sf.append("model_id", "scribe_v1");
-        if (source && source !== "auto") sf.append("language_code", source);
-        const r = await fetch(elevenURL("speech-to-text"), { method: "POST", headers: elevenHeaders(), body: sf });
+        // scribe_v1 was retired in July 2026. Try the current model first and fall back once,
+        // so a key that still resolves the old id keeps working either way.
+        const sttCall = (model) => {
+          const sf = new FormData();
+          sf.append("file", upload);
+          sf.append("model_id", model);
+          if (source && source !== "auto") sf.append("language_code", source);
+          return fetch(elevenURL("speech-to-text"), { method: "POST", headers: elevenHeaders(), body: sf });
+        };
+        let r = await sttCall(STT_MODEL);
+        if (!r.ok && (r.status === 400 || r.status === 404 || r.status === 422) && STT_MODEL !== STT_MODEL_FALLBACK) {
+          r = await sttCall(STT_MODEL_FALLBACK);
+        }
         if (useProxy() && r.status === 401) throw new Error("Tester password rejected — re-enter it in the connection dialog.");
         if (!r.ok) {
           if (proxyMissing(r)) throw new Error(PROXY_MISSING_MSG);
@@ -2379,6 +2755,7 @@
       : (useProxy() ? "Connected via tester password — click to manage" : "Connected with your API key — click to manage");
     // Generate button guides to connect when there's no connection yet (mode-aware).
     updateGenLabel();
+    syncCapNote(); // caps only apply in tester mode, so they follow the connection state
   };
   const openKeyModal = () => {
     keyInput.value = apiKey;
@@ -2774,9 +3151,10 @@
     const lh  = Math.round(cap * 1.42);
     const bandTop    = Math.round(ch * 0.075);
     const ar = cw / ch;
-    // wide canvases lift the waveform so the footer breathes; tall/portrait drop it toward the
-    // footer (closing the dead gap) and let the bars run taller.
-    const waveBase   = Math.round(ch - ch * (ar > 1.4 ? 0.205 : ar < 0.85 ? 0.128 : 0.155));
+    // Wide canvases lift the waveform most so the footer breathes. Portrait used to drop it
+    // lowest, which starved layout 2's creator row; it now sits with the square, which costs
+    // no visible caption lines (10 either way at 1080x1350) and gives the footer real room.
+    const waveBase   = Math.round(ch - ch * (ar > 1.4 ? 0.205 : 0.155));
     const waveMax    = Math.round(ch * (ar < 0.85 ? 0.155 : 0.135));
     const bandBottom = Math.round(waveBase - waveMax - ch * 0.03);
     const handleY    = Math.round(ch - ch * 0.072);
@@ -2895,6 +3273,18 @@
   }
 
   // wrap ALL words into lines (no cap); returns positioned fragments + total line count
+  // A word that closes a sentence, allowing for a trailing quote or bracket. Common
+  // abbreviations are excluded so "Dr." or "U.S." doesn't split a line mid-thought.
+  const ABBREV = /^(mr|mrs|ms|dr|st|jr|sr|prof|sgt|lt|vs|etc|approx|no|fig|e\.g|i\.e)\.?$/i;
+  function endsSentence(text) {
+    const t = String(text || "").trim();
+    if (!/[.!?…]["'’”)\]]?$/.test(t)) return false;
+    const bare = t.replace(/["'’”)\]]+$/, "");
+    if (ABBREV.test(bare)) return false;
+    if (/^[A-Z]\.$/.test(bare)) return false; // a lone initial, as in "J. Smith"
+    return true;
+  }
+
   function layoutCaptionAll(g) {
     ctx.font = capFont(g);
     const maxW = g.cw - g.pad * 2;
@@ -2914,8 +3304,97 @@
       const nl = wObj.nl || 0;
       if (nl >= 2) { line += 2; x = g.pad; }
       else if (nl === 1) { line += 1; x = g.pad; }
+      // Sentence mode: transcripts arrive as one undifferentiated stream, so break at the
+      // punctuation. A blank line between sentences is what makes a wall of words readable.
+      else if (capStyle === "sentence" && i < captionWords.length - 1 && endsSentence(wObj.text)) {
+        line += 2; x = g.pad;
+      }
     }
     return { placed, lines: line + 1 };
+  }
+
+  // Focus style: a handful of words at a time, sized up and centred, advancing with the audio.
+  // Chunks break on sentences first, then on a word budget, so a chunk is always a whole thought
+  // or a clean slice of one.
+  function focusChunks() {
+    const FOCUS_MAX = 7;
+    const sentences = [];
+    let cur = [];
+    for (let i = 0; i < captionWords.length; i++) {
+      cur.push(i);
+      if (endsSentence(captionWords[i].text) || (captionWords[i].nl || 0) > 0) { sentences.push(cur); cur = []; }
+    }
+    if (cur.length) sentences.push(cur);
+    // Keep whole sentences together where they fit; split the long ones into even parts rather
+    // than greedy runs, so a sentence never ends on a single orphaned word.
+    const out = [];
+    for (const s of sentences) {
+      if (s.length <= FOCUS_MAX) { out.push(s); continue; }
+      const parts = Math.ceil(s.length / FOCUS_MAX);
+      const per = Math.ceil(s.length / parts);
+      for (let i = 0; i < s.length; i += per) out.push(s.slice(i, i + per));
+    }
+    return out;
+  }
+
+  function paintCaptionFocus(g, activeIdx) {
+    const chunks = focusChunks();
+    if (!chunks.length) return;
+    let ci = 0;
+    if (activeIdx >= 0) {
+      const found = chunks.findIndex(c => c[0] <= activeIdx && activeIdx <= c[c.length - 1]);
+      if (found >= 0) ci = found;
+    }
+    const chunk = chunks[ci];
+
+    // Focus type runs larger than the flowing styles — there is far less of it on screen.
+    const fCap = Math.round(g.cap * 1.5);
+    const fLh = Math.round(fCap * 1.22);
+    const maxW = g.cw - g.pad * 2;
+    const font = `800 ${fCap}px "Clash Display", "General Sans", ${FB}`;
+    ctx.font = font;
+    const space = ctx.measureText(" ").width;
+
+    // wrap the chunk into centred lines
+    const lines = [];
+    let row = [], rowW = 0;
+    for (const i of chunk) {
+      const text = g.upper ? captionWords[i].text.toUpperCase() : captionWords[i].text;
+      const w = ctx.measureText(text).width;
+      if (row.length && rowW + space + w > maxW) { lines.push({ row, rowW }); row = []; rowW = 0; }
+      rowW += (row.length ? space : 0) + w;
+      row.push({ i, text, w });
+    }
+    if (row.length) lines.push({ row, rowW });
+
+    const blockH = lines.length * fLh;
+    let y = Math.round((g.bandTop + g.bandBottom) / 2 - blockH / 2);
+
+    const L = layerReady();
+    L.textBaseline = "top";
+    if (bgImage) { L.shadowColor = "rgba(0,0,0,0.55)"; L.shadowBlur = fCap * 0.3; L.shadowOffsetY = 1; }
+    L.font = font;
+    const padX = fCap * 0.2, rad = fCap * 0.2, pillH = Math.round(fCap * 1.16);
+    for (const ln of lines) {
+      let x = Math.round((g.cw - ln.rowW) / 2);
+      for (const w of ln.row) {
+        if (w.i === activeIdx) {
+          L.fillStyle = theme.a;
+          roundRect(L, x - padX, y - fCap * 0.1, w.w + padX * 2, pillH, rad); L.fill();
+          L.fillStyle = theme.ink || "#ffffff";
+        } else {
+          // words already spoken in this chunk dim slightly; upcoming ones stay bright
+          L.fillStyle = (activeIdx >= 0 && w.i < activeIdx) ? "rgba(255,255,255,0.5)" : "#ffffff";
+        }
+        L.fillText(w.text, x, y);
+        x += w.w + space;
+      }
+      y += fLh;
+    }
+    ctx.save();
+    ctx.shadowColor = "transparent"; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+    ctx.drawImage(textLayer, 0, 0);
+    ctx.restore();
   }
 
   // Offscreen layer for caption/description compositing — lets text fade and blur out at the
@@ -2936,6 +3415,7 @@
   // the scrolling karaoke word band — shared by write mode and the dub layout (which passes
   // its own geometry: bigger type, uppercase, custom band position)
   function paintCaptionBand(g, activeIdx) {
+    if (capStyle === "focus") { paintCaptionFocus(g, activeIdx); return; }
     const { placed, lines } = layoutCaptionAll(g);
     const visible = Math.floor((g.bandBottom - g.bandTop) / g.lh);
     let activeLine = 0;
@@ -3021,13 +3501,11 @@
 
   // The card's description line, shared by both layouts — typed text (translated when a
   // generation localized it), else an automatic line describing the audio.
+  // The description is the user's line or nothing at all. An invented fallback ("ENGLISH
+  // CAPTIONS") just labels the obvious and clutters the canvas; a dub's provenance is already
+  // stated in the footer, so nothing is lost by leaving this blank.
   function descLine() {
-    const autoDesc = mode === "write"
-      ? (translatedLang ? translatedLang + " · " : "") + ((voiceSel.value && voiceSel.selectedOptions[0]) ? voiceSel.selectedOptions[0].textContent : "Audiogram")
-      : captionOnly()
-        ? (dubFromLang || "Live") + " captions"
-        : (LANG_NAMES[dubTargetSel.value] || "") + " dub";
-    return ((dubDescTr || dubDesc.value.trim()) || autoDesc).toUpperCase();
+    return ((dubDescTr || dubDesc.value.trim()) || "").toUpperCase();
   }
 
   // dynamic, auto-scrolling karaoke captions — the whole post plays through
@@ -3049,37 +3527,42 @@
 
     paintCaptionBand(g, activeIdx);
 
-    // footer row, bottom-left: optional PFP + creator name, with the description line under it.
-    // fcap clamps the footer scale against height (cap is width-based and balloons on wide
-    // canvases); cy lifts the row so the image + description clear the bottom edge.
-    const fcap = Math.min(g.cap, Math.round(g.ch * 0.052));
-    const cy = Math.min(Math.round(g.ch - g.ch * 0.052), Math.round(g.ch - g.cap * 1.15));
+    // Footer row, bottom-left: optional creator image + name, description underneath.
+    // Sized from the band actually left between the waveform and the bottom edge rather than
+    // from a width-derived constant, so the row fills the space it's given in every format —
+    // 16:9 leaves the most room below the waveform and used to waste it.
+    const footTop = g.waveBase + Math.round(g.ch * 0.008);
+    const footBot = g.ch - Math.round(g.ch * 0.022);
+    const zone = Math.max(1, footBot - footTop);
+    const tile = Math.round(Math.min(zone * 0.92, g.cw * 0.155)); // width clamp keeps 16:9 sane
+    const cy = Math.round(footTop + zone / 2);
     let tx = g.pad;
     if (pfpImage) {
-      const d = Math.round(fcap * 1.2), py = cy - d / 2, rad = Math.round(d * 0.22);
+      const py = cy - tile / 2, rad = Math.round(tile * 0.22);
       ctx.save();
-      roundRect(ctx, g.pad, py, d, d, rad); ctx.clip();
-      drawCoverBox(pfpImage, g.pad, py, d, d);
+      roundRect(ctx, g.pad, py, tile, tile, rad); ctx.clip();
+      drawCoverBox(pfpImage, g.pad, py, tile, tile);
       ctx.restore();
-      roundRect(ctx, g.pad, py, d, d, rad);
-      ctx.lineWidth = Math.max(2, fcap * 0.045); ctx.strokeStyle = theme.b; ctx.stroke();
-      tx = g.pad + d + Math.round(fcap * 0.32);
+      tx = g.pad + tile + Math.round(tile * 0.26);
     }
     ctx.textBaseline = "middle";
     ctx.fillStyle = theme.b;
     // same right edge as the description below, so a long name never reaches the watermark
     const nMaxW = (g.cw - g.pad - g.cap * 1.3) - tx;
     const nFont = (px) => `600 ${px}px "Clash Display", ${FB}`;
-    const nFit = fitLine(handle.value || "@yourname", nMaxW, Math.round(fcap * 0.62), Math.round(fcap * 0.40), nFont);
+    const nFit = fitLine(handle.value || "@yourname", nMaxW, Math.round(tile * 0.40), Math.round(tile * 0.26), nFont);
     ctx.font = nFont(nFit.px);
-    ctx.fillText(nFit.text, tx, cy - Math.round(fcap * 0.36));
-    ctx.font = `500 ${Math.round(fcap * 0.42)}px "General Sans", ${FB}`;
-    ctx.fillStyle = "rgba(255,255,255,0.62)";
-    // ellipsize so a long description never runs into the watermark, bottom-right
-    const dMaxW = (g.cw - g.pad - g.cap * 1.3) - tx;
+    // with no description the name is the whole footer, so centre it on the tile
     let dl = descLine();
-    while (ctx.measureText(dl).width > dMaxW && dl.length > 2) dl = dl.slice(0, -2).trimEnd() + "…";
-    ctx.fillText(dl, tx, cy + Math.round(fcap * 0.44));
+    ctx.fillText(nFit.text, tx, dl ? cy - Math.round(tile * 0.20) : cy);
+    if (dl) {
+      ctx.font = `500 ${Math.round(tile * 0.27)}px "General Sans", ${FB}`;
+      ctx.fillStyle = "rgba(255,255,255,0.62)";
+      // ellipsize so a long description never runs into the watermark, bottom-right
+      const dMaxW = (g.cw - g.pad - g.cap * 1.3) - tx;
+      while (ctx.measureText(dl).width > dMaxW && dl.length > 2) dl = dl.slice(0, -2).trimEnd() + "…";
+      ctx.fillText(dl, tx, cy + Math.round(tile * 0.24));
+    }
     ctx.textBaseline = "top";
 
     ctx.shadowColor = "transparent"; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
@@ -3100,9 +3583,6 @@
       const h = Math.max(g.cap * 0.16, v * g.waveMax);
       const x = g.pad + i * bw + bw * 0.15, bwi = bw * 0.7;
       roundRect(ctx, x, baseY - h, bwi, h, rr); ctx.fill();
-      ctx.globalAlpha = 0.25;
-      roundRect(ctx, x, baseY + 6, bwi, h * 0.28, rr); ctx.fill(); // shorter reflection: the lower portrait baseline mustn't reach the footer
-      ctx.globalAlpha = 1;
     }
   }
 
@@ -3165,15 +3645,17 @@
     ctx.fillStyle = "#ffffff";
     ctx.fillText(nf.text, hx, ty);
 
-    // description (translated after a dub) — falls back to "<Language> dub".
+    // description (translated after a dub), only if the user wrote one.
     // Too long for the header? It marquees during playback instead of getting cut off.
     const ds = Math.round(tile * 0.155);
     ctx.font = `500 ${ds}px "General Sans", ${FB}`;
     ctx.fillStyle = "rgba(255,255,255,0.78)";
     const dline = descLine();
     const dy = ty + Math.round(hs * 1.2);
-    const dw = ctx.measureText(dline).width;
-    if (dw <= hw) {
+    const dw = dline ? ctx.measureText(dline).width : 0;
+    if (!dline) {
+      /* nothing typed: leave the header as just the name */
+    } else if (dw <= hw) {
       ctx.fillText(dline, hx, dy);
     } else {
       const gap = ds * 2.5, speed = ds * 1.6; // px/second — calm, readable drift
