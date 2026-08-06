@@ -103,6 +103,9 @@ export default async function handler(req, res) {
     await logEvent({
       feature,
       target_lang: cleanTag(req.headers["x-ol-lang"], 12),
+      // which design controls were touched before this generation ("none" if untouched) —
+      // tells us whether the design panel is being found and used, not just shipped
+      design: cleanTag(req.headers["x-ol-design"], 80),
       ok: upstream.ok,
       status: upstream.status,
       country: cleanTag(req.headers["x-vercel-ip-country"], 2),

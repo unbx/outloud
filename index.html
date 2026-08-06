@@ -131,8 +131,38 @@
   .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--warn); box-shadow: 0 0 0 3px rgba(255,138,138,0.15); transition: background .18s, box-shadow .18s; }
   .dot.ok { background: var(--good); box-shadow: 0 0 0 3px rgba(95,210,164,0.18); }
 
-  main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-  @media (max-width: 940px) { main { grid-template-columns: 1fr; } }
+  /* Left column is the recipe (create, then design); right column is the dish, and it holds
+     still while you work. Design controls used to live under the canvas, which put them on the
+     fold line and out of mind. */
+  main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+  #createPanel { grid-column: 1; grid-row: 1; }
+  #designPanel { grid-column: 1; grid-row: 2; }
+  #previewPanel { grid-column: 2; grid-row: 1 / span 2; }
+  @media (max-width: 940px) {
+    /* One column. The preview leads (it is the result, and it shows what the app makes before
+       you've made anything), then the numbered steps run 01, 02 in order. Putting the preview
+       between them read as broken, because a number promises a sequence. */
+    main { grid-template-columns: 1fr; }
+    #createPanel, #designPanel, #previewPanel { grid-column: 1; grid-row: auto; }
+    #previewPanel { order: 1; }
+    #createPanel { order: 2; }
+    #designPanel { order: 3; }
+    /* With the preview leading, dead export buttons would push Create off the first screen.
+       Hold them until they actually do something; the hint below still explains the state. */
+    #exportGroup:not(.ready) .export-row { display: none; }
+  }
+
+  /* Collapsible create step: after a generation the source is settled and design takes over,
+     but re-opening is one click since re-dubbing the same clip is a real workflow. */
+  .panel-body { display: block; }
+  #createPanel.collapsed .panel-body { display: none; }
+  .panel-toggle {
+    margin-left: auto; font: inherit; font-size: 11.5px; font-weight: 600; letter-spacing: 0.02em;
+    color: var(--accent-2); background: none; border: 1px solid var(--line-2); border-radius: 999px;
+    padding: 5px 12px; cursor: pointer; text-transform: none; transition: color .16s, border-color .16s, background .16s;
+  }
+  .panel-toggle:hover { color: var(--text); border-color: var(--accent); background: var(--panel); }
+  .panel-toggle[hidden] { display: none; }
   @media (max-width: 560px) {
     main { padding: 18px 14px 8px; gap: 16px; }
     .panel { padding: 20px 18px 22px; }
@@ -161,7 +191,9 @@
     /* Cap the canvas so the whole preview panel fits the viewport and stays pinned.
        Full 60vh on tall monitors; shrinks only when the window is short.
        (.preview-panel prefix raises specificity above the base .preview-wrap rule below.) */
-    .preview-panel .preview-wrap { max-height: min(60vh, calc(100vh - 470px)); }
+       Only the playbar and export sit below it now that design moved to the left column,
+       so the canvas gets the room those controls used to take. */
+    .preview-panel .preview-wrap { max-height: min(68vh, calc(100vh - 300px)); }
   }
 
   .kicker { display: flex; align-items: center; gap: 11px; margin-bottom: 12px; }
@@ -169,6 +201,12 @@
     font-family: var(--display); font-weight: 600; font-size: 12px; color: var(--ink);
     background: linear-gradient(135deg, var(--accent), var(--accent-2));
     min-width: 26px; height: 21px; padding: 0 6px; border-radius: 6px; display: grid; place-items: center;
+  }
+  /* The preview isn't a numbered step, so it gets a mark instead of a number, sized to match. */
+  .preview-kicker .ic {
+    width: 21px; height: 21px; min-width: 26px; padding: 0 3px; border-radius: 6px;
+    color: var(--ink); background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    display: grid; place-items: center;
   }
   /* panel titles echo the live-caption type: bold Clash Display, uppercase */
   .kicker .ttl {
@@ -749,10 +787,14 @@
 </header>
 
 <main>
-  <!-- LEFT: composer -->
-  <section class="panel">
+  <!-- LEFT COLUMN, STEP 1: the source -->
+  <section class="panel" id="createPanel">
     <div class="panel-aura" aria-hidden="true"></div>
-    <div class="kicker"><span class="num">01</span><span class="ttl">Create</span></div>
+    <div class="kicker">
+      <span class="num">01</span><span class="ttl">Create</span>
+      <button type="button" class="panel-toggle" id="createToggle" hidden>Change clip</button>
+    </div>
+    <div class="panel-body" id="createBody">
 
     <!-- MODE — caption an uploaded clip (primary), or write a script -->
     <div class="seg mode-seg" id="modeSeg" role="group" aria-label="Input mode">
@@ -909,26 +951,15 @@
     </div><!-- /writeControls -->
 
     <button class="btn" id="genBtn"><span class="ic" data-icon="mic"></span><span class="lbl">Generate audiogram</span></button>
+    </div><!-- /createBody -->
     <div class="status" id="status"></div>
   </section>
 
-  <!-- RIGHT: preview -->
-  <section class="panel preview-panel">
+  <!-- LEFT COLUMN, STEP 2: everything that changes how it looks -->
+  <section class="panel" id="designPanel">
     <div class="panel-aura" aria-hidden="true"></div>
-    <div class="kicker"><span class="num">02</span><span class="ttl">Design &amp; export</span></div>
-    <p class="hint">Brand it, shape the canvas, and export. Square or portrait, optimized for social feeds.</p>
-    <div class="preview-wrap portrait" id="previewWrap">
-      <canvas id="stage" width="1080" height="1350" title="Click the image, name, or description to edit it"></canvas>
-    </div>
-
-    <!-- Play, directly under the preview — lights up once a clip is generated -->
-    <div class="playbar" id="playbar">
-      <button class="play-under" id="playBtn" disabled title="Play" aria-label="Play"><span class="ic" data-icon="play"></span></button>
-      <span class="ptime" id="tCur">0:00</span>
-      <input type="range" id="scrub" min="0" max="1000" value="0" step="1" disabled aria-label="Seek" />
-      <span class="ptime" id="tRem">-0:00</span>
-    </div>
-    <button type="button" class="chip cap-edit" id="editCapsBtn" hidden><span class="ic chip-plus" data-icon="pencil"></span>Edit captions</button>
+    <div class="kicker"><span class="num">02</span><span class="ttl">Design</span></div>
+    <p class="hint">Brand it and shape the canvas. Everything here updates the preview as you go.</p>
 
     <!-- CREATOR — image, name & description that brand the audiogram (shared by both modes) -->
     <label for="handle">Creator image &amp; name</label>
@@ -951,9 +982,10 @@
     </div>
     <input id="dubDesc" type="text" placeholder="Show name, episode, or where the audio came from" />
 
-    <!-- DESIGN: format, theme & background -->
-    <details class="style-section" id="designSection">
-      <summary><span class="ic" data-icon="image"></span><span class="style-ttl">Design</span><span class="sub">· format, theme &amp; background</span></summary>
+    <!-- Look: format, captions, theme & background. Open by default — when this sat
+         collapsed below the canvas it landed on the fold line and went unused. -->
+    <details class="style-section" id="designSection" open>
+      <summary><span class="ic" data-icon="image"></span><span class="style-ttl">Look</span><span class="sub">· format, captions, theme &amp; background</span></summary>
       <div class="style-body">
         <label>Format</label>
         <div class="format-row">
@@ -1005,6 +1037,26 @@
         </div>
       </div>
     </details>
+  </section>
+
+  <!-- RIGHT COLUMN: the artifact and what you do with it -->
+  <section class="panel preview-panel" id="previewPanel">
+    <div class="panel-aura" aria-hidden="true"></div>
+    <!-- Deliberately unnumbered: the preview is not a step, it is the result, present the whole
+         time. Numbering it forced a sequence the layout kept breaking. -->
+    <div class="kicker preview-kicker"><span class="ic" data-icon="play"></span><span class="ttl">Preview &amp; export</span></div>
+    <div class="preview-wrap portrait" id="previewWrap">
+      <canvas id="stage" width="1080" height="1350" title="Click the image, name, or description to edit it"></canvas>
+    </div>
+
+    <!-- Play, directly under the preview — lights up once a clip is generated -->
+    <div class="playbar" id="playbar">
+      <button class="play-under" id="playBtn" disabled title="Play" aria-label="Play"><span class="ic" data-icon="play"></span></button>
+      <span class="ptime" id="tCur">0:00</span>
+      <input type="range" id="scrub" min="0" max="1000" value="0" step="1" disabled aria-label="Seek" />
+      <span class="ptime" id="tRem">-0:00</span>
+    </div>
+    <button type="button" class="chip cap-edit" id="editCapsBtn" hidden><span class="ic chip-plus" data-icon="pencil"></span>Edit captions</button>
 
     <!-- Export -->
     <div class="export-group" id="exportGroup">
@@ -1340,10 +1392,40 @@
   const isConnected = () => !!apiKey || !!testerPass;
   const useProxy = () => !apiKey && !!testerPass;
   const elevenURL = (path) => useProxy() ? ("/api/eleven/" + path) : ("https://api.elevenlabs.io/v1/" + path);
+  // ---------- Which design controls actually get used ----------
+  // Design changes never reach the server, so rather than stand up a public write endpoint we
+  // ride along on the generation event that already gets logged: one comma-separated list of
+  // what was touched before this generation. Answers "do people adjust the design, and which
+  // parts" without any new surface area. Own-key users bypass the proxy and aren't logged,
+  // same as every other metric.
+  const designTouched = new Set();
+  function noteDesign(e) {
+    const t = e.target;
+    if (!t || !t.closest) return;
+    if (t.closest("#themes")) designTouched.add("theme");
+    else if (t.closest("#customTheme")) designTouched.add("theme_custom");
+    else if (t.closest(".ratio-row")) designTouched.add("format");
+    else if (t.closest("#styleSeg")) designTouched.add("layout");
+    else if (t.closest("#capStyleSeg")) designTouched.add("captions");
+    else if (t.id === "watermark") designTouched.add("watermark");
+    else if (t.id === "handle") designTouched.add("name");
+    else if (t.id === "dubDesc") designTouched.add("description");
+    else if (t.id === "pfpFile" || t.closest("#pfpBtn")) designTouched.add("photo");
+    else if (t.id === "bgFile" || t.id === "bgDark" || t.closest("#bgBtn")) designTouched.add("background");
+  }
+  // capture phase on the panel, so it keeps working for controls added later
+  ["click", "change", "input"].forEach((ev) => {
+    document.addEventListener(ev, (e) => {
+      const p = document.getElementById("designPanel");
+      if (p && p.contains(e.target)) noteDesign(e);
+    }, true);
+  });
+
   const elevenHeaders = (extra) => {
     const h = Object.assign({}, extra || {});
     if (useProxy()) {
       h["x-tester-pass"] = testerPass;
+      h["x-ol-design"] = (designTouched.size ? [...designTouched].sort().join(",") : "none").slice(0, 80);
     } else {
       h["xi-api-key"] = apiKey;
       // x-ol-* are proxy-only usage-analytics headers; sending them cross-origin to ElevenLabs
@@ -1374,7 +1456,7 @@
   const text = $("#text"), count = $("#count"), voiceSel = $("#voice"), modelSel = $("#model"), langSel = $("#lang");
   const LANG_NAMES = { en:"English", es:"Spanish", pt:"Portuguese", fr:"French", de:"German", it:"Italian", nl:"Dutch", pl:"Polish", sv:"Swedish", tr:"Turkish", id:"Indonesian", ro:"Romanian", cs:"Czech", ru:"Russian", uk:"Ukrainian", hi:"Hindi", ja:"Japanese", ko:"Korean", zh:"Chinese" };
   const genBtn = $("#genBtn"), playBtn = $("#playBtn"), audioBtn = $("#audioBtn"), videoBtn = $("#videoBtn");
-  const createPanel = document.querySelector(".panel");          // 01 · Create
+  const createPanel = $("#createPanel");                          // 01 · Create
   const exportPanel = document.querySelector(".preview-panel");  // 02 · Design & Export
   function busyPanel(panel, on) { if (panel) panel.classList.toggle("working", !!on); }
   const voicePreviewBtn = $("#voicePreview");
@@ -1644,6 +1726,28 @@
     drawPoster();
   }
   modeSeg.querySelectorAll("button").forEach(b => b.addEventListener("click", () => setMode(b.dataset.mode)));
+
+  // ---------- Create step settles once there's a result ----------
+  // The source is decided at that point and design becomes the job, so step 01 folds away and
+  // hands the column to step 02. Re-opening is one click, because re-dubbing the same clip into
+  // another language is a normal next move. On one column, scroll to the result rather than
+  // leaving it below a screen of controls.
+  const createToggle = $("#createToggle");
+  function setCreateCollapsed(on) {
+    createPanel.classList.toggle("collapsed", on);
+    createToggle.hidden = false;
+    createToggle.textContent = on ? "Change clip" : "Hide";
+  }
+  function settleCreate() {
+    setCreateCollapsed(true);
+    // On one column the preview sits above Create, so scroll UP to the result rather than
+    // leaving the user staring at a collapsed step.
+    if (window.matchMedia("(max-width: 940px)").matches) {
+      const p = $("#previewPanel");
+      if (p) p.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
+  createToggle.addEventListener("click", () => setCreateCollapsed(!createPanel.classList.contains("collapsed")));
 
   // Caption style: a design choice, so it persists and repaints immediately.
   const capStyleSeg = $("#capStyleSeg");
@@ -2574,6 +2678,7 @@
         ? "Dubbed — captions highlight in sync. Hit Play."
         : "Dubbed, but no caption transcript came back (see browser console) — playing without live captions.", "ok");
       drawPoster();
+      settleCreate();
     } catch (e) {
       setStatus(e.message, "err");
       drawPoster();
@@ -3061,6 +3166,7 @@
       $("#exportGroup").classList.add("ready");
       setStatus(timed ? "Ready — words will highlight in sync. Hit Play." : "Ready. Hit Play, or record the video.", "ok");
       drawPoster();
+      settleCreate();
     } catch (e) {
       setStatus(e.message, "err");
     } finally {
@@ -3789,6 +3895,15 @@
   updatePlaybar();
 
   // ---------- Click-to-edit: the preview is the editor ----------
+  // Clicking the canvas edits what you clicked. Those fields now live in the design panel, which
+  // on one column sits below the preview, so bring the field into view before focusing it —
+  // otherwise the caret lands somewhere the user can't see.
+  function editField(el, select) {
+    try { el.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (_) {}
+    el.focus({ preventScroll: true });
+    if (select && el.select) el.select();
+  }
+
   canvas.addEventListener("click", (e) => {
     const r = canvas.getBoundingClientRect();
     const x = (e.clientX - r.left) * (canvas.width / r.width);
@@ -3800,16 +3915,16 @@
       const tx = g.pad, ty = Math.round(g.ch * 0.055);
       const hx = tx + tile + Math.round(g.pad * 0.6);
       if (x >= tx && x <= tx + tile && y >= ty && y <= ty + tile) { pfpFile.click(); return; }        // creator tile → photo picker
-      if (x >= hx && y >= ty && y <= ty + tile * 0.42) { handle.focus(); handle.select(); return; }   // name
-      if (x >= hx && y > ty + tile * 0.42 && y <= ty + tile * 0.8) { dubDesc.focus(); return; }       // description line
+      if (x >= hx && y >= ty && y <= ty + tile * 0.42) { editField(handle, true); return; }           // name
+      if (x >= hx && y > ty + tile * 0.42 && y <= ty + tile * 0.8) { editField(dubDesc); return; }     // description line
       if (y > ty + tile) {                                                                            // caption band
         if (canEditCaps()) openCapEditor();
         else if (mode === "write") text.focus();
       }
     } else {
       const cy = Math.min(Math.round(g.ch - g.ch * 0.052), Math.round(g.ch - g.cap * 1.15));           // matches paintText footer
-      if (y > cy) { dubDesc.focus(); return; }                                                        // description line
-      if (y > cy - g.cap * 1.5) { handle.focus(); handle.select(); return; }                          // creator name
+      if (y > cy) { editField(dubDesc); return; }                                                      // description line
+      if (y > cy - g.cap * 1.5) { editField(handle, true); return; }                                  // creator name
       if (canEditCaps()) { openCapEditor(); return; }                                                 // timed captions → editor
       if (mode === "write") text.focus();                                                            // otherwise, edit the script
     }
