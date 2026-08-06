@@ -477,16 +477,37 @@
 
   /* Intake: upload, record, and capture presented as three peers — all equally good ways in */
   .intake { display: flex; gap: 10px; margin-top: 2px; }
-  .intake.drag .intake-opt { border-color: var(--accent); background: var(--panel); }
   .intake-opt {
+    position: relative; /* anchors the dashed frame */
     flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 5px;
     font: inherit; text-align: center; cursor: pointer; color: var(--muted);
-    background: var(--panel-2); border: 1px dashed var(--line-2); border-radius: 12px; padding: 18px 10px;
-    transition: color .16s, border-color .16s, background .16s, transform .16s;
+    background: var(--panel-2); border: none; border-radius: 12px; padding: 18px 10px;
+    transition: color .16s, background .16s, transform .16s;
   }
   .intake-opt[hidden] { display: none; } /* the flex rule above would defeat the hidden attribute */
-  .intake-opt:hover { color: var(--text); border-color: var(--accent); background: var(--panel); }
+  .intake-opt:hover { color: var(--text); background: var(--panel); }
   .intake-opt:active { transform: translateY(1px); }
+
+  /* Dashed holo frame. Inset by half the stroke width so the stroke isn't clipped by the edge. */
+  .io-frame { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+  .io-frame rect {
+    x: 1px; y: 1px; width: calc(100% - 2px); height: calc(100% - 2px);
+    fill: none; stroke: url(#holoDash); stroke-width: 1.5; stroke-dasharray: 8 7;
+    opacity: 0; transition: opacity .2s ease; /* hidden until hover or focus */
+  }
+  /* Upload alone keeps a faint dashed hint at rest, because it is the one that also takes a
+     dropped file. A dashed edge on Record or Capture would promise something they can't do. */
+  .intake-opt.io-drop .io-frame rect { opacity: 0.15; }
+  /* Listed after the rest rule so equal specificity resolves in hover's favour. */
+  .intake-opt:hover .io-frame rect,
+  .intake-opt:focus-visible .io-frame rect,
+  .intake.drag .io-drop .io-frame rect {
+    opacity: 1;
+    animation: ants 1.1s linear infinite; /* the dashes travel the edge */
+  }
+  .intake-opt:hover .io-frame,
+  .intake.drag .io-drop .io-frame { filter: drop-shadow(0 0 6px rgba(192,160,224,0.45)); }
+  @keyframes ants { to { stroke-dashoffset: -30px; } } /* 2 × the 15px dash period, so it loops seamlessly */
   .intake-opt .ic { width: 22px; height: 22px; color: var(--accent); }
   .intake-opt .io-main { font-size: 13.5px; font-weight: 600; color: var(--text); }
   .intake-opt .io-sub { font-size: 11.5px; color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
@@ -730,6 +751,8 @@
   /* respect reduced-motion: aura rings settle static (the wordmark's SMIL is paused via JS) */
   @media (prefers-reduced-motion: reduce) {
     .btn, .seg button.sel, #designSection:not([open]) summary::after { animation: none; }
+    /* the frame still brightens on hover, it just stops marching */
+    .intake-opt:hover .io-frame rect, .intake.drag .io-drop .io-frame rect { animation: none; }
   }
   .splash-tag { color: var(--muted); font-size: 14px; margin: 0 0 22px; }
   .splash-feats { display: grid; gap: 12px; text-align: left; margin: 0 0 22px; }
@@ -786,6 +809,18 @@
   </div>
 </header>
 
+<!-- Shared holo stroke for the dashed intake frames. A CSS border can't carry a gradient, and
+     an SVG stroke can also be marched with stroke-dashoffset, which a border never could. -->
+<svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
+  <defs>
+    <linearGradient id="holoDash" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#88c8e8" />
+      <stop offset="45%" stop-color="#c0a0e0" />
+      <stop offset="100%" stop-color="#f0a0c0" />
+    </linearGradient>
+  </defs>
+</svg>
+
 <main>
   <!-- LEFT COLUMN, STEP 1: the source -->
   <section class="panel" id="createPanel">
@@ -807,17 +842,20 @@
       <p class="hint" style="margin:14px 0 0;">Upload a clip, record a voice note, or capture audio playing in another tab. OutLoud renders a live-captioned audiogram that keeps the voice, intonation, and expression of the original. Or dub it into another language, <strong>still in the original speaker's voice</strong>.</p>
       <label for="dubFile">Clip</label>
       <div class="intake" id="dropzone">
-        <button type="button" class="intake-opt" id="pickBtn">
+        <button type="button" class="intake-opt io-drop" id="pickBtn">
+          <svg class="io-frame" aria-hidden="true"><rect rx="12" ry="12" /></svg>
           <span class="ic" data-icon="upload"></span>
           <span class="io-main">Upload</span>
           <span class="io-sub">Audio or video</span>
         </button>
         <button type="button" class="intake-opt" id="recBtn">
+          <svg class="io-frame" aria-hidden="true"><rect rx="12" ry="12" /></svg>
           <span class="ic" data-icon="mic"></span>
           <span class="io-main">Record</span>
           <span class="io-sub">Voice note</span>
         </button>
         <button type="button" class="intake-opt" id="tabBtn" hidden>
+          <svg class="io-frame" aria-hidden="true"><rect rx="12" ry="12" /></svg>
           <span class="ic" data-icon="monitor"></span>
           <span class="io-main">Capture</span>
           <span class="io-sub">Tab audio</span>
