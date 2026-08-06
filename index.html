@@ -1444,12 +1444,16 @@
     //   than palette: `fx` rasterises the glyphs through a dot grid, `frame` adds camera marks. —
     // `b` also paints the creator name in layout 2, so it has to clear black on its own — the
     // deep red this started as measured 1.9:1 and vanished.
-    { name: "SIGNAL", a: "#ff2a18", b: "#ff3b24", bg1: "#000000", bg2: "#000000",
-      stops: ["#ff3b24", "#c81006", "#ff3b24"], glow2: "#ff2a18", ink: "#000000",
+    // Reds chosen cool rather than warm. The originals sat at hue ~5-8 with green above blue,
+    // which is the definition of an orange lean and is what showed up in exports. These sit just
+    // under 360 (a touch toward magenta, like the glitch lines in the reference) so they read as
+    // red at any size and can never drift orange.
+    { name: "SIGNAL", a: "#ff0d16", b: "#ff2630", bg1: "#000000", bg2: "#000000",
+      stops: ["#ff2630", "#d20a12", "#ff2630"], glow2: "#ff0d16", ink: "#000000",
       // glow 0 on purpose. The header mesh is painted in bg1, so any accent wash behind it gets
       // erased in a rectangle and the header reads as a black box. A pure black canvas also
       // matches the look this is drawn from: all the light comes from the dots.
-      fg: "#ff2a18", fx: "dot", frame: true, glow: 0, font: '"Geist Mono", ui-monospace, monospace' },
+      fg: "#ff0d16", fx: "dot", frame: true, glow: 0, font: '"Geist Mono", ui-monospace, monospace' },
     { name: "Contrast", a: "#ffffff", b: "#d4d4d4", bg1: "#0a0a0a", bg2: "#000000", ink: "#000000" },
     // The one light theme. `fg` flips the canvas text from white to ink; cream is NANA
     // LIFESTYLE's --cream (#e1e0cc), the colour its own body copy and logo use.
@@ -3589,24 +3593,44 @@
     const chunk = chunks[ci];
 
     // Focus type runs larger than the flowing styles — there is far less of it on screen.
-    const fCap = Math.round(g.cap * 1.5);
-    const fLh = Math.round(fCap * 1.22);
     const maxW = g.cw - g.pad * 2;
+    const bandH = Math.max(1, g.bandBottom - g.bandTop);
+
+    // Wrap the chunk into centred lines at a given size. Long tokens are split with fitToken
+    // first: Chinese, Japanese and Korean arrive as runs with no spaces to break on, so a single
+    // "word" can be wider than the whole canvas and word-wrapping alone never touches it.
+    const wrapAt = (px) => {
+      ctx.font = `800 ${px}px ${face()}`;
+      const space = ctx.measureText(" ").width;
+      const lines = [];
+      let row = [], rowW = 0;
+      for (const i of chunk) {
+        const raw = g.upper ? captionWords[i].text.toUpperCase() : captionWords[i].text;
+        for (const text of fitToken(raw, maxW)) {
+          const w = ctx.measureText(text).width;
+          if (row.length && rowW + space + w > maxW) { lines.push({ row, rowW }); row = []; rowW = 0; }
+          rowW += (row.length ? space : 0) + w;
+          row.push({ i, text, w });
+        }
+      }
+      if (row.length) lines.push({ row, rowW });
+      return lines;
+    };
+
+    // Shrink to fit the band. A CJK chunk expands to far more lines than the same chunk in a
+    // spaced language, so a fixed size that suits English overflows vertically here.
+    let fCap = Math.round(g.cap * 1.5);
+    const minCap = Math.round(g.cap * 0.6);
+    let fLh = Math.round(fCap * 1.22);
+    let lines = wrapAt(fCap);
+    while (lines.length * fLh > bandH && fCap > minCap) {
+      fCap = Math.round(fCap * 0.88);
+      fLh = Math.round(fCap * 1.22);
+      lines = wrapAt(fCap);
+    }
     const font = `800 ${fCap}px ${face()}`;
     ctx.font = font;
     const space = ctx.measureText(" ").width;
-
-    // wrap the chunk into centred lines
-    const lines = [];
-    let row = [], rowW = 0;
-    for (const i of chunk) {
-      const text = g.upper ? captionWords[i].text.toUpperCase() : captionWords[i].text;
-      const w = ctx.measureText(text).width;
-      if (row.length && rowW + space + w > maxW) { lines.push({ row, rowW }); row = []; rowW = 0; }
-      rowW += (row.length ? space : 0) + w;
-      row.push({ i, text, w });
-    }
-    if (row.length) lines.push({ row, rowW });
 
     const blockH = lines.length * fLh;
     let y = Math.round((g.bandTop + g.bandBottom) / 2 - blockH / 2);
@@ -4333,6 +4357,229 @@
   $("#vttBtn").addEventListener("click", () => downloadCaptions("vtt"));
   // Caption export only makes sense when we have real word timings (dubs, caption-only,
   // and Multilingual-v2 scripts return them; Eleven v3 does not).
+  // ---------- MP4 remux: fragmented → progressive ----------
+  // MediaRecorder writes a FRAGMENTED MP4: its moov declares `mvex` and carries empty sample
+  // tables (stsz sampleCount = 0), with every sample living in moof/mdat fragments. That shape is
+  // built for streaming, and upload pipelines that read the moov to demux — X's among them — find
+  // no samples and reject the file ("your video could not be processed"). Saving it to an iPhone
+  // worked only because Photos silently re-encodes on import.
+  //
+  // This rebuilds the same encoded samples as a progressive MP4: ftyp + a real moov + one mdat,
+  // index at the front. Nothing is re-encoded; the H.264 and AAC bytes are copied verbatim, so it
+  // is fast and lossless. Fragment order is preserved as chunks, keeping audio/video interleaved.
+  function remuxToProgressiveMp4(buf) {
+    const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+    const typeAt = (o) => String.fromCharCode(buf[o + 4], buf[o + 5], buf[o + 6], buf[o + 7]);
+    const boxes = (start, end) => {
+      const out = [];
+      let o = start;
+      while (o + 8 <= end) {
+        let size = dv.getUint32(o), hs = 8;
+        if (size === 1) { size = Number(dv.getBigUint64(o + 8)); hs = 16; }
+        if (size < 8 || o + size > end) break;
+        out.push({ type: typeAt(o), start: o, body: o + hs, end: o + size });
+        o += size;
+      }
+      return out;
+    };
+    const one = (l, t) => l.find((b) => b.type === t);
+    const all = (l, t) => l.filter((b) => b.type === t);
+
+    const top = boxes(0, buf.length);
+    const ftyp = one(top, "ftyp"), moov = one(top, "moov");
+    if (!moov) return null;
+    const mk = boxes(moov.body, moov.end);
+    const mvex = one(mk, "mvex");
+    if (!mvex) return null;                 // already progressive — nothing to do
+    const mvhd = one(mk, "mvhd");
+    if (!mvhd) return null;
+
+    const tracks = all(mk, "trak").map((tr) => {
+      const k = boxes(tr.body, tr.end);
+      const tkhd = one(k, "tkhd"), mdia = one(k, "mdia");
+      const mdk = boxes(mdia.body, mdia.end);
+      const mdhd = one(mdk, "mdhd"), hdlr = one(mdk, "hdlr"), minf = one(mdk, "minf");
+      const mik = boxes(minf.body, minf.end);
+      const stbl = one(mik, "stbl");
+      const v1 = buf[tkhd.body] === 1;
+      return {
+        id: dv.getUint32(tkhd.body + 4 + (v1 ? 16 : 8)),
+        timescale: dv.getUint32(mdhd.body + 4 + (buf[mdhd.body] === 1 ? 16 : 8)),
+        video: String.fromCharCode(...buf.slice(hdlr.body + 8, hdlr.body + 12)) === "vide",
+        tkhd, mdhd, hdlr,
+        minfOthers: boxes(minf.body, minf.end).filter((b) => b.type !== "stbl"),
+        stsd: one(boxes(stbl.body, stbl.end), "stsd"),
+        chunks: [], samples: [], dur: 0,
+      };
+    });
+    const byId = new Map(tracks.map((t) => [t.id, t]));
+
+    for (const trex of all(boxes(mvex.body, mvex.end), "trex")) {
+      const t = byId.get(dv.getUint32(trex.body + 4));
+      if (!t) continue;
+      t.dDesc = dv.getUint32(trex.body + 8); t.dDur = dv.getUint32(trex.body + 12);
+      t.dSize = dv.getUint32(trex.body + 16); t.dFlags = dv.getUint32(trex.body + 20);
+    }
+
+    // read every fragment; each traf becomes one chunk so the original interleave survives
+    for (const mf of all(top, "moof")) {
+      for (const traf of all(boxes(mf.body, mf.end), "traf")) {
+        const tk = boxes(traf.body, traf.end);
+        const tfhd = one(tk, "tfhd");
+        if (!tfhd) continue;
+        const fl = dv.getUint32(tfhd.body) & 0xffffff;
+        let p = tfhd.body + 4;
+        const t = byId.get(dv.getUint32(p)); p += 4;
+        if (!t) continue;
+        let base = mf.start;
+        if (fl & 0x01) { base = Number(dv.getBigUint64(p)); p += 8; }
+        if (fl & 0x02) p += 4;
+        let dDur = t.dDur, dSize = t.dSize, dFlags = t.dFlags;
+        if (fl & 0x08) { dDur = dv.getUint32(p); p += 4; }
+        if (fl & 0x10) { dSize = dv.getUint32(p); p += 4; }
+        if (fl & 0x20) { dFlags = dv.getUint32(p); p += 4; }
+
+        const chunkSamples = [];
+        for (const trun of all(tk, "trun")) {
+          const ver = buf[trun.body], tf = dv.getUint32(trun.body) & 0xffffff;
+          let q = trun.body + 4;
+          const count = dv.getUint32(q); q += 4;
+          let off = base;
+          if (tf & 0x0001) { off = base + dv.getInt32(q); q += 4; }
+          let first = null;
+          if (tf & 0x0004) { first = dv.getUint32(q); q += 4; }
+          for (let i = 0; i < count; i++) {
+            let dur = dDur, size = dSize, flags = dFlags, cto = 0;
+            if (tf & 0x0100) { dur = dv.getUint32(q); q += 4; }
+            if (tf & 0x0200) { size = dv.getUint32(q); q += 4; }
+            if (tf & 0x0400) { flags = dv.getUint32(q); q += 4; }
+            else if (i === 0 && first !== null) flags = first;
+            if (tf & 0x0800) { cto = ver === 1 ? dv.getInt32(q) : dv.getUint32(q); q += 4; }
+            chunkSamples.push({ off, size, dur, cto, sync: !(flags & 0x00010000) });
+            off += size;
+          }
+        }
+        if (chunkSamples.length) { t.chunks.push(chunkSamples); t.samples.push(...chunkSamples); }
+      }
+    }
+    if (!tracks.some((t) => t.samples.length)) return null;
+    for (const t of tracks) t.dur = t.samples.reduce((a, sm) => a + sm.dur, 0);
+
+    // ---- writers ----
+    const u32 = (n) => { const a = new Uint8Array(4); new DataView(a.buffer).setUint32(0, n >>> 0); return a; };
+    const cat = (arrs) => {
+      let n = 0; for (const a of arrs) n += a.length;
+      const out = new Uint8Array(n); let o = 0;
+      for (const a of arrs) { out.set(a, o); o += a.length; }
+      return out;
+    };
+    const box = (type, ...parts) => {
+      const body = cat(parts);
+      const out = new Uint8Array(8 + body.length);
+      out.set(u32(out.length), 0);
+      for (let i = 0; i < 4; i++) out[4 + i] = type.charCodeAt(i);
+      out.set(body, 8);
+      return out;
+    };
+    const raw = (b) => buf.slice(b.start, b.end);
+    const fullBox = (entries, each) => {
+      const parts = [new Uint8Array(4), u32(entries.length)];
+      for (const e of entries) parts.push(each(e));
+      return parts;
+    };
+    // run-length helper for stts / ctts
+    const runs = (vals) => {
+      const out = [];
+      for (const v of vals) {
+        const last = out[out.length - 1];
+        if (last && last.v === v) last.n++;
+        else out.push({ n: 1, v });
+      }
+      return out;
+    };
+
+    const mdatBodyLen = tracks.reduce((a, t) => a + t.samples.reduce((b, sm) => b + sm.size, 0), 0);
+    const use64 = mdatBodyLen + 4096 > 0xfffffff0;
+
+    const buildTrak = (t, chunkOffsets) => {
+      const sizes = t.samples.map((sm) => sm.size);
+      const sttsRuns = runs(t.samples.map((sm) => sm.dur));
+      const cttsRuns = t.samples.some((sm) => sm.cto) ? runs(t.samples.map((sm) => sm.cto)) : null;
+      const syncIdx = t.video ? t.samples.map((sm, i) => (sm.sync ? i + 1 : 0)).filter(Boolean) : null;
+      // stsc: one entry whenever the samples-per-chunk changes
+      const stscEntries = [];
+      t.chunks.forEach((c, i) => {
+        const last = stscEntries[stscEntries.length - 1];
+        if (!last || last.spc !== c.length) stscEntries.push({ first: i + 1, spc: c.length });
+      });
+      const stbl = box("stbl",
+        raw(t.stsd),
+        box("stts", ...fullBox(sttsRuns, (r) => cat([u32(r.n), u32(r.v)]))),
+        ...(cttsRuns ? [box("ctts", ...fullBox(cttsRuns, (r) => cat([u32(r.n), u32(r.v)])))] : []),
+        box("stsc", ...fullBox(stscEntries, (e) => cat([u32(e.first), u32(e.spc), u32(1)]))),
+        box("stsz", new Uint8Array(4), u32(0), u32(sizes.length), cat(sizes.map(u32))),
+        use64
+          ? box("co64", ...fullBox(chunkOffsets, (o) => { const a = new Uint8Array(8); new DataView(a.buffer).setBigUint64(0, BigInt(o)); return a; }))
+          : box("stco", ...fullBox(chunkOffsets, (o) => u32(o))),
+        ...(syncIdx && syncIdx.length && syncIdx.length !== t.samples.length
+          ? [box("stss", ...fullBox(syncIdx, (i) => u32(i)))] : []),
+      );
+      // mdhd duration must match the samples we actually wrote
+      const mdhd = raw(t.mdhd);
+      const mv = new DataView(mdhd.buffer, mdhd.byteOffset, mdhd.byteLength);
+      if (mdhd[8] === 1) mv.setBigUint64(8 + 4 + 20, BigInt(t.dur)); else mv.setUint32(8 + 4 + 12, t.dur);
+      return box("trak", raw(t.tkhd), box("mdia", mdhd, raw(t.hdlr),
+        box("minf", ...t.minfOthers.map(raw), stbl)));
+    };
+
+    // chunk offsets depend on moov's size, and moov's size depends on the offsets — build once
+    // with zeros to measure, then rebuild with the real values. Entry counts never change, so
+    // the second moov is exactly the same size as the first.
+    const zeros = tracks.map((t) => t.chunks.map(() => 0));
+    const measure = box("moov", raw(mvhd), ...tracks.map((t, i) => buildTrak(t, zeros[i])));
+    const mdatHeader = use64 ? 16 : 8;
+    const mdatStart = (ftyp ? ftyp.end - ftyp.start : 0) + measure.length + mdatHeader;
+
+    // lay samples out in original fragment order so the tracks stay interleaved
+    const order = [];
+    tracks.forEach((t, ti) => t.chunks.forEach((c, ci) => order.push({ ti, ci, c, at: c[0].off })));
+    order.sort((a, b) => a.at - b.at);
+    const offsets = tracks.map((t) => new Array(t.chunks.length).fill(0));
+    const mdatBody = new Uint8Array(mdatBodyLen);
+    let w = 0;
+    for (const o of order) {
+      offsets[o.ti][o.ci] = mdatStart + w;
+      for (const sm of o.c) { mdatBody.set(buf.subarray(sm.off, sm.off + sm.size), w); w += sm.size; }
+    }
+
+    const moovFinal = box("moov", raw(mvhd), ...tracks.map((t, i) => buildTrak(t, offsets[i])));
+    if (moovFinal.length !== measure.length) return null; // sizes must match or offsets are wrong
+    let mdat;
+    if (use64) {
+      mdat = new Uint8Array(16 + mdatBodyLen);
+      mdat.set(u32(1), 0);
+      for (let i = 0; i < 4; i++) mdat[4 + i] = "mdat".charCodeAt(i);
+      new DataView(mdat.buffer).setBigUint64(8, BigInt(16 + mdatBodyLen));
+      mdat.set(mdatBody, 16);
+    } else {
+      mdat = new Uint8Array(8 + mdatBodyLen);
+      mdat.set(u32(8 + mdatBodyLen), 0);
+      for (let i = 0; i < 4; i++) mdat[4 + i] = "mdat".charCodeAt(i);
+      mdat.set(mdatBody, 8);
+    }
+    return cat([ftyp ? raw(ftyp) : new Uint8Array(0), moovFinal, mdat]);
+  }
+
+  // Best-effort wrapper: any parse surprise falls through to the original file rather than
+  // failing the export, since a fragmented MP4 still plays locally.
+  async function progressiveMp4Blob(blob) {
+    try {
+      const src = new Uint8Array(await blob.arrayBuffer());
+      const out = remuxToProgressiveMp4(src);
+      return out ? new Blob([out], { type: "video/mp4" }) : blob;
+    } catch (_) { return blob; }
+  }
+
   function refreshCapExport() {
     const el = document.getElementById("capExport");
     if (el) el.hidden = !(hasTiming && captionWords.length > 0);
@@ -4446,7 +4693,7 @@
     player.addEventListener("timeupdate", stallCheck);
     const stopTicker = () => { recording = false; try { ticker.postMessage({ start: false }); ticker.terminate(); } catch (e) {} };
 
-    rec.onstop = () => {
+    rec.onstop = async () => {
       stopTicker();
       player.removeEventListener("timeupdate", stallCheck); // per-take watchdog, don't stack across takes
       dropWakeLock();
@@ -4464,7 +4711,11 @@
         setStatus(msg, kind);
         return;
       }
-      const blob = new Blob(chunks, { type: isMp4 ? "video/mp4" : "video/webm" });
+      let blob = new Blob(chunks, { type: isMp4 ? "video/mp4" : "video/webm" });
+      if (isMp4) {
+        setStatus("Finishing the file…");
+        blob = await progressiveMp4Blob(blob);
+      }
       triggerDownload(blob, "outloud-audiogram." + ext);
       setStatus(isMp4
         ? "MP4 saved. Ready to post on X, Instagram, and beyond."
