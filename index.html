@@ -1448,8 +1448,10 @@
     // which is the definition of an orange lean and is what showed up in exports. These sit just
     // under 360 (a touch toward magenta, like the glitch lines in the reference) so they read as
     // red at any size and can never drift orange.
-    { name: "SIGNAL", a: "#ff0d16", b: "#ff2630", bg1: "#000000", bg2: "#000000",
-      stops: ["#ff2630", "#d20a12", "#ff2630"], glow2: "#ff0d16", ink: "#000000",
+    { name: "SIGNAL", a: "#ff0d16", b: "#ff0d16", bg1: "#000000", bg2: "#000000",
+      // Every red here is the caption red. The stops vary brightness only — the old bright stop
+      // sat 10 saturation points lower, which is what read as pink beside the captions.
+      stops: ["#ff0d16", "#c20a11", "#ff0d16"], glow2: "#ff0d16", ink: "#000000",
       // glow 0 on purpose. The header mesh is painted in bg1, so any accent wash behind it gets
       // erased in a rectangle and the header reads as a black box. A pure black canvas also
       // matches the look this is drawn from: all the light comes from the dots.
@@ -3370,7 +3372,9 @@
     if (!sourceNode) {
       sourceNode = audioCtx.createMediaElementSource(player);
       analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 256;
+      // 2048 gives ~23Hz bins. At 256 the bins were 187Hz wide, too coarse to spread the
+      // speech band across the meter without several bars reading the same bin.
+      analyser.fftSize = 2048;
       freqData = new Uint8Array(analyser.frequencyBinCount);
       streamDest = audioCtx.createMediaStreamDestination();
       sourceNode.connect(analyser);
@@ -3659,9 +3663,20 @@
     applyFx(L);
     ctx.save();
     ctx.shadowColor = "transparent"; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
-    if (theme.fx === "dot" && canFilter) { // bloom: the dots read as lit, not printed
+    if (theme.fx === "dot" && canFilter) {
+      // Additive bloom, in two passes. A normal composite could only ever sit *behind* the dots,
+      // so the black between them stayed black and the whole block averaged near-black at feed
+      // size — lit and unlit area combine in the eye, and only ~2% of it was lit. "lighter" adds
+      // light instead, filling the gaps the way a real LED panel does: a tight halo for
+      // punch, a wide one for glow. The dots themselves are already at full red so they can't
+      // blow out; only the gaps gain.
       ctx.save();
-      ctx.globalAlpha = 0.34; ctx.filter = "blur(" + Math.max(2, Math.round(fCap * 0.045)) + "px)";
+      ctx.globalCompositeOperation = "lighter";
+      ctx.globalAlpha = 0.55;
+      ctx.filter = "blur(" + Math.max(2, Math.round(fCap * 0.05)) + "px)";
+      ctx.drawImage(textLayer, 0, 0);
+      ctx.globalAlpha = 0.3;
+      ctx.filter = "blur(" + Math.max(6, Math.round(fCap * 0.15)) + "px)";
       ctx.drawImage(textLayer, 0, 0);
       ctx.restore();
     }
@@ -3691,7 +3706,11 @@
   // A theme can carry an `fx`, which rasterises the finished text layer through a mask instead of
   // changing what colour it is. "dot" punches an LED grid through the glyphs, so type and any
   // future artwork share one dot pitch and read as a single emissive display.
-  const DOT_R = 0.34;                                          // dot radius as a share of pitch
+  // Radius as a share of pitch. Coverage goes as the square of this, and coverage is what
+  // sets the brightness a viewer actually perceives once the dots blend at feed size — at
+  // 0.34 the block averaged near-black. Fatter dots on the same fine pitch keep the grid
+  // legible while roughly doubling the lit area.
+  const DOT_R = 0.46;
   // ONE pitch for the whole canvas, so every element sits on the same grid — deriving it per
   // element once put the header on a 4px grid and the captions on a 5px one, which moiréd.
   //
@@ -3879,9 +3898,20 @@
       btx.restore();
       ctx.drawImage(blurLayer, 0, 0);
     }
-    if (theme.fx === "dot" && canFilter) { // bloom, so the dots read as lit rather than printed
+    if (theme.fx === "dot" && canFilter) {
+      // Additive bloom, in two passes. A normal composite could only ever sit *behind* the dots,
+      // so the black between them stayed black and the whole block averaged near-black at feed
+      // size — lit and unlit area combine in the eye, and only ~2% of it was lit. "lighter" adds
+      // light instead, filling the gaps the way a real LED panel does: a tight halo for
+      // punch, a wide one for glow. The dots themselves are already at full red so they can't
+      // blow out; only the gaps gain.
       ctx.save();
-      ctx.globalAlpha = 0.34; ctx.filter = "blur(" + Math.max(2, Math.round(g.cap * 0.045)) + "px)";
+      ctx.globalCompositeOperation = "lighter";
+      ctx.globalAlpha = 0.55;
+      ctx.filter = "blur(" + Math.max(2, Math.round(g.cap * 0.05)) + "px)";
+      ctx.drawImage(textLayer, 0, 0);
+      ctx.globalAlpha = 0.3;
+      ctx.filter = "blur(" + Math.max(6, Math.round(g.cap * 0.15)) + "px)";
       ctx.drawImage(textLayer, 0, 0);
       ctx.restore();
     }
@@ -3968,7 +3998,7 @@
     const rr = Math.max(3, bw * 0.18);
     for (let i = 0; i < n; i++) {
       let v;
-      if (values) { const idx = Math.floor((i / n) * values.length); v = values[idx] / 255; }
+      if (values) v = barLevel(values, i, n);
       else v = 0.12 + 0.10 * Math.abs(Math.sin(i * 0.5));
       const h = Math.max(g.cap * 0.16, v * g.waveMax);
       const x = g.pad + i * bw + bw * 0.15, bwi = bw * 0.7;
@@ -3988,13 +4018,36 @@
   }
 
   // waveform bars in an arbitrary box (used by the dub cover card)
+  // Map a bar to a slice of the spectrum. Bars are spaced LOGARITHMICALLY across the speech
+  // band, because a linear bin mapping put 8kHz at bar 12 of 36 and everything above that in the
+  // remaining two-thirds — and caption audio is resampled to 16kHz, so there is no content up
+  // there at all. Two-thirds of the meter could never move. Log spacing puts the range people
+  // actually speak in across the full width.
+  const BAR_LO_HZ = 60, BAR_HI_HZ = 6000;
+  function barLevel(values, i, n) {
+    const nyq = (audioCtx ? audioCtx.sampleRate : 48000) / 2;
+    const perBin = nyq / values.length;
+    const f0 = BAR_LO_HZ * Math.pow(BAR_HI_HZ / BAR_LO_HZ, i / n);
+    const f1 = BAR_LO_HZ * Math.pow(BAR_HI_HZ / BAR_LO_HZ, (i + 1) / n);
+    const lo = Math.max(0, Math.min(values.length - 1, Math.floor(f0 / perBin)));
+    const hi = Math.max(lo, Math.min(values.length - 1, Math.ceil(f1 / perBin) - 1));
+    let sum = 0;
+    for (let b = lo; b <= hi; b++) sum += values[b];
+    let v = (sum / (hi - lo + 1)) / 255;
+    // Speech rolls off with frequency, so without a tilt the right side still reads quiet even
+    // once it is being fed the right bins. Kept gentle: at 1.05 roughly a quarter of readings
+    // pinned at full height, which flattens the meter into a wall instead of a dancing one.
+    v *= 1 + 0.55 * (i / n);
+    return Math.max(0, Math.min(1, v));
+  }
+
   function paintBarsIn(values, x0, x1, baseY, maxH) {
     const n = 36, w = x1 - x0, bw = w / n;
     ctx.fillStyle = lineGradient(x0, x1);
     const rr = Math.max(3, bw * 0.18);
     for (let i = 0; i < n; i++) {
       let v;
-      if (values) { const idx = Math.floor((i / n) * values.length); v = values[idx] / 255; }
+      if (values) v = barLevel(values, i, n);
       else v = 0.2 + 0.68 * Math.abs(Math.sin(i * 0.9) * Math.sin(i * 0.37)); // lively static poster
       const h = Math.max(maxH * 0.08, v * maxH);
       roundRect(ctx, x0 + i * bw + bw * 0.15, baseY - h, bw * 0.7, h, rr); ctx.fill();
@@ -4651,7 +4704,7 @@
     const mime = candidates.find(t => MediaRecorder.isTypeSupported(t)) || "video/webm";
     const isMp4 = mime.indexOf("mp4") !== -1;
     const ext = isMp4 ? "mp4" : "webm";
-    const rec = new MediaRecorder(mixed, { mimeType: mime, videoBitsPerSecond: 6_000_000 });
+    const rec = new MediaRecorder(mixed, { mimeType: mime, videoBitsPerSecond: 12_000_000 });
     const chunks = [];
     rec.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
 
