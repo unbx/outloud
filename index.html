@@ -1403,6 +1403,14 @@
   const CAP_S_WAV = { caption: 135, dub: 90 };
   const capFor = (isCaption) => (canOpus() ? CAP_S : CAP_S_WAV)[isCaption ? "caption" : "dub"];
 
+  // Byte ceiling is a browser concern, not a credit one — only extracted audio is uploaded, so
+  // file size costs nothing but decode memory. The duration caps above already do the spending
+  // control. Kept generous because the main source is an OS screen recording of a Space, and
+  // those run ~8 Mbps: 80MB for 80 seconds is normal, so the old 60MB gate rejected the app's
+  // most common input while the duration note next to it said the clip was fine.
+  const MAX_BYTES = 300_000_000;
+  const fmtMB = (b) => (b / 1e6).toFixed(1).replace(/\.0$/, "") + " MB";
+
   const FALLBACK_VOICES = [
     { voice_id: "21m00Tcm4TlvDq8ikWAM", name: "Rachel · calm narration" },
     { voice_id: "EXAVITQu4vr4xnSDxMaL", name: "Sarah · warm, social" },
@@ -1785,6 +1793,14 @@
     const len = trimActive() ? trimEnd - trimStart : clipSeconds;
     capNote.hidden = false;
     capNote.classList.remove("fits", "over");
+    // Size is checked before length: a clip can be well inside the duration cap and still be
+    // refused on bytes, and saying "inside the limit" first would be a straight contradiction
+    // of the error that follows the click.
+    if (dubFile && dubFile.size > MAX_BYTES) {
+      capNote.classList.add("over");
+      capNote.innerHTML = "This file is <b>" + fmtMB(dubFile.size) + "</b>, over the <b>" + fmtMB(MAX_BYTES) + "</b> limit. Compress it, or connect your own API key.";
+      return;
+    }
     if (!len) {
       capNote.innerHTML = isCap
         ? "Captions run up to <b>" + fmtT(cap) + "</b> per clip."
@@ -2587,8 +2603,8 @@
     // Tester path routes through the proxy (Vercel ~4.5MB body cap). Only the extracted
     // audio is sent, so what matters is duration, not video size. Gate on both, cheaply.
     if (useProxy()) {
-      if (dubFile.size > 60_000_000) {
-        setStatus("In tester mode, clips must be under 60 MB. Trim/compress the clip, or connect your own API key.", "err");
+      if (dubFile.size > MAX_BYTES) {
+        setStatus("In tester mode, clips must be under " + fmtMB(MAX_BYTES) + ". Compress the clip, or connect your own API key.", "err");
         return;
       }
       const clipDur = await probeDuration(dubFile);
