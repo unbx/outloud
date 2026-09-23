@@ -1,2 +1,9 @@
 .env*
 tests
+worker
+AGENTS.md
+README.md
+MOMENTS.md
+DEPLOY.md
+LICENSE
+.gitignore
