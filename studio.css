@@ -519,3 +519,61 @@ body .modal-close{position:absolute;top:16px;right:16px;display:grid;place-items
 
 
 #momentSpeakers{display:grid;gap:12px;margin-top:16px}.person-card{padding:16px;border:1px solid #C8C2B9;border-radius:6px;background:#EAE7E2}.person-heading{display:flex;justify-content:space-between;gap:12px;align-items:baseline;margin-bottom:12px}.person-heading small{color:#605D59}.person-controls{display:grid;grid-template-columns:1fr 1fr;gap:12px}.person-controls label{display:block;font:11px var(--mono);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}.person-controls input,.person-controls select{width:100%;box-sizing:border-box;min-height:44px;margin:0}.person-samples{display:grid;gap:8px;margin-top:12px}.person-sample{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.person-sample button{width:auto;margin:0;min-height:40px}.person-card details{margin-top:12px}.person-card summary{cursor:pointer;color:#27695F}@media(max-width:600px){.person-controls{grid-template-columns:1fr}.person-heading{align-items:flex-start;flex-direction:column;gap:4px}}
+
+/* Readout strip. Playback, start, end and duration read across one line, like the display window
+   on a hardware recorder: one dark bezel, hairline dividers, silkscreen captions over segment
+   digits. Folding the old two-row readout into one keeps the transport keys on screen beside the
+   waveform, even on a phone. The element ids are unchanged; only the layout moved. */
+.workspace-timeline .moment-transport{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,3fr);align-items:stretch;gap:0;margin:14px 0 0;padding:0;background:#0C0E0F;border:1px solid #3A4347;border-radius:6px;box-shadow:inset 0 1px 3px #000C,inset 0 0 0 1px #0008,0 1px 0 #FFFFFF14;overflow:hidden}
+.workspace-timeline .transport-display{display:flex;flex-direction:column;justify-content:center;gap:5px;min-width:0;padding:9px 14px;border-right:1px solid #283034}
+.workspace-timeline .playback-clock{gap:4px;min-width:0}
+.workspace-timeline #momentPlaybackTime{font:24px/1.05 var(--digital);white-space:nowrap;color:#DFF3FA;text-shadow:0 0 6px #91C6E03A}
+.workspace-timeline #momentPlaybackTime .clock-total{font-size:15px;color:#7FA1AC}
+.workspace-timeline #momentPlaybackTime .clock-divider{font-size:12px;margin:0 4px;color:#5E7780}
+.workspace-timeline .source-meter{width:auto;gap:2px}
+.workspace-timeline .source-meter .display-caption,.workspace-timeline .meter-channel>span{display:none}
+.workspace-timeline .meter-channel meter{width:100%;height:2px}
+.workspace-timeline .meter-channel meter::-webkit-meter-bar{height:2px}
+.workspace-timeline .waveform-trim-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:auto;max-width:none;margin:0;padding:0;gap:0;background:transparent;border:0;box-shadow:none}
+.workspace-timeline .waveform-trim-fields label,.workspace-timeline .waveform-trim-fields #tlSelectedLength{display:flex;flex-direction:column;justify-content:center;gap:5px;min-width:0;padding:9px 14px}
+.workspace-timeline .waveform-trim-fields label+label{border-left:1px solid #283034}
+.workspace-timeline .display-caption,.workspace-timeline .waveform-trim-fields .trim-field-title{font:500 9px/1.2 var(--font);letter-spacing:.14em;text-transform:uppercase;white-space:nowrap;color:#8DA2A9}
+.workspace-timeline .waveform-trim-fields #tlSelectedLength .trim-field-title{color:#E9965E}
+.workspace-timeline .waveform-trim-fields input,.workspace-timeline .waveform-trim-fields #waveformDuration{width:100%;min-width:0;min-height:0;height:auto;margin:0;padding:0 0 2px;font:24px/1.05 var(--digital);letter-spacing:.02em;border:0;border-bottom:1px dotted #465459;border-radius:0;background:transparent;color:#DFF3FA;text-shadow:0 0 6px #91C6E03A}
+.workspace-timeline .waveform-trim-fields #waveformDuration{color:#FF8B42;border-bottom-color:#6B4128;text-shadow:0 0 6px #FF8B4230}
+.workspace-timeline .waveform-trim-fields input:focus-visible{outline:1px solid #DFF3FA;outline-offset:2px}
+.workspace-timeline .transport-console{padding:12px 0 0;border-top:0;gap:12px;flex-wrap:nowrap}
+.workspace-timeline .transport-options{margin-top:4px}
+@media(max-width:560px){
+  .workspace-timeline .moment-transport{margin-top:10px}
+  /* Each cell's share matches the widest value it can hold, measured in the segment face: start
+     and end reach six digits in a long recording (6012.4), the clock five (1:29.9, a clip is at most
+     90 s), duration four (89.9). Digits scale with the screen so the worst case fits at 360 px. */
+  .workspace-timeline .moment-transport{grid-template-columns:minmax(0,69fr) minmax(0,213fr)}
+  .workspace-timeline .waveform-trim-fields{grid-template-columns:minmax(0,76fr) minmax(0,76fr) minmax(0,60fr)}
+  .workspace-timeline .transport-display,.workspace-timeline .waveform-trim-fields label,.workspace-timeline .waveform-trim-fields #tlSelectedLength{padding:7px 6px;gap:4px}
+  .workspace-timeline #momentPlaybackTime,.workspace-timeline .waveform-trim-fields input,.workspace-timeline .waveform-trim-fields #waveformDuration{font-size:clamp(13px,4.2vw,18px)}
+  .workspace-timeline #momentPlaybackTime .clock-divider,.workspace-timeline #momentPlaybackTime .clock-total{display:none}
+  .workspace-timeline .display-caption,.workspace-timeline .waveform-trim-fields .trim-field-title{font-size:8px;letter-spacing:.06em}
+  .workspace-timeline .transport-console{padding-top:10px;gap:8px}
+  .workspace-timeline .transport-keys{gap:6px}
+  .workspace-timeline .transport-state{font-size:0;letter-spacing:0}
+  .workspace-timeline .transport-state::before{margin:0;width:6px;height:6px}
+  .workspace-timeline .trim-unit{display:none}
+}
+
+/* Compact dock on phones. Small captions over two slim selectors, then the action; the selection
+   summary is already on the strip and the waveform, so it gives way. Routine status stays on one
+   line; an error wraps in full so it is never cut off. */
+@media(max-width:700px){
+  .studio-workstation .workspace-handoff{padding:10px 12px;gap:4px 10px;row-gap:8px}
+  .workspace-handoff>label,.workspace-handoff .handoff-scope{grid-template-rows:12px 36px;gap:4px;font:500 9px/12px var(--font);letter-spacing:.1em}
+  .workspace-handoff #momentScope,.workspace-handoff #momentTarget{height:36px;min-height:36px;padding:6px 26px 6px 10px;font-size:13px;line-height:22px}
+  .workspace-handoff #momentContinue{height:42px;min-height:42px}
+  .workspace-handoff .handoff-meta{margin:0}
+  .workspace-handoff #handoffSelection{display:none}
+  .workspace-handoff #handoffStatus{margin:0;font-size:12px;line-height:16px;color:#3F3C39;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .workspace-handoff #handoffStatus[data-tone=error]{white-space:normal;color:#9B3425}
+}
+@media(max-width:400px){.workspace-handoff #momentScope,.workspace-handoff #momentTarget{font-size:12.5px;padding:6px 22px 6px 8px}}
+@media(max-width:370px){.workspace-timeline .waveform-trim-fields #tlSelectedLength .trim-field-title{letter-spacing:0}}
