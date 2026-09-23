@@ -8,6 +8,7 @@ export function initMoments(app) {
   const find = $('findMoments'), cancel = $('cancelMoments'), player = $('momentPlayer');
   let file = null, decoded = null, words = [], completed = new Set(), language = null, sourceLanguage = null;
   let epoch = 0, controller = null, busy = false, complete = false, url = null, stopAt = 0, activeCard = null;
+  let people = {};
   let segments = [], labels = {}, transcriptPage = 0, duration = 0, playing = false;
   let previewStart = 0, samplePreview = false, searchPreview = null;
   let choices = [], selectedId = null, nextId = 1, decoding = null;
@@ -115,7 +116,7 @@ export function initMoments(app) {
   function reset(next) {
     epoch++; controller?.abort(); controller = null; stop();
     if (url) URL.revokeObjectURL(url);
-    file = next; decoded = null; searchPreview = null; $('momentSearch').value = '';  words = []; segments = []; completed = new Set(); labels = {};
+    file = next; decoded = null; searchPreview = null; $('momentSearch').value = '';  words = []; segments = []; completed = new Set(); labels = {}; people = {};
     complete = false; sourceLanguage = null; language = null; transcriptPage = 0; duration = 0; url = null;
     player.removeAttribute('src'); player.load();
     clearChoices(); timeline.source(null, 0); timeline.speakers([], {}); timeline.progress(null); decoding = null; closeWorkspace(); $('momentTranscript').replaceChildren(); $('momentSpeakers').replaceChildren();
@@ -221,7 +222,7 @@ export function initMoments(app) {
     if (!file || busy) return;
     if (!complete && !app.connected()) { closeWorkspace(); app.connect(); return; }
     if (sourceLanguage && sourceLanguage !== app.sourceLanguage()) {
-      words = []; completed.clear(); complete = false; language = null; segments = []; labels = {};
+      words = []; completed.clear(); complete = false; language = null; segments = []; labels = {}; people = {};
       clearChoices(); timeline.speakers([], {}); $('momentTranscriptWrap').hidden = true; $('momentSpeakerWrap').hidden = true;
       $('momentSpeaker').replaceChildren(new Option('Any speaker', '')); $('momentSpeakerFilter').hidden = true;
     }
@@ -263,14 +264,58 @@ export function initMoments(app) {
   }
   function updateSpeakers() {
     const box = $('momentSpeakers'); box.replaceChildren();
-    [...new Set(words.map(w => w.speaker))].filter(id => id !== 'unknown').forEach((id, i) => {
-      const first = words.find(w => w.speaker === id);
-      const row = el('div', null, 'moment-speaker-row'), label = el('label', speakerLabel(id));
-      const input = el('input'); input.id = `moment-speaker-${i}`; label.htmlFor = input.id;
-      input.placeholder = 'Name (optional)'; input.maxLength = 80; input.value = labels[id] || '';
-      input.dataset.edit = 'true';
-      input.addEventListener('change', () => { labels[id] = input.value.trim(); updateSpeakerOptions(); renderTranscript(); timeline.speakers(segments, labels); });
-      row.append(label, input, button('Hear sample', () => preview(first.start, Math.min(duration, first.start + 8)))); box.append(row);
+    const ids = [...new Set(words.map(w => w.speaker))].filter(id => id !== 'unknown');
+    const groups = new Map();
+    ids.forEach(id => {
+      const key = people[id] || id;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(id);
+    });
+    const entries = [...groups.entries()];
+    const name = members => labels[members[0]]?.trim() || speakerLabel(members[0]);
+    const refresh = () => { updateSpeakers(); renderTranscript(); timeline.speakers(segments, labels); };
+    entries.forEach(([key, members], i) => {
+      const row = el('div', null, 'person-card');
+      const heading = el('div', null, 'person-heading');
+      heading.append(el('strong', name(members)), el('small', `${members.length} voice ${members.length === 1 ? 'appearance' : 'appearances'}`));
+      const controls = el('div', null, 'person-controls');
+      const label = el('label', 'Name');
+      const input = el('input'); input.id = `moment-person-${i}`; label.htmlFor = input.id;
+      input.placeholder = 'Name this person'; input.maxLength = 80; input.value = labels[members[0]] || ''; input.dataset.edit = 'true';
+      input.addEventListener('change', () => { members.forEach(id => { labels[id] = input.value.trim(); }); refresh(); });
+      const field = el('div'); field.append(label, input); controls.append(field);
+      if (entries.length > 1) {
+        const mergeField = el('div'), mergeLabel = el('label', 'Same person as…'), select = el('select');
+        select.id = `moment-person-merge-${i}`; mergeLabel.htmlFor = select.id;
+        select.add(new Option('Choose a person', ''));
+        entries.filter(([other]) => other !== key).forEach(([other, voices]) => select.add(new Option(name(voices), other)));
+        select.addEventListener('change', () => {
+          const target = groups.get(select.value); if (!target) return;
+          const mergedName = labels[target[0]]?.trim() || labels[members[0]]?.trim() || '';
+          [...target, ...members].forEach(id => { people[id] = select.value; labels[id] = mergedName; });
+          refresh();
+        });
+        mergeField.append(mergeLabel, select); controls.append(mergeField);
+      }
+      row.append(heading, controls);
+      const samples = el('div', null, 'person-samples');
+      members.forEach(id => {
+        const sample = segments.filter(s => s.speaker === id).sort((a,b) => (b.end-b.start)-(a.end-a.start))[0];
+        const first = words.find(w => w.speaker === id);
+        const start = sample?.start ?? first.start, end = Math.min(duration, sample?.end ?? first.end, start + 8);
+        const line = el('div', null, 'person-sample');
+        line.append(button(`▶ Hear voice · ${timeLabel(start)}`, () => preview(start, end)));
+        if (members.length > 1) line.append(button('Separate', () => {
+          const rest = members.filter(member => member !== id), nextKey = rest[0];
+          rest.forEach(member => { people[member] = nextKey; });
+          delete people[id]; delete labels[id]; refresh();
+        }));
+        samples.append(line);
+      });
+      if (members.length > 1) {
+        const details = el('details'); details.append(el('summary', 'Listen to linked appearances · separate a mistaken match'), samples); row.append(details);
+      } else row.append(samples);
+      box.append(row);
     });
     $('momentSpeakerWrap').hidden = !box.children.length; updateSpeakerOptions();
   }

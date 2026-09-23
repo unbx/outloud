@@ -471,6 +471,7 @@ body #momentPlayToggle:active:not(:disabled),body .moment-card-play:active:not(:
 footer .foot-links{align-items:center}
 footer .foot-links>.foot-link{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;min-height:36px;margin:0;padding:8px 0;font:400 13px/20px var(--font);vertical-align:middle}
 
+
 /* Keep onboarding navigation flat and separate from action keys. */
 #splash .splash-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px 20px;align-items:center}
 #splashConnect{grid-column:1/-1;width:100%;margin:0;min-height:44px}
@@ -514,3 +515,7 @@ body .modal-close{position:absolute;top:16px;right:16px;display:grid;place-items
 #splash #keyModal .card{position:static}
 .how-modal .how-heading{padding-right:72px}.how-modal .how-heading .modal-close{position:absolute;flex:none;margin:0}
 @media(max-width:600px){body .modal-close{top:12px;right:12px}}
+
+
+
+#momentSpeakers{display:grid;gap:12px;margin-top:16px}.person-card{padding:16px;border:1px solid #C8C2B9;border-radius:6px;background:#EAE7E2}.person-heading{display:flex;justify-content:space-between;gap:12px;align-items:baseline;margin-bottom:12px}.person-heading small{color:#605D59}.person-controls{display:grid;grid-template-columns:1fr 1fr;gap:12px}.person-controls label{display:block;font:11px var(--mono);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}.person-controls input,.person-controls select{width:100%;box-sizing:border-box;min-height:44px;margin:0}.person-samples{display:grid;gap:8px;margin-top:12px}.person-sample{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.person-sample button{width:auto;margin:0;min-height:40px}.person-card details{margin-top:12px}.person-card summary{cursor:pointer;color:#27695F}@media(max-width:600px){.person-controls{grid-template-columns:1fr}.person-heading{align-items:flex-start;flex-direction:column;gap:4px}}
