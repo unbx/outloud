@@ -37,9 +37,11 @@ Unreleased branches at the time of writing:
 
 | Branch | What it does | Status |
 |---|---|---|
-| `feature/people` | Link repeated voices across sections ("Same person as…") | Ready to review |
-| `feature/intake-limits` | Free sessions take one recording up to 2 hours / 300 MB (was 60 seconds), sent in server-measured sections | Ready to review |
 | `feature/url-import` | Import audio from YouTube / recorded X Space links via a worker | **Do not merge or deploy without Sean's explicit go-ahead.** The worker uses yt-dlp, which raises platform terms questions, and it is not hosted yet. |
+
+Shipped and merged: `feature/people` (link repeated voices across sections) and
+`feature/intake-limits` (free sessions up to 2 hours / 300 MB). Delete a feature branch once it
+is merged and live.
 
 ## Test and preview
 
