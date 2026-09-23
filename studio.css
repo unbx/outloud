@@ -823,3 +823,8 @@ body :is(.workspace-timeline .transport-mark){--tactile-top:#3B4043;--tactile-bo
 /* Ghost colour must beat the older ".waveform-trim-fields span" colour rule, so it is stated at
    matching strength; otherwise unlit segments would render as bright as lit ones. */
 .workspace-timeline .waveform-trim-fields .seg-ghost,.moments-panel .moment-card-readouts .seg-ghost{color:var(--led-ghost);text-shadow:none}
+/* Every transport key takes the dark function-key finish (inspired by RAL 7021 Black Grey), as on the
+   K.O. II; Play stays yellow. IN and OUT keep the same finish and are told apart by orange brackets,
+   the TE orange used for the selection's length and the level ladders. */
+body :is(.workspace-timeline .transport-key){--tactile-top:#3B4043;--tactile-bottom:#2B3033;--tactile-edge:#15191B;--tactile-base:#0E1112;--tactile-ink:#F4F1EA;--tactile-highlight:#FFFFFF24}
+.workspace-timeline .transport-mark svg{stroke:var(--led-orange)}
