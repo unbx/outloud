@@ -828,3 +828,28 @@ body :is(.workspace-timeline .transport-mark){--tactile-top:#3B4043;--tactile-bo
    the TE orange used for the selection's length and the level ladders. */
 body :is(.workspace-timeline .transport-key){--tactile-top:#3B4043;--tactile-bottom:#2B3033;--tactile-edge:#15191B;--tactile-base:#0E1112;--tactile-ink:#F4F1EA;--tactile-highlight:#FFFFFF24}
 .workspace-timeline .transport-mark svg{stroke:var(--led-orange)}
+
+/* Zoom keys join the transport in the dark function-key finish, so the whole panel reads as one device. */
+body :is(.workspace-timeline .tl-magnification button){--tactile-top:#3B4043;--tactile-bottom:#2B3033;--tactile-edge:#15191B;--tactile-base:#0E1112;--tactile-ink:#F4F1EA;--tactile-highlight:#FFFFFF24}
+
+/* Playhead and playbar, wherever audio plays: the clip waveform, the moment card, the zoom slider,
+   the Design and Share preview player and the trim dialog. The playhead is a bright white line with
+   a soft glow (inspired by RAL 9016 Traffic White); a playbar is a slim track with a clean white fill
+   and no glow, so the playhead is the one thing that shines. Bars look 3px thin but keep a 20px
+   touch area. */
+:root{
+  --playhead:#F7F7F2;
+  --playhead-glow:0 0 5px #FFFFFFB3,0 0 14px #FFFFFF45;
+  --playbar-track:#2E3336;
+  --playbar-fill:#F7F7F2D9;
+}
+.tl-playhead,.workspace-timeline .tl-playhead,.trim-playhead{width:2px;background:var(--playhead);box-shadow:var(--playhead-glow)}
+.tl-playhead::before,.workspace-timeline .tl-playhead::before{width:9px;height:9px;left:-3.5px;top:-4px;border-radius:50%;clip-path:none;background:var(--playhead);box-shadow:var(--playhead-glow)}
+:is(#scrub,.moments-panel .moment-card-seek,#tlZoom){-webkit-appearance:none;appearance:none;height:20px;min-height:20px;margin:0;padding:0;border:0;border-radius:0;box-shadow:none;cursor:pointer;accent-color:auto!important;background:linear-gradient(90deg,var(--playbar-fill) var(--played,0%),var(--playbar-track) var(--played,0%)) center/100% 3px no-repeat}
+:is(#scrub,.moments-panel .moment-card-seek,#tlZoom)::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:12px;height:12px;border:0;border-radius:50%;background:var(--playhead);box-shadow:var(--playhead-glow);opacity:1}
+:is(#scrub,.moments-panel .moment-card-seek,#tlZoom)::-moz-range-thumb{width:12px;height:12px;border:0;border-radius:50%;background:var(--playhead);box-shadow:var(--playhead-glow);opacity:1}
+:is(#scrub,.moments-panel .moment-card-seek,#tlZoom)::-moz-range-track{background:transparent;border:0}
+:is(#scrub,.moments-panel .moment-card-seek,#tlZoom):disabled{cursor:default;opacity:.45}
+:is(#scrub,.moments-panel .moment-card-seek,#tlZoom):disabled::-webkit-slider-thumb{box-shadow:none}
+:is(#scrub,.moments-panel .moment-card-seek,#tlZoom):focus-visible{outline:2px solid var(--playhead);outline-offset:4px}
+@media(pointer:coarse){:is(#scrub,.moments-panel .moment-card-seek,#tlZoom)::-webkit-slider-thumb{width:16px;height:16px}:is(#scrub,.moments-panel .moment-card-seek,#tlZoom)::-moz-range-thumb{width:16px;height:16px}}

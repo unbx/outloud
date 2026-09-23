@@ -376,7 +376,7 @@ export function initMoments(app) {
       if (control.dataset.action !== action) { control.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">' + icons[action] + '</svg>'; control.dataset.action = action; }
     });
     root.querySelectorAll('.moment-card-clock').forEach(n => { n.querySelector('.clock-current').textContent = timeLabel(t-a); n.querySelector('.clock-total').textContent = timeLabel(b-a); });
-    root.querySelectorAll('.moment-card-seek').forEach(n => { n.value = b > a ? (t-a)/(b-a)*1000 : 0; n.disabled = !item || generating; n.setAttribute('aria-valuetext', `${timeLabel(t-a)} of ${timeLabel(b-a)}`); });
+    root.querySelectorAll('.moment-card-seek').forEach(n => { n.value = b > a ? (t-a)/(b-a)*1000 : 0; n.style.setProperty('--played', `${n.value / 10}%`); n.disabled = !item || generating; n.setAttribute('aria-valuetext', `${timeLabel(t-a)} of ${timeLabel(b-a)}`); });
     root.querySelectorAll('.moment-card-preview-note').forEach(n => n.textContent = samplePreview ? (searchPreview ? 'Search preview · not added to moments' : 'Speaker sample') : $('momentContext').checked ? 'Preview includes surrounding audio' : 'Listen to this moment');
     root.querySelectorAll('[data-transport],[data-mark]').forEach(control => { control.disabled = !item || generating; });
     $('momentPlaybackTime').querySelector('.clock-current').textContent = timeLabel(t-a);

@@ -303,6 +303,7 @@ export function createTimeline(root, events) {
     const maxZoom = Math.max(1,duration/Math.min(2,duration || 2));
     const zoom = duration / Math.max(.001,view[1]-view[0]);
     $('#tlZoom').value = maxZoom > 1 ? 100*Math.log(Math.max(1,zoom))/Math.log(maxZoom) : 0;
+    $('#tlZoom').style.setProperty('--played', `${$('#tlZoom').value}%`); // the bar fills to the zoom level
     $('#tlZoom').disabled = maxZoom <= 1;
     $('#tlZoom').setAttribute('aria-valuetext', `${zoom.toFixed(1)} times magnification`);
     $('#tlZoomValue').textContent = `${Math.max(1,zoom).toFixed(1)}×`;
