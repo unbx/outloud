@@ -880,3 +880,8 @@ body #playbar #playBtn .ic svg{width:29px;height:29px;fill:currentColor;stroke:n
 #stage.bg-moving{cursor:move}
 #themes .indiglo-theme-swatch{display:inline-flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 50%,#0C4631,#021109 75%)!important}
 #themes .indiglo-theme-swatch span{font:12px var(--digital);color:#62F2BE;text-shadow:0 0 5px #1FE39E;letter-spacing:.04em}
+
+/* Move is for touch screens only: there a finger drag scrolls the page unless Move is on.
+   A mouse or trackpad can always drag the preview, so desktop hides it and says so. */
+.bg-hint-fine{display:none}
+@media (hover:hover) and (pointer:fine){#bgFrameSeg [data-bgframe="move"]{display:none}.bg-hint-touch{display:none}.bg-hint-fine{display:inline}}
