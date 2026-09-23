@@ -623,3 +623,141 @@ body .modal-close{position:absolute;top:16px;right:16px;display:grid;place-items
 @media(max-width:700px){.workspace-timeline .shortcut-help dl{grid-template-columns:1fr}}
 /* No keyboard on a touch-only phone, so no shortcut link to follow. */
 @media(hover:none) and (pointer:coarse){.workspace-timeline .shortcut-link{display:none}}
+
+/* IN / OUT: the same size as every transport key, in their own colour family. RAL 7040 Window Grey
+   marks them as the edit keys: light keys move the playhead, the yellow key plays, the grey keys set
+   the selection. The bracket takes the legend ink, since yellow would be low-contrast on grey. */
+body :is(.workspace-timeline .transport-mark){--tactile-top:#AFB3BA;--tactile-bottom:#9DA1AA;--tactile-edge:#747881;--tactile-base:#63676F;--tactile-ink:#1E2124;--tactile-highlight:#E3E6EBB3}
+.workspace-timeline .transport-mark{width:50px;color:var(--tactile-ink)}
+.workspace-timeline .transport-mark svg{stroke:currentColor}
+
+/* One grid for all four readout cells: caption on the first line, digits on the second, the unit
+   tucked into each selection cell's bottom-right corner. Every caption and every number sits on
+   the same line across both windows. */
+.workspace-timeline .transport-display,.workspace-timeline .waveform-trim-fields label,.workspace-timeline .waveform-trim-fields #tlSelectedLength{justify-content:flex-start;gap:5px;padding:9px 14px 14px;position:relative}
+.workspace-timeline .playback-clock{gap:5px}
+.workspace-timeline .clock-head,.workspace-timeline .waveform-trim-fields .trim-field-title{height:12px;line-height:12px}
+.workspace-timeline .clock-head .display-caption{line-height:12px}
+.workspace-timeline #momentPlaybackTime{display:block;padding:0 0 2px;border-bottom:1px solid transparent}
+.workspace-timeline .trim-unit{position:absolute;right:14px;bottom:3px;font:500 9px/1 var(--font);letter-spacing:.1em;text-transform:uppercase;color:#6F848B;pointer-events:none}
+.workspace-timeline #tlSelectedLength .trim-unit{color:#9C6440}
+.workspace-timeline .source-meter{position:absolute;left:14px;right:14px;bottom:5px}
+@media(max-width:560px){
+  .workspace-timeline .transport-mark{flex:0 1 44px;min-width:34px;width:auto}
+  .workspace-timeline .transport-display,.workspace-timeline .waveform-trim-fields label,.workspace-timeline .waveform-trim-fields #tlSelectedLength{padding:7px 6px 12px;gap:4px}
+  .workspace-timeline .playback-clock{gap:4px}
+  .workspace-timeline .clock-head,.workspace-timeline .waveform-trim-fields .trim-field-title{height:10px;line-height:10px}
+  .workspace-timeline .trim-unit{display:block;right:6px;bottom:2px;font-size:8px}
+  .workspace-timeline .source-meter{left:6px;right:6px;bottom:4px}
+}
+.workspace-timeline .waveform-trim-fields{align-items:stretch;align-content:stretch}
+/* Exact metrics, so captions, digits and units line up to the pixel at every width. */
+.workspace-timeline .trim-unit{height:9px;line-height:9px}
+@media(max-width:560px){
+  .workspace-timeline .clock-head .display-caption{line-height:10px}
+  .workspace-timeline .waveform-trim-fields #tlSelectedLength .trim-field-title{font-size:8px;letter-spacing:.06em}
+  .workspace-timeline .trim-unit{height:8px;line-height:8px}
+}
+@media(max-width:370px){.workspace-timeline .waveform-trim-fields #tlSelectedLength .trim-field-title{letter-spacing:0}}
+
+/* Four matching readout cells. Every cell has the same caption, the same digit size and the same
+   dotted rule on the same line; the unit sits small just above the rule at the right, with room
+   reserved so a long value never runs into it. Playback no longer shows the selection length after
+   its clock: that is the Duration cell's value, and it was the one place with mixed sizes. */
+.workspace-timeline #momentPlaybackTime .clock-divider,.workspace-timeline #momentPlaybackTime .clock-total{display:none}
+.workspace-timeline .transport-display,.workspace-timeline .waveform-trim-fields label,.workspace-timeline .waveform-trim-fields #tlSelectedLength{padding:9px 14px 10px}
+.workspace-timeline #momentPlaybackTime,.workspace-timeline .waveform-trim-fields input,.workspace-timeline .waveform-trim-fields #waveformDuration{font:24px/1.05 var(--digital);letter-spacing:.02em;padding:0 0 2px;border:0;border-bottom:1px dotted #465459;border-radius:0}
+.workspace-timeline .waveform-trim-fields input,.workspace-timeline .waveform-trim-fields #waveformDuration{padding-right:14px}
+.workspace-timeline .waveform-trim-fields #waveformDuration{border-bottom-color:#6B4128}
+.workspace-timeline .trim-unit{right:14px;bottom:13px;font:500 9px/9px var(--font);height:9px;letter-spacing:.08em}
+.workspace-timeline .source-meter{bottom:2px}
+@media(max-width:560px){
+  /* Shares match the widest value each cell holds, with the unit's room: start and end 6012.4,
+     playback 1:29.9, duration 89.9. Digits ease down so the worst case fits at 360 px. */
+  .workspace-timeline .moment-transport{grid-template-columns:minmax(0,62fr) minmax(0,213fr)}
+  .workspace-timeline .waveform-trim-fields{grid-template-columns:minmax(0,79fr) minmax(0,79fr) minmax(0,55fr)}
+  .workspace-timeline .transport-display,.workspace-timeline .waveform-trim-fields label,.workspace-timeline .waveform-trim-fields #tlSelectedLength{padding:7px 6px 8px}
+  .workspace-timeline #momentPlaybackTime,.workspace-timeline .waveform-trim-fields input,.workspace-timeline .waveform-trim-fields #waveformDuration{font-size:clamp(13px,3.9vw,18px)}
+  .workspace-timeline .waveform-trim-fields input,.workspace-timeline .waveform-trim-fields #waveformDuration{padding-right:8px}
+  .workspace-timeline .trim-unit{right:6px;bottom:11px;font-size:8px;line-height:8px;height:8px}
+  .workspace-timeline .source-meter{bottom:1px}
+}
+.workspace-timeline #momentPlaybackTime,.workspace-timeline .waveform-trim-fields input,.workspace-timeline .waveform-trim-fields #waveformDuration{box-sizing:border-box;height:calc(1.05em + 3px);min-height:0}
+
+/* Duration readouts: segment digits with small unit letters (25.3s, 1m 25s). The field underneath
+   holds plain seconds; it stays focusable while hidden and takes over when tapped or tabbed to. */
+.readout-field{position:relative;display:block;min-width:0}
+.readout-field:not(:focus-within) input{position:absolute;inset:0;opacity:0}
+.readout-field:focus-within .readout-face{display:none}
+.readout-face{display:flex;align-items:baseline;white-space:nowrap;overflow:hidden;box-sizing:border-box;cursor:text}
+.readout-face b{font-weight:400}
+.readout-face i{font:500 9px/1 var(--font);font-style:normal;letter-spacing:.04em;margin:0 5px 0 2px;opacity:.85}
+.readout-face i:last-child{margin-right:0}
+/* In the strip it matches the other three cells: size, colour, dotted rule, height. */
+.workspace-timeline .readout-face{font:24px/1.05 var(--digital);letter-spacing:.02em;color:#FF8B42;text-shadow:0 0 6px #FF8B4230;padding:0 0 2px;border-bottom:1px dotted #6B4128;height:calc(1.05em + 3px)}
+/* In the moment card it matches that card's fields. */
+.moments-panel .moment-card-readouts .readout-face{min-height:48px;padding:7px 0;border-bottom:1px solid #805231;font:26px/1.4 var(--digital);letter-spacing:.02em;color:#FF8B42}
+.moments-panel .moment-card-readouts .readout-face i{font-size:10px}
+.workspace-timeline .waveform-trim-fields input{padding-right:0}
+@media(max-width:560px){
+  .workspace-timeline .readout-face{font-size:clamp(13px,3.9vw,18px)}
+  .workspace-timeline .readout-face i{font-size:8px;margin:0 3px 0 1px}
+}
+@media(max-width:700px){.moments-panel .moment-card-readouts .readout-face{font-size:21px}}
+
+/* Meter window, after the small portrait display on TE's K.O. Sidekick: the status light on top,
+   then left and right output ladders. Segments sit dim until lit; the colour runs orange to red
+   along the ladder's full height, and the lit part is revealed from the bottom, so red only ever
+   shows at the peaks. */
+.workspace-timeline .moment-transport{grid-template-columns:minmax(0,1.15fr) auto minmax(0,3fr)}
+.workspace-timeline .meter-window{display:grid;grid-template-rows:auto minmax(0,1fr) auto;justify-items:center;gap:5px;min-width:0;padding:8px 9px 6px;background:#0C0E0F;border:1px solid #3A4347;border-radius:6px;box-shadow:inset 0 1px 3px #000C,inset 0 0 0 1px #0008,0 1px 0 #FFFFFF14}
+.workspace-timeline .meter-window .transport-state{display:flex;flex-direction:column;align-items:center;gap:4px;font:500 7px/1 var(--font);letter-spacing:.1em;color:#8DA2A9;white-space:nowrap}
+.workspace-timeline .meter-window .transport-state::before{margin:0;width:6px;height:6px;vertical-align:0}
+.workspace-timeline .led-meters{display:flex;gap:3px;align-items:stretch;min-height:18px}
+.workspace-timeline .led-bar{position:relative;width:6px;background:repeating-linear-gradient(to top,#2B1A11 0 2px,transparent 2px 3px)}
+.workspace-timeline .led-bar::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,#FF5A14 0%,#FF6A1A 62%,#FF3B1F 80%,#FF1E28 100%);-webkit-mask:repeating-linear-gradient(to top,#000 0 2px,transparent 2px 3px);mask:repeating-linear-gradient(to top,#000 0 2px,transparent 2px 3px);clip-path:inset(calc(100% - var(--level,0%)) 0 0 0);transition:clip-path 70ms linear;filter:drop-shadow(0 0 2px #FF5A1455)}
+.workspace-timeline .led-labels{display:flex;gap:3px;font:500 7px/1 var(--font);color:#6F848B}
+.workspace-timeline .led-labels span{width:6px;text-align:center}
+/* The old hairline meters stay for screen readers only; playback carries no editing rule. */
+.workspace-timeline .source-meter{position:absolute!important;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.workspace-timeline #momentPlaybackTime{border-bottom-color:transparent;text-align:left}
+.workspace-timeline .playback-clock{align-items:flex-start;text-align:left}
+@media(max-width:560px){
+  .workspace-timeline .moment-transport{grid-template-columns:minmax(0,62fr) auto minmax(0,213fr)}
+  .workspace-timeline .meter-window{padding:7px 5px 5px;gap:4px}
+  .workspace-timeline .meter-window .transport-state{font-size:0;gap:0;letter-spacing:0}
+  .workspace-timeline .led-meters,.workspace-timeline .led-labels{gap:2px}
+  .workspace-timeline .led-bar,.workspace-timeline .led-labels span{width:5px}
+  .workspace-timeline .led-labels{font-size:6px}
+}
+@media(prefers-reduced-motion:reduce){.workspace-timeline .led-bar::after{transition:none}}
+/* Timecode is wider than seconds: start and end hold up to 101:42.3, duration up to 1m 30s,
+   playback 1:29.9. Column shares follow those widths, and the duration readout is pinned to the
+   same metrics as its neighbours. */
+.workspace-timeline .moment-transport{grid-template-columns:minmax(0,118fr) auto minmax(0,374fr)}
+.workspace-timeline .waveform-trim-fields{grid-template-columns:minmax(0,133fr) minmax(0,133fr) minmax(0,108fr)}
+.workspace-timeline .waveform-trim-fields .readout-face{font:24px/1.05 var(--digital);letter-spacing:.02em;color:#FF8B42;padding:0 0 2px;border-bottom:1px dotted #6B4128;box-sizing:border-box;height:calc(1.05em + 3px)}
+.workspace-timeline .waveform-trim-fields .readout-face i{font:500 9px/1 var(--font);letter-spacing:.04em;color:#FF8B42}
+@media(max-width:560px){
+  .workspace-timeline .moment-transport{grid-template-columns:minmax(0,118fr) auto minmax(0,374fr)}
+  .workspace-timeline .waveform-trim-fields .readout-face{font-size:clamp(12px,3.6vw,18px)}
+  .workspace-timeline #momentPlaybackTime,.workspace-timeline .waveform-trim-fields input{font-size:clamp(12px,3.6vw,18px)}
+  .workspace-timeline .waveform-trim-fields .readout-face i{font-size:8px;margin:0 3px 0 1px}
+}
+/* An older "#tlSelectedLength span" rule outranks class selectors, so the readout is addressed by id. */
+#tlSelectedLength .readout-face{font:24px/1.05 var(--digital);letter-spacing:.02em;color:#FF8B42;text-shadow:0 0 6px #FF8B4230;padding:0 0 2px;border-bottom:1px dotted #6B4128;box-sizing:border-box;height:calc(1.05em + 3px)}
+#tlSelectedLength .readout-face b{font:inherit}
+#tlSelectedLength .readout-face i{font:500 9px/1 var(--font);letter-spacing:.04em;color:#FF8B42;margin:0 5px 0 2px}
+#tlSelectedLength .readout-face i:last-child{margin-right:0}
+@media(max-width:560px){#tlSelectedLength .readout-face{font-size:clamp(12px,3.6vw,18px)}#tlSelectedLength .readout-face i{font-size:8px;margin:0 3px 0 1px}}
+/* Apply the shared fit factor (1 unless a long value needs room) to all four readouts. */
+.workspace-timeline #momentPlaybackTime,.workspace-timeline .waveform-trim-fields input,#tlSelectedLength .readout-face{font-size:calc(24px * var(--digit-fit,1))}
+@media(max-width:560px){.workspace-timeline #momentPlaybackTime,.workspace-timeline .waveform-trim-fields input,#tlSelectedLength .readout-face{font-size:calc(clamp(12px,3.6vw,18px) * var(--digit-fit,1))}}
+/* Playback hugs the left of its window, like the other readouts. */
+.workspace-timeline .transport-display{align-items:stretch;text-align:left}
+.workspace-timeline .playback-clock{width:100%}
+/* One-line status (● READY) leaves the ladders most of the window's height. */
+.workspace-timeline .meter-window .transport-state{flex-direction:row;gap:4px}
+.workspace-timeline .led-meters{min-height:22px}
+/* Unit letters stay lowercase wherever they appear (1m 23s), whatever the label's case. */
+.readout-face i{text-transform:none}

@@ -115,3 +115,31 @@ test('long search passages stay within the clip limit and include the matching w
   assert.ok(result.start <= 110 && result.end >= 111);
   assert.ok(result.start >= 0 && result.end <= 131);
 });
+
+test('start and end fields read timecode or plain seconds', async () => {
+  const { parseTimecode } = await import('../moments-core.mjs');
+  assert.equal(parseTimecode('1:23.4'), 83.4);
+  assert.equal(parseTimecode('0:07.5'), 7.5);
+  assert.equal(parseTimecode('100:12.4'), 6012.4);
+  assert.equal(parseTimecode('1:40:12.4'), 6012.4);
+  assert.equal(parseTimecode('83.4'), 83.4);
+  assert.equal(parseTimecode(' 12 '), 12);
+  assert.equal(parseTimecode('1:05,5'), 65.5);
+  for (const bad of ['', '1:75', '1:60:00', 'abc', '1::2', '-3', '1:2:3:4', '1.2.3']) assert.ok(Number.isNaN(parseTimecode(bad)), bad);
+});
+
+test('durations read as seconds, then minutes, then hours, and parse back', async () => {
+  const { durationParts, parseDuration } = await import('../moments-core.mjs');
+  assert.deepEqual(durationParts(25.34), [['25.3', 's']]);
+  assert.deepEqual(durationParts(59.9), [['59.9', 's']]);
+  assert.deepEqual(durationParts(59.96), [['1', 'm'], ['00', 's']]);
+  assert.deepEqual(durationParts(85.3), [['1', 'm'], ['25', 's']]);
+  assert.deepEqual(durationParts(6012.4), [['1', 'h'], ['40', 'm'], ['12', 's']]);
+  assert.equal(parseDuration('85.3'), 85.3);
+  assert.equal(parseDuration('1:25'), 85);
+  assert.equal(parseDuration('1m 25s'), 85);
+  assert.equal(parseDuration('1m25'), 85);
+  assert.equal(parseDuration('90s'), 90);
+  assert.equal(parseDuration('1h 2m'), 3720);
+  for (const bad of ['', 'm', '1x', 'ms', '1m 2m']) assert.ok(Number.isNaN(parseDuration(bad)), bad);
+});

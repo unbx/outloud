@@ -1,5 +1,5 @@
-import { createTimeline, MOMENT_COLORS, timeLabel, rangeForDuration } from './timeline.mjs';
-import { LIMITS, normalizeWords, segmentsFromWords, clipWords, validRange, transcriptPassages, labeledSpeakersForRange } from './moments-core.mjs';
+import { createTimeline, MOMENT_COLORS, timeLabel, rangeForDuration, renderDurationFace } from './timeline.mjs';
+import { LIMITS, normalizeWords, segmentsFromWords, clipWords, validRange, transcriptPassages, labeledSpeakersForRange, parseTimecode, parseDuration } from './moments-core.mjs';
 
 export function initMoments(app) {
   const $ = id => document.getElementById(id);
@@ -46,7 +46,7 @@ export function initMoments(app) {
     const item = choices.find(m => m.id === selectedId);
     const full = usesFullRecording(item);
     if (!file || (!full && !item) || busy || app.busy()) return;
-    const [a, b] = full ? [0, duration] : withinRecording(Number(item.startInput.value), Number(item.endInput.value)), run = epoch;
+    const [a, b] = full ? [0, duration] : withinRecording(parseTimecode(item.startInput.value), parseTimecode(item.endInput.value)), run = epoch;
     const title = full ? file.name : item.title;
     if (!validRange(a, b, duration) || (!full && b - a > 90)) { const why = 'Choose a valid selection of up to 90 seconds.'; say(why, true); setHandoffStatus(why, 'error'); return; }
     const cached = !full && complete && sourceLanguage === app.sourceLanguage();
@@ -80,7 +80,7 @@ export function initMoments(app) {
     change: (start, end) => {
       const item = choices.find(m => m.id === selectedId);
       if (!item) return;
-      item.startInput.value = start.toFixed(1); item.endInput.value = end.toFixed(1); item.refresh(true);
+      item.startInput.value = timeLabel(start); item.endInput.value = timeLabel(end); item.refresh(true);
     },
     seek: time => { stop(); samplePreview = false; const [a,b] = playbackBounds(); player.currentTime = Math.max(a, Math.min(b,time)); timeline.playhead(player.currentTime); syncPlayback(); }
   });
@@ -97,8 +97,8 @@ export function initMoments(app) {
   function fitChoicesToRecording() {
     choices.forEach(item => {
       if (!(item.end > duration + 0.001)) return;
-      if (Number(item.startInput.value) >= duration) item.startInput.value = '0.0';
-      item.endInput.value = duration.toFixed(1); item.refresh();
+      if (parseTimecode(item.startInput.value) >= duration) item.startInput.value = timeLabel(0);
+      item.endInput.value = timeLabel(duration); item.refresh();
     });
   }
   function seedSelection() {
@@ -437,7 +437,7 @@ export function initMoments(app) {
     let a = item.start, b = item.end;
     if (edge === 'in') { a = t; if (b - a < 0.3) b = Math.min(duration, a + keep); }
     else { b = t; if (b - a < 0.3) a = Math.max(0, b - keep); }
-    item.startInput.value = a.toFixed(1); item.endInput.value = b.toFixed(1); item.refresh();
+    item.startInput.value = timeLabel(a); item.endInput.value = timeLabel(b); item.refresh();
     if (resume) { const [lo, hi] = playbackBounds(); if (t < hi) { preview(t, hi, item.article); previewStart = lo; } }
     syncPlayback();
   }
@@ -473,6 +473,7 @@ export function initMoments(app) {
     else if (k === 'End') transport('end');
     else if (k === 'ArrowLeft' || k === 'ArrowRight') transport(k === 'ArrowLeft' ? 'back' : 'forward', e.shiftKey ? 15 : 1);
     else if (k === 'ArrowUp' || k === 'ArrowDown') stepMoment(k === 'ArrowUp' ? -1 : 1);
+    else if (k === '=' || k === '+' || k === '-' || k === '_') { const z = $(k === '=' || k === '+' ? 'tlZoomIn' : 'tlZoomOut'); if (z && !z.disabled) z.click(); }
     else if (k === '?' || (k === '/' && e.shiftKey)) { if (once) toggleHelp(); }
     else if (k === 'Escape' && !help.hidden) { toggleHelp(false); e.stopPropagation(); }
     else return;
@@ -572,20 +573,27 @@ export function initMoments(app) {
     const range = el('div', null, 'moment-range moment-card-readouts');
     range.setAttribute('role','group'); range.setAttribute('aria-label','Adjust this moment');
     const start = el('input'), end = el('input');
-    for (const [node, value, name] of [[start, moment.start, 'Start (seconds)'], [end, moment.end, 'End (seconds)']]) {
-      node.type = 'number'; node.step = '0.1'; node.min = '0'; node.max = String(duration); node.value = value.toFixed(1);
-      node.setAttribute('aria-label', name); node.dataset.edit = 'true';
-      const label = el('label'); label.append(el('span', name.startsWith('Start') ? 'Start · s' : 'End · s', 'trim-field-title'), node); range.append(label);
+    // Start and end read as timecode, like the strip above; duration as 25.3 s or 1 m 25 s.
+    const asTimeField = (node, label) => { node.type = 'text'; node.inputMode = 'decimal'; node.autocomplete = 'off'; node.spellcheck = false; node.dataset.edit = 'true'; node.setAttribute('aria-label', label); };
+    for (const [node, value, name] of [[start, moment.start, 'Start'], [end, moment.end, 'End']]) {
+      asTimeField(node, `${name} time`); node.value = timeLabel(value); node.title = 'Type a time like 1:23.4, or seconds.';
+      node.addEventListener('input', () => node.setCustomValidity(''));
+      const label = el('label'); label.append(el('span', name, 'trim-field-title'), node); range.append(label);
     }
-    const length = el('input'); length.type = 'number'; length.min = String(Math.min(.3,duration)); length.max = String(duration); length.step = '0.1'; length.dataset.edit = 'true';
-    length.setAttribute('aria-label','Moment duration in seconds');
-    const lengthLabel = el('label', null, 'moment-card-duration'); lengthLabel.append(el('span','Duration · s','trim-field-title'),length); range.append(lengthLabel);
+    const length = el('input'); asTimeField(length, 'Moment duration in seconds'); length.title = 'Type seconds, 1:25 or 1m 25s.';
+    const lengthFace = el('span', null, 'readout-face'); lengthFace.setAttribute('aria-hidden', 'true');
+    const lengthField = el('span', null, 'readout-field'); lengthField.append(length, lengthFace);
+    const lengthLabel = el('label', null, 'moment-card-duration'); lengthLabel.append(el('span','Duration','trim-field-title'), lengthField); range.append(lengthLabel);
     cardPlayer.append(range);
     const refresh = (fromTimeline = false) => {
-      stop(); const [a, b] = withinRecording(Number(start.value), Number(end.value));
-      if (!start.value || !end.value || !validRange(a, b, duration)) { say('Start must be before end, within the recording.', true); return; }
+      stop(); const [a, b] = withinRecording(parseTimecode(start.value), parseTimecode(end.value));
+      if (!start.value || !end.value || !validRange(a, b, duration)) {
+        say('Start must be before end, within the recording. Type a time like 1:23.4, or seconds.', true);
+        start.value = timeLabel(item.start ?? 0); end.value = timeLabel(item.end ?? duration); return;
+      }
+      start.value = timeLabel(a); end.value = timeLabel(b);
       if (selectedId === item.id && (a !== item.start || b !== item.end)) scope.value = 'selection';
-      item.start = a; item.end = b; length.value = (b-a).toFixed(1);
+      item.start = a; item.end = b; length.value = (b-a).toFixed(1); renderDurationFace(lengthFace, b - a);
       meta.textContent = `${timeLabel(a)} – ${timeLabel(b)} · ${(b - a).toFixed(1)} seconds`;
       tabMeta.textContent = `${timeLabel(a)} — ${timeLabel(b)}`;
       textFor(a, b, quote);
@@ -596,10 +604,9 @@ export function initMoments(app) {
     start.addEventListener('change', () => refresh()); end.addEventListener('change', () => refresh());
     length.addEventListener('change', () => {
       if (busy) return;
-      if (!length.value || !length.checkValidity()) { length.reportValidity(); return; }
-      const next = rangeForDuration(item.start, length.valueAsNumber, duration);
-      if (!next) return;
-      start.value = next[0].toFixed(1); end.value = next[1].toFixed(1); refresh();
+      const next = rangeForDuration(item.start, parseDuration(length.value), duration);
+      if (!next) { say('Type a length like 25.5, 1:25 or 1m 25s.', true); length.value = (item.end - item.start).toFixed(1); return; }
+      start.value = timeLabel(next[0]); end.value = timeLabel(next[1]); refresh();
     });
     for (const field of [start,end,length]) field.addEventListener('keydown', e => { if(e.key === 'Enter') { e.preventDefault(); field.blur(); } });
     item.startInput = start; item.endInput = end; item.refresh = refresh; item.article = article; item.tab = tab;

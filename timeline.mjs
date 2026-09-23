@@ -1,4 +1,12 @@
+import { parseTimecode, parseDuration, durationParts } from './moments-core.mjs';
 export const MOMENT_COLORS = ['#DDA84B', '#91BDD9', '#91BFAE', '#D7C8A5', '#BAC5CC'];
+// A duration readout drawn beside its field: segment digits with small unit letters (25.3 s,
+// 1 m 25 s). The field itself holds plain seconds for editing and takes over while focused.
+export function renderDurationFace(face, seconds) {
+  face.replaceChildren(...durationParts(seconds).flatMap(([value, unit]) => {
+    const v = document.createElement('b'), u = document.createElement('i'); v.textContent = value; u.textContent = unit; return [v, u];
+  }));
+}
 export function timeLabel(t) {
   const tenths = Math.max(0, Math.round(t * 10));
   return `${Math.floor(tenths / 600)}:${String(Math.floor(tenths / 10) % 60).padStart(2, '0')}.${tenths % 10}`;
@@ -70,6 +78,20 @@ export function sourceLevel(data, rate, time) {
   return Math.max(-60, Math.min(0, 20 * Math.log10(Math.sqrt(sum / (end - start)) || 1e-3)));
 }
 export function createTimeline(root, events) {
+  // The four readouts share one size. When the longest value (a late timecode like 101:42.3 in a
+  // long recording) would overflow its cell, all four shrink together just enough to fit.
+  function fitReadout() {
+    const strip = root.querySelector('.moment-transport'); if (!strip) return;
+    strip.style.removeProperty('--digit-fit');
+    let fit = 1;
+    for (const sel of ['#momentPlaybackTime', '#waveformStart', '#waveformEnd', '#waveformDurationFace']) {
+      const el = root.querySelector(sel);
+      if (el && el.offsetParent && el.clientWidth && el.scrollWidth > el.clientWidth + 0.5) fit = Math.min(fit, el.clientWidth / el.scrollWidth);
+    }
+    if (fit < 1) strip.style.setProperty('--digit-fit', String(Math.floor(fit * 1000) / 1000));
+  }
+  addEventListener('resize', () => requestAnimationFrame(fitReadout));
+  document.fonts?.ready.then(fitReadout);
   let audio = null, duration = 0, moments = [], selected = null, view = [0, 0], turns = [], labels = {};
   let busy = false, playhead = 0, gesture = null;
   let trimFrame = 0, trimX = 0, trimOriginX = 0, trimMoved = false, trimStamp = 0;
@@ -102,7 +124,7 @@ export function createTimeline(root, events) {
     <div class="tl-overview" id="tlOverview"><canvas aria-label="Full recording waveform"></canvas><div class="tl-view-window" aria-hidden="true"></div><div class="tl-analysis-progress" hidden></div></div>
     <div class="tl-regions" aria-label="Recommended moments on the recording"></div>
     <div class="tl-axis tl-overview-axis"></div>
-    <div class="tl-detail-heading"><div><span class="tl-dot"></span><strong id="tlSelectedName">Selected Moment</strong></div><div class="tl-magnification"><span>Zoom</span><button type="button" id="tlZoomOut" aria-label="Zoom out">−</button><input type="range" id="tlZoom" min="0" max="100" step="1" value="0" aria-label="Waveform magnification" /><button type="button" id="tlZoomIn" aria-label="Zoom in">+</button><output id="tlZoomValue">1×</output></div></div>
+    <div class="tl-detail-heading"><div><span class="tl-dot"></span><strong id="tlSelectedName">Selected Moment</strong></div><div class="tl-magnification"><span>Zoom</span><button type="button" id="tlZoomOut" aria-label="Zoom out" title="Zoom out (−)" aria-keyshortcuts="-">−</button><input type="range" id="tlZoom" min="0" max="100" step="1" value="0" aria-label="Waveform magnification" /><button type="button" id="tlZoomIn" aria-label="Zoom in" title="Zoom in (=)" aria-keyshortcuts="=">+</button><output id="tlZoomValue">1×</output></div></div>
     <div class="tl-detail" id="tlDetail">
       <canvas aria-label="Zoomed waveform for precise trimming"></canvas>
       <div class="tl-selection" aria-hidden="true"></div>
@@ -114,11 +136,16 @@ export function createTimeline(root, events) {
     <div class="tl-speakers" aria-label="Speaker turns"></div>
     <p id="tlHint" class="tl-wave-error" role="status" hidden></p>
         <div class="moment-transport" id="momentTransport">
-          <div class="transport-display"><div class="playback-clock"><div class="clock-head"><span class="display-caption">PLAYBACK</span><span class="transport-state" id="transportState">READY</span></div><span id="momentPlaybackTime" aria-label="Playback elapsed and total time"><span class="clock-current">0:00.0</span><span class="clock-divider">/</span><span class="clock-total">0:00.0</span></span></div><div class="source-meter" title="Source level at the playback position"><span class="display-caption" id="meterCaption">SOURCE LEVEL</span><div class="meter-channel"><span id="meterLeftLabel">L</span><meter id="meterLeft" min="-60" max="0" value="-60" aria-label="Left source level in decibels"></meter></div><div class="meter-channel" id="meterRightRow"><span>R</span><meter id="meterRight" min="-60" max="0" value="-60" aria-label="Right source level in decibels"></meter></div></div></div>
+          <div class="transport-display"><div class="playback-clock"><div class="clock-head"><span class="display-caption">PLAYBACK</span></div><span id="momentPlaybackTime" aria-label="Playback elapsed and total time"><span class="clock-current">0:00.0</span><span class="clock-divider">/</span><span class="clock-total">0:00.0</span></span></div><div class="source-meter" title="Source level at the playback position"><span class="display-caption" id="meterCaption">SOURCE LEVEL</span><div class="meter-channel"><span id="meterLeftLabel">L</span><meter id="meterLeft" min="-60" max="0" value="-60" aria-label="Left source level in decibels"></meter></div><div class="meter-channel" id="meterRightRow"><span>R</span><meter id="meterRight" min="-60" max="0" value="-60" aria-label="Right source level in decibels"></meter></div></div></div>
+          <div class="meter-window" title="Output level">
+            <span class="transport-state" id="transportState">READY</span>
+            <div class="led-meters" aria-hidden="true"><span class="led-bar" data-channel="0"></span><span class="led-bar" data-channel="1"></span></div>
+            <div class="led-labels" aria-hidden="true"><span>L</span><span>R</span></div>
+          </div>
           <div class="waveform-trim-fields" role="group" aria-label="Adjust selected clip">
-            <label for="waveformStart"><span class="trim-field-title">Start<span class="trim-unit"> · s</span></span><input id="waveformStart" type="number" min="0" step="0.1" data-edit aria-label="Waveform start in seconds" /></label>
-            <label for="waveformEnd"><span class="trim-field-title">End<span class="trim-unit"> · s</span></span><input id="waveformEnd" type="number" min="0" step="0.1" data-edit aria-label="Waveform end in seconds" /></label>
-            <label id="tlSelectedLength" for="waveformDuration"><span class="trim-field-title">Duration<span class="trim-unit"> · s</span></span><input id="waveformDuration" type="number" min="0.3" step="0.1" data-edit aria-label="Selection duration in seconds" title="Change duration in seconds; keeps the start unless the recording ends" disabled /></label>
+            <label for="waveformStart"><span class="trim-field-title">Start</span><input id="waveformStart" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" data-edit aria-label="Selection start time" title="Type a time like 1:23.4, or seconds. Arrow keys nudge it." /></label>
+            <label for="waveformEnd"><span class="trim-field-title">End</span><input id="waveformEnd" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" data-edit aria-label="Selection end time" title="Type a time like 1:23.4, or seconds. Arrow keys nudge it." /></label>
+            <label id="tlSelectedLength" for="waveformDuration"><span class="trim-field-title">Duration</span><span class="readout-field"><input id="waveformDuration" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" data-edit aria-label="Selection duration in seconds" title="Type seconds, 1:25 or 1m 25s; keeps the start unless the recording ends" disabled /><span class="readout-face" id="waveformDurationFace" aria-hidden="true"></span></span></label>
           </div>
         </div>
         <div class="transport-console"><div class="transport-keys" role="group" aria-label="Playback controls">
@@ -141,6 +168,7 @@ export function createTimeline(root, events) {
             <div><dt><kbd>Shift</kbd> <kbd>←</kbd> <kbd>→</kbd></dt><dd>Back / forward 15 seconds</dd></div>
             <div><dt><kbd>Home</kbd> <kbd>End</kbd></dt><dd>Start / end of the selection</dd></div>
             <div><dt><kbd>↑</kbd> <kbd>↓</kbd></dt><dd>Previous / next moment</dd></div>
+            <div><dt><kbd>−</kbd> <kbd>=</kbd></dt><dd>Zoom out / in on the waveform</dd></div>
             <div><dt><kbd>?</kbd></dt><dd>Show or hide this card</dd></div>
           </dl>
         </div>
@@ -224,16 +252,14 @@ export function createTimeline(root, events) {
     $('.tl-selection').hidden = !valid;
     const durationField = $('#waveformDuration');
     durationField.disabled = !valid || busy;
-    durationField.min = String(Math.min(.3, duration));
-    durationField.max = String(duration);
     if (document.activeElement !== durationField) durationField.value = valid ? (selected.end - selected.start).toFixed(1) : '';
+    renderDurationFace($('#waveformDurationFace'), valid ? selected.end - selected.start : NaN);
+    queueMicrotask(fitReadout);
 
     for (const edge of ['start', 'end']) {
       const field = $(edge === 'start' ? '#waveformStart' : '#waveformEnd');
       field.disabled = !valid || busy;
-      field.value = valid ? selected[edge].toFixed(1) : '';
-      field.min = edge === 'start' ? '0' : String(selected?.start + .3 || 0);
-      field.max = edge === 'end' ? String(duration) : String(Math.max(0, (selected?.end || 0) - .3));
+      if (document.activeElement !== field) field.value = valid ? timeLabel(selected[edge]) : '';
       const handle = $(`.tl-${edge}`); handle.hidden = !valid;
       if (!valid) continue;
       const t = selected[edge]; handle.hidden = t < view[0] - .051 || t > view[1] + .051; handle.style.left = `${Math.max(0, Math.min(100, percent(t)))}%`;
@@ -275,11 +301,15 @@ export function createTimeline(root, events) {
     drawSelection(); drawRegions(); drawWaves(); events.change(selected.start, selected.end);
   }
   const durationField = $('#waveformDuration');
+  durationField.addEventListener('input', () => durationField.setCustomValidity(''));
   durationField.addEventListener('change', () => {
     if (!selected || busy) return;
-    if (durationField.value === '' || !durationField.checkValidity()) { durationField.reportValidity(); return; }
-    const range = rangeForDuration(selected.start, durationField.valueAsNumber, duration);
-    if (!range) return;
+    const seconds = parseDuration(durationField.value);
+    const range = Number.isFinite(seconds) ? rangeForDuration(selected.start, seconds, duration) : null;
+    if (!range) {
+      durationField.setCustomValidity('Type a length like 25.5, 1:25 or 1m 25s, within the recording.'); durationField.reportValidity();
+      durationField.value = (selected.end - selected.start).toFixed(1); return;
+    }
     [selected.start, selected.end] = range;
     durationField.value = (selected.end - selected.start).toFixed(1);
     if (selected.start < view[0] || selected.end > view[1]) view = fitRange(selected.start, selected.end, duration);
@@ -292,13 +322,31 @@ export function createTimeline(root, events) {
   ['start', 'end'].forEach(edge => {
     const handle = $(`.tl-${edge}`);
     const field = $(edge === 'start' ? '#waveformStart' : '#waveformEnd');
+    // Start and end read as timecode, and accept timecode or plain seconds. An unreadable entry
+    // explains itself and puts the time back; arrow keys nudge a tenth, or a second with Shift.
+    const setEdge = t => {
+      change(edge, t);
+      if (selected.start < view[0] || selected.end > view[1]) { view = fitRange(selected.start, selected.end, duration); render(); }
+    };
+    field.addEventListener('input', () => field.setCustomValidity(''));
     field.addEventListener('change', () => {
       if (!selected || busy) return;
-      if (field.value === '' || !field.checkValidity()) { field.reportValidity(); return; }
-      change(edge, Number(field.value));
-      if (selected.start < view[0] || selected.end > view[1]) { view = fitRange(selected.start, selected.end, duration); render(); }
+      const t = parseTimecode(field.value);
+      if (!Number.isFinite(t)) {
+        field.setCustomValidity('Type a time like 1:23.4, or a number of seconds.'); field.reportValidity();
+        field.value = timeLabel(selected[edge]); return;
+      }
+      setEdge(t); field.value = timeLabel(selected[edge]);
     });
-    field.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); field.blur(); } });
+    field.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); field.blur(); return; }
+      if (e.key === 'Escape') { e.preventDefault(); field.setCustomValidity(''); if (selected) field.value = timeLabel(selected[edge]); field.blur(); return; }
+      if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && selected && !busy) {
+        e.preventDefault();
+        setEdge(selected[edge] + (e.key === 'ArrowUp' ? 1 : -1) * (e.shiftKey ? 1 : 0.1));
+        field.value = timeLabel(selected[edge]);
+      }
+    });
     handle.addEventListener('pointerdown', e => {
       if (busy || !selected) return;
       if (e.button !== 0 || e.isPrimary === false) return;
@@ -357,6 +405,8 @@ export function createTimeline(root, events) {
         const db = active && available && (i === 0 || stereo) ? sourceLevel(audio.getChannelData(i),audio.sampleRate,time) : -60;
         $(id).value = db; $(id).style.setProperty('--level', `${(db+60)/60*100}%`);
       }
+      const left = Number($('#meterLeft').value), right = stereo ? Number($('#meterRight').value) : left;
+      root.querySelectorAll('.led-bar').forEach(bar => bar.style.setProperty('--level', `${((bar.dataset.channel === '1' ? right : left) + 60) / 60 * 100}%`));
     },
     source(buffer, seconds) { endTrimGesture(); audio = buffer; duration = seconds || 0; view = [0, duration]; render(); this.levels(0, false); },
     moments(items) { moments = items; render(); },
