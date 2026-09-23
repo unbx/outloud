@@ -885,3 +885,9 @@ body #playbar #playBtn .ic svg{width:29px;height:29px;fill:currentColor;stroke:n
    A mouse or trackpad can always drag the preview, so desktop hides it and says so. */
 .bg-hint-fine{display:none}
 @media (hover:hover) and (pointer:fine){#bgFrameSeg [data-bgframe="move"]{display:none}.bg-hint-touch{display:none}.bg-hint-fine{display:inline}}
+
+/* Splash: the share card as the first thing a new visitor sees (2026-09-23) */
+#splash .splash-og{display:block;width:100%;height:auto;aspect-ratio:1200/630;margin:0 0 18px;border:1px solid #99948E;border-radius:5px;box-shadow:0 2px 0 #AAA59E,0 8px 22px #24242418;background:#ECE9E4}
+
+/* OUTLOUD default swatch spans exactly two squares: 34 + 10 gap + 34 (2026-09-23) */
+#themes .studio-theme-swatch{width:78px;min-width:78px;flex:none}
