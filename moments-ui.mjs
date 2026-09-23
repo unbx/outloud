@@ -25,6 +25,10 @@ export function initMoments(app) {
   let workLabel = '', workStarted = 0, workTimer = 0;
   const setHandoffStatus = (text, tone = '') => { const n = $('handoffStatus'); n.textContent = text; n.dataset.tone = tone; };
   const elapsed = () => { const t = Math.floor((Date.now() - workStarted) / 1000); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; };
+  // Boundary fields show tenths of a second, so an end at the very end of a 7.48 s recording reads
+  // "7.5". Reading a field back allows for that rounding (at most 0.05 s) rather than calling the
+  // recording's own end out of range. A value genuinely outside the recording is still refused.
+  const withinRecording = (a, b) => [a < 0 && a > -0.051 ? 0 : a, b > duration && b - duration < 0.051 ? duration : b];
   function handoff() {
     const item = choices.find(m => m.id === selectedId);
     const full = usesFullRecording(item);
@@ -42,7 +46,7 @@ export function initMoments(app) {
     const item = choices.find(m => m.id === selectedId);
     const full = usesFullRecording(item);
     if (!file || (!full && !item) || busy || app.busy()) return;
-    const a = full ? 0 : Number(item.startInput.value), b = full ? duration : Number(item.endInput.value), run = epoch;
+    const [a, b] = full ? [0, duration] : withinRecording(Number(item.startInput.value), Number(item.endInput.value)), run = epoch;
     const title = full ? file.name : item.title;
     if (!validRange(a, b, duration) || (!full && b - a > 90)) { const why = 'Choose a valid selection of up to 90 seconds.'; say(why, true); setHandoffStatus(why, 'error'); return; }
     const cached = !full && complete && sourceLanguage === app.sourceLanguage();
@@ -88,6 +92,15 @@ export function initMoments(app) {
     const item = choices.find(m => m.id === id); if (item) { timeline.select(item, fit); if ($('momentContext').checked) timeline.window(...playbackBounds()); samplePreview = false; player.currentTime = playbackBounds()[0]; } syncPlayback(); handoff();
   }
   function clearChoices() { choices = []; selectedId = null; list.replaceChildren(); detail.replaceChildren(); timeline.moments([]); timeline.select(null); }
+  // The decoded length can be a little shorter than the first estimate (a voice note's
+  // recorder-measured time includes its start-up), so boundaries past it come back to the end.
+  function fitChoicesToRecording() {
+    choices.forEach(item => {
+      if (!(item.end > duration + 0.001)) return;
+      if (Number(item.startInput.value) >= duration) item.startInput.value = '0.0';
+      item.endInput.value = duration.toFixed(1); item.refresh();
+    });
+  }
   function seedSelection() {
     if (choices.length || !duration) return;
     const trim = app.getTrim();
@@ -174,7 +187,7 @@ export function initMoments(app) {
     finally { await ctx.close(); }
     check(run);
     if (buffer.duration > LIMITS.seconds) throw new Error('This recording is longer than 2 hours. Upload a shorter excerpt.');
-    decoded = buffer; duration = buffer.duration; timeline.source(decoded, duration); seedSelection(); return buffer;
+    decoded = buffer; duration = buffer.duration; timeline.source(decoded, duration); seedSelection(); fitChoicesToRecording(); return buffer;
   }
   async function slice(start, end, opus = false, rate = 24000) {
     if (!decoded || !validRange(start, end, decoded.duration)) throw new Error('Choose a valid start and end within the recording.');
@@ -512,7 +525,7 @@ export function initMoments(app) {
     const lengthLabel = el('label', null, 'moment-card-duration'); lengthLabel.append(el('span','Duration · s','trim-field-title'),length); range.append(lengthLabel);
     cardPlayer.append(range);
     const refresh = (fromTimeline = false) => {
-      stop(); const a = Number(start.value), b = Number(end.value);
+      stop(); const [a, b] = withinRecording(Number(start.value), Number(end.value));
       if (!start.value || !end.value || !validRange(a, b, duration)) { say('Start must be before end, within the recording.', true); return; }
       if (selectedId === item.id && (a !== item.start || b !== item.end)) scope.value = 'selection';
       item.start = a; item.end = b; length.value = (b-a).toFixed(1);
