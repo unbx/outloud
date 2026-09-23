@@ -1,10 +1,35 @@
 import { parseTimecode, parseDuration, durationParts } from './moments-core.mjs';
 export const MOMENT_COLORS = ['#DDA84B', '#91BDD9', '#91BFAE', '#D7C8A5', '#BAC5CC'];
+// Segment ghosting: a lit readout shows its unlit segments faintly behind it, an 8 under every
+// digit, like the LCD on a hardware device. Text readouts carry data-seg="text" and follow their text
+// through one observer; editable fields get a ghost layer that follows every value, typed or set.
+export const ghostOf = text => String(text ?? '').replace(/[0-9]/g, '8');
+export function segField(input) {
+  if (!input || input.dataset.seg) return;
+  const inputValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+  input.dataset.seg = 'field';
+  const ghost = document.createElement('span'); ghost.className = 'seg-ghost'; ghost.setAttribute('aria-hidden', 'true');
+  input.before(ghost);
+  const sync = () => { ghost.textContent = ghostOf(inputValue.get.call(input)); };
+  Object.defineProperty(input, 'value', { configurable: true, get() { return inputValue.get.call(this); }, set(v) { inputValue.set.call(this, v); sync(); } });
+  input.addEventListener('input', sync); sync();
+}
+export function segText(scope) {
+  const update = el => { el.dataset.ghost = ghostOf(el.textContent); };
+  scope.querySelectorAll('[data-seg=text]').forEach(update);
+  new MutationObserver(records => {
+    for (const r of records) {
+      const host = (r.target.nodeType === 3 ? r.target.parentElement : r.target);
+      const seg = host?.closest?.('[data-seg=text]'); if (seg) update(seg);
+      r.addedNodes.forEach(n => { if (n.nodeType !== 1) return; if (n.matches('[data-seg=text]')) update(n); n.querySelectorAll?.('[data-seg=text]').forEach(update); });
+    }
+  }).observe(scope, { subtree: true, childList: true, characterData: true });
+}
 // A duration readout drawn beside its field: segment digits with small unit letters (25.3 s,
 // 1 m 25 s). The field itself holds plain seconds for editing and takes over while focused.
 export function renderDurationFace(face, seconds) {
   face.replaceChildren(...durationParts(seconds).flatMap(([value, unit]) => {
-    const v = document.createElement('b'), u = document.createElement('i'); v.textContent = value; u.textContent = unit; return [v, u];
+    const v = document.createElement('b'), u = document.createElement('i'); v.textContent = value; v.dataset.ghost = ghostOf(value); u.textContent = unit; return [v, u];
   }));
 }
 export function timeLabel(t) {
@@ -120,7 +145,7 @@ export function createTimeline(root, events) {
     trimFrame = requestAnimationFrame(autoExpandTrim);
   }
   root.innerHTML = `
-    <div class="tl-heading"><span>RECORDING OVERVIEW</span><span id="tlDuration">—</span></div>
+    <div class="tl-heading"><span>RECORDING OVERVIEW</span><span id="tlDuration" data-seg="text">—</span></div>
     <div class="tl-overview" id="tlOverview"><canvas aria-label="Full recording waveform"></canvas><div class="tl-view-window" aria-hidden="true"></div><div class="tl-analysis-progress" hidden></div></div>
     <div class="tl-regions" aria-label="Recommended moments on the recording"></div>
     <div class="tl-axis tl-overview-axis"></div>
@@ -136,7 +161,7 @@ export function createTimeline(root, events) {
     <div class="tl-speakers" aria-label="Speaker turns"></div>
     <p id="tlHint" class="tl-wave-error" role="status" hidden></p>
         <div class="moment-transport" id="momentTransport">
-          <div class="transport-display"><div class="playback-clock"><div class="clock-head"><span class="display-caption">PLAYBACK</span></div><span id="momentPlaybackTime" aria-label="Playback elapsed and total time"><span class="clock-current">0:00.0</span><span class="clock-divider">/</span><span class="clock-total">0:00.0</span></span></div><div class="source-meter" title="Source level at the playback position"><span class="display-caption" id="meterCaption">SOURCE LEVEL</span><div class="meter-channel"><span id="meterLeftLabel">L</span><meter id="meterLeft" min="-60" max="0" value="-60" aria-label="Left source level in decibels"></meter></div><div class="meter-channel" id="meterRightRow"><span>R</span><meter id="meterRight" min="-60" max="0" value="-60" aria-label="Right source level in decibels"></meter></div></div></div>
+          <div class="transport-display"><div class="playback-clock"><div class="clock-head"><span class="display-caption">PLAYBACK</span></div><span id="momentPlaybackTime" aria-label="Playback elapsed and total time"><span class="clock-current" data-seg="text">0:00.0</span><span class="clock-divider">/</span><span class="clock-total">0:00.0</span></span></div><div class="source-meter" title="Source level at the playback position"><span class="display-caption" id="meterCaption">SOURCE LEVEL</span><div class="meter-channel"><span id="meterLeftLabel">L</span><meter id="meterLeft" min="-60" max="0" value="-60" aria-label="Left source level in decibels"></meter></div><div class="meter-channel" id="meterRightRow"><span>R</span><meter id="meterRight" min="-60" max="0" value="-60" aria-label="Right source level in decibels"></meter></div></div></div>
           <div class="meter-window" title="Output level">
             <span class="transport-state" id="transportState">READY</span>
             <div class="led-meters" aria-hidden="true"><span class="led-bar" data-channel="0"></span><span class="led-bar" data-channel="1"></span></div>
@@ -278,6 +303,7 @@ export function createTimeline(root, events) {
     const maxZoom = Math.max(1,duration/Math.min(2,duration || 2));
     const zoom = duration / Math.max(.001,view[1]-view[0]);
     $('#tlZoom').value = maxZoom > 1 ? 100*Math.log(Math.max(1,zoom))/Math.log(maxZoom) : 0;
+    $('#tlZoom').style.setProperty('--played', `${$('#tlZoom').value}%`); // the bar fills to the zoom level
     $('#tlZoom').disabled = maxZoom <= 1;
     $('#tlZoom').setAttribute('aria-valuetext', `${zoom.toFixed(1)} times magnification`);
     $('#tlZoomValue').textContent = `${Math.max(1,zoom).toFixed(1)}×`;
@@ -322,6 +348,7 @@ export function createTimeline(root, events) {
   ['start', 'end'].forEach(edge => {
     const handle = $(`.tl-${edge}`);
     const field = $(edge === 'start' ? '#waveformStart' : '#waveformEnd');
+    segField(field);
     // Start and end read as timecode, and accept timecode or plain seconds. An unreadable entry
     // explains itself and puts the time back; arrow keys nudge a tenth, or a second with Shift.
     const setEdge = t => {

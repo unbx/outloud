@@ -916,10 +916,9 @@
           <div class="analysis-main">
             <button type="button" class="moment-button moment-primary" id="findMoments" aria-pressed="false">ANALYZE</button>
             <div class="analysis-readout"><span class="workspace-analysis-label" id="workspaceAnalysisLabel" role="status">Not analyzed</span><span class="analysis-help">Find suggested moments &amp; unlock transcript search.</span></div>
-            <label for="momentLength">LENGTH<select id="momentLength" data-edit><option value="15-90" selected>Auto</option><option value="15-30">15–30 sec</option><option value="30-60">30–60 sec</option><option value="60-90">60–90 sec</option></select></label>
             <button type="button" class="moment-button" id="cancelMoments" hidden>Cancel</button>
           </div>
-          <details class="analysis-guidance"><summary>Tune analysis <span class="sub">· optional</span></summary><div class="analysis-options"><label for="momentBrief">What should we listen for?<input id="momentBrief" maxlength="600" data-edit placeholder="A topic, audience, or type of moment…" /></label><label for="momentSpeaker" id="momentSpeakerFilter" hidden>Focus on a speaker<select id="momentSpeaker" data-edit><option value="">Any speaker</option></select></label></div></details>
+          <details class="analysis-guidance"><summary>Tune analysis <span class="sub">· optional</span></summary><div class="analysis-options"><label for="momentLength">Clip length<select id="momentLength" data-edit><option value="15-90" selected>Auto</option><option value="15-30">15–30 sec</option><option value="30-60">30–60 sec</option><option value="60-90">60–90 sec</option></select></label><label for="momentBrief">What should we listen for?<input id="momentBrief" maxlength="600" data-edit placeholder="A topic, audience, or type of moment…" /></label><label for="momentSpeaker" id="momentSpeakerFilter" hidden>Focus on a speaker<select id="momentSpeaker" data-edit><option value="">Any speaker</option></select></label></div></details>
         </div>
         <p class="moment-status" id="momentStatus" role="status" aria-live="polite"></p>
         <div class="workspace-timeline" id="clipTimeline"></div>

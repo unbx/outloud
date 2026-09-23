@@ -761,3 +761,95 @@ body :is(.workspace-timeline .transport-mark){--tactile-top:#AFB3BA;--tactile-bo
 .workspace-timeline .led-meters{min-height:22px}
 /* Unit letters stay lowercase wherever they appear (1m 23s), whatever the label's case. */
 .readout-face i{text-transform:none}
+
+/* ===== Display pass, after Teenage Engineering's K.O. II and K.O. Sidekick =====
+   Readouts sit in near-black glass like the device's LCD band: bright warm-white segment digits
+   with a soft glow over faint unlit segments (an 8 behind every digit), orange for the selection's
+   length and the level ladders, dark function keys for IN and OUT. Colour names cite the RAL
+   CLASSIC shades they are inspired by; the hex values are screen approximations, not certified
+   conversions (RAL notes digital values only approximate physical colour). */
+:root{
+  --glass:#0A0B0B;              /* display glass, near RAL 9005 Jet Black */
+  --glass-edge:#2C3134;
+  --glass-divider:#23282A;
+  --led-white:#F4F1EA;          /* lit segment, warm white */
+  --led-glow:#FFF1DC47;
+  --led-ghost:#F4F1EA12;        /* unlit segment */
+  --led-orange:#FF5A14;         /* inspired by RAL 2004 Pure Orange, TE's documented orange */
+  --led-orange-glow:#FF5A1440;
+  --led-orange-ghost:#FF5A141C;
+  --glass-caption:#9A9C98;
+  --glass-rule:#3E4447;
+  --glass-rule-orange:#5E2A10;
+}
+/* Glass */
+.workspace-timeline .transport-display,.workspace-timeline .meter-window,.workspace-timeline .waveform-trim-fields{background:var(--glass);border-color:var(--glass-edge);box-shadow:inset 0 1px 0 #FFFFFF0A,inset 0 2px 7px #000D,0 1px 0 #FFFFFF12}
+.workspace-timeline .waveform-trim-fields label+label{border-left:1px solid var(--glass-divider)}
+/* The divider between End and Duration: that cell is styled by id elsewhere, so it is named here. */
+.workspace-timeline .waveform-trim-fields #tlSelectedLength{border-left:1px solid var(--glass-divider)}
+/* Captions */
+.workspace-timeline .display-caption,.workspace-timeline .waveform-trim-fields .trim-field-title,.moment-card-readouts .trim-field-title,.workspace-timeline .led-labels,.workspace-timeline .meter-window .transport-state{color:var(--glass-caption)}
+.workspace-timeline .waveform-trim-fields #tlSelectedLength .trim-field-title,.moment-card-duration .trim-field-title{color:var(--led-orange)}
+/* Lit digits: warm white */
+.workspace-timeline #momentPlaybackTime,.workspace-timeline #tlDuration,.workspace-timeline .waveform-trim-fields input,.moment-card-clock,.moment-card-clock .clock-current,.moment-card-clock .clock-total,.moments-panel .moment-card-readouts input{color:var(--led-white);text-shadow:0 0 6px var(--led-glow)}
+.moment-card-clock .clock-total{opacity:.72}
+.workspace-timeline .waveform-trim-fields input,.moments-panel .moment-card-readouts input{border-bottom-color:var(--glass-rule)}
+/* Duration: orange digits, units and rule */
+#tlSelectedLength .readout-face,.moments-panel .moment-card-readouts .readout-face,#tlSelectedLength .readout-face i,.moments-panel .moment-card-readouts .readout-face i{color:var(--led-orange)}
+#tlSelectedLength .readout-face,.moments-panel .moment-card-readouts .readout-face{text-shadow:0 0 7px var(--led-orange-glow);border-bottom-color:var(--glass-rule-orange)}
+#tlSelectedLength .readout-face{border-bottom-style:dotted}
+/* Unlit segments behind text readouts */
+[data-seg=text],.readout-face b{position:relative;z-index:0}
+[data-seg=text]::before,.readout-face b::before{content:attr(data-ghost);position:absolute;left:0;top:0;z-index:-1;color:var(--led-ghost);text-shadow:none;pointer-events:none;white-space:pre}
+.readout-face b::before{color:var(--led-orange-ghost)}
+/* Unlit segments behind editable fields: the ghost layer shares the field's grid cell */
+.workspace-timeline .waveform-trim-fields label,.moments-panel .moment-card-readouts label{display:grid;grid-template-columns:minmax(0,1fr);align-content:start}
+.workspace-timeline .waveform-trim-fields label{row-gap:5px}
+.workspace-timeline .waveform-trim-fields .trim-field-title,.moments-panel .moment-card-readouts .trim-field-title{grid-row:1;grid-column:1}
+.workspace-timeline .waveform-trim-fields .seg-ghost,.workspace-timeline .waveform-trim-fields input,.moments-panel .moment-card-readouts .seg-ghost,.moments-panel .moment-card-readouts input{grid-row:2;grid-column:1}
+.workspace-timeline .waveform-trim-fields .readout-field,.moments-panel .moment-card-readouts .readout-field{grid-row:2;grid-column:1}
+.seg-ghost{display:block;box-sizing:border-box;overflow:hidden;white-space:pre;color:var(--led-ghost);pointer-events:none;user-select:none;border-bottom:1px solid transparent}
+.workspace-timeline .waveform-trim-fields .seg-ghost{font:calc(24px * var(--digit-fit,1))/1.05 var(--digital);letter-spacing:.02em;padding:0 0 2px;height:calc(1.05em + 3px)}
+.moments-panel .moment-card-readouts .seg-ghost{font:26px/1.4 var(--digital);letter-spacing:.02em;min-height:48px;padding:7px 0}
+/* IN and OUT: dark function keys with white legends, like the K.O. II's; inspired by RAL 7021 Black Grey */
+body :is(.workspace-timeline .transport-mark){--tactile-top:#3B4043;--tactile-bottom:#2B3033;--tactile-edge:#15191B;--tactile-base:#0E1112;--tactile-ink:#F4F1EA;--tactile-highlight:#FFFFFF24}
+/* Level ladders: TE orange, dark unlit segments */
+.workspace-timeline .led-bar{background:repeating-linear-gradient(to top,#221811 0 2px,transparent 2px 3px)}
+@media(max-width:560px){
+  .workspace-timeline .waveform-trim-fields label{row-gap:4px}
+  .workspace-timeline .waveform-trim-fields .seg-ghost{font-size:calc(clamp(12px,3.6vw,18px) * var(--digit-fit,1))}
+}
+@media(max-width:700px){.moments-panel .moment-card-readouts .seg-ghost{font-size:21px}}
+/* Ghost colour must beat the older ".waveform-trim-fields span" colour rule, so it is stated at
+   matching strength; otherwise unlit segments would render as bright as lit ones. */
+.workspace-timeline .waveform-trim-fields .seg-ghost,.moments-panel .moment-card-readouts .seg-ghost{color:var(--led-ghost);text-shadow:none}
+/* Every transport key takes the dark function-key finish (inspired by RAL 7021 Black Grey), as on the
+   K.O. II; Play stays yellow. IN and OUT keep the same finish and are told apart by orange brackets,
+   the TE orange used for the selection's length and the level ladders. */
+body :is(.workspace-timeline .transport-key){--tactile-top:#3B4043;--tactile-bottom:#2B3033;--tactile-edge:#15191B;--tactile-base:#0E1112;--tactile-ink:#F4F1EA;--tactile-highlight:#FFFFFF24}
+.workspace-timeline .transport-mark svg{stroke:var(--led-orange)}
+
+/* Zoom keys join the transport in the dark function-key finish, so the whole panel reads as one device. */
+body :is(.workspace-timeline .tl-magnification button){--tactile-top:#3B4043;--tactile-bottom:#2B3033;--tactile-edge:#15191B;--tactile-base:#0E1112;--tactile-ink:#F4F1EA;--tactile-highlight:#FFFFFF24}
+
+/* Playhead and playbar, wherever audio plays: the clip waveform, the moment card, the zoom slider,
+   the Design and Share preview player and the trim dialog. The playhead is a bright white line with
+   a soft glow (inspired by RAL 9016 Traffic White); a playbar is a slim track with a clean white fill
+   and no glow, so the playhead is the one thing that shines. Bars look 3px thin but keep a 20px
+   touch area. */
+:root{
+  --playhead:#F7F7F2;
+  --playhead-glow:0 0 5px #FFFFFFB3,0 0 14px #FFFFFF45;
+  --playbar-track:#2E3336;
+  --playbar-fill:#F7F7F2D9;
+}
+.tl-playhead,.workspace-timeline .tl-playhead,.trim-playhead{width:2px;background:var(--playhead);box-shadow:var(--playhead-glow)}
+.tl-playhead::before,.workspace-timeline .tl-playhead::before{width:9px;height:9px;left:-3.5px;top:-4px;border-radius:50%;clip-path:none;background:var(--playhead);box-shadow:var(--playhead-glow)}
+:is(#scrub,.moments-panel .moment-card-seek,#tlZoom){-webkit-appearance:none;appearance:none;height:20px;min-height:20px;margin:0;padding:0;border:0;border-radius:0;box-shadow:none;cursor:pointer;accent-color:auto!important;background:linear-gradient(90deg,var(--playbar-fill) var(--played,0%),var(--playbar-track) var(--played,0%)) center/100% 3px no-repeat}
+:is(#scrub,.moments-panel .moment-card-seek,#tlZoom)::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:12px;height:12px;border:0;border-radius:50%;background:var(--playhead);box-shadow:var(--playhead-glow);opacity:1}
+:is(#scrub,.moments-panel .moment-card-seek,#tlZoom)::-moz-range-thumb{width:12px;height:12px;border:0;border-radius:50%;background:var(--playhead);box-shadow:var(--playhead-glow);opacity:1}
+:is(#scrub,.moments-panel .moment-card-seek,#tlZoom)::-moz-range-track{background:transparent;border:0}
+:is(#scrub,.moments-panel .moment-card-seek,#tlZoom):disabled{cursor:default;opacity:.45}
+:is(#scrub,.moments-panel .moment-card-seek,#tlZoom):disabled::-webkit-slider-thumb{box-shadow:none}
+:is(#scrub,.moments-panel .moment-card-seek,#tlZoom):focus-visible{outline:2px solid var(--playhead);outline-offset:4px}
+@media(pointer:coarse){:is(#scrub,.moments-panel .moment-card-seek,#tlZoom)::-webkit-slider-thumb{width:16px;height:16px}:is(#scrub,.moments-panel .moment-card-seek,#tlZoom)::-moz-range-thumb{width:16px;height:16px}}

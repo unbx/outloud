@@ -1,4 +1,4 @@
-import { createTimeline, MOMENT_COLORS, timeLabel, rangeForDuration, renderDurationFace } from './timeline.mjs';
+import { createTimeline, MOMENT_COLORS, timeLabel, rangeForDuration, renderDurationFace, segField, segText } from './timeline.mjs';
 import { LIMITS, normalizeWords, segmentsFromWords, clipWords, validRange, transcriptPassages, labeledSpeakersForRange, parseTimecode, parseDuration } from './moments-core.mjs';
 
 export function initMoments(app) {
@@ -376,7 +376,7 @@ export function initMoments(app) {
       if (control.dataset.action !== action) { control.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">' + icons[action] + '</svg>'; control.dataset.action = action; }
     });
     root.querySelectorAll('.moment-card-clock').forEach(n => { n.querySelector('.clock-current').textContent = timeLabel(t-a); n.querySelector('.clock-total').textContent = timeLabel(b-a); });
-    root.querySelectorAll('.moment-card-seek').forEach(n => { n.value = b > a ? (t-a)/(b-a)*1000 : 0; n.disabled = !item || generating; n.setAttribute('aria-valuetext', `${timeLabel(t-a)} of ${timeLabel(b-a)}`); });
+    root.querySelectorAll('.moment-card-seek').forEach(n => { n.value = b > a ? (t-a)/(b-a)*1000 : 0; n.style.setProperty('--played', `${n.value / 10}%`); n.disabled = !item || generating; n.setAttribute('aria-valuetext', `${timeLabel(t-a)} of ${timeLabel(b-a)}`); });
     root.querySelectorAll('.moment-card-preview-note').forEach(n => n.textContent = samplePreview ? (searchPreview ? 'Search preview · not added to moments' : 'Speaker sample') : $('momentContext').checked ? 'Preview includes surrounding audio' : 'Listen to this moment');
     root.querySelectorAll('[data-transport],[data-mark]').forEach(control => { control.disabled = !item || generating; });
     $('momentPlaybackTime').querySelector('.clock-current').textContent = timeLabel(t-a);
@@ -448,6 +448,7 @@ export function initMoments(app) {
     const next = choices[Math.max(0, Math.min(choices.length - 1, i < 0 ? 0 : i + dir))];
     if (next && next.id !== selectedId) { selectMoment(next.id); next.tab?.scrollIntoView?.({ block: 'nearest' }); }
   }
+  segText(root);
   const help = $('shortcutHelp');
   function toggleHelp(show = help.hidden) {
     help.hidden = !show;
@@ -561,7 +562,7 @@ export function initMoments(app) {
     });
     heading.append(titleButton, titleInput); article.append(heading, renameActions);
     const cardPlayer = el('div', null, 'moment-card-player');
-    cardPlayer.innerHTML = '<div class="moment-card-transport"><button type="button" class="moment-card-play" aria-label="Play preview"></button><div class="moment-card-player-body"><div class="moment-card-player-meta"><span class="moment-card-preview-note">Listen to this moment</span><span class="moment-card-clock" aria-label="Playback elapsed and total time"><span class="clock-current"></span><span class="clock-divider">/</span><span class="clock-total"></span></span></div><input type="range" class="moment-card-seek" min="0" max="1000" step="1" value="0" aria-label="Seek preview" /></div></div>';
+    cardPlayer.innerHTML = '<div class="moment-card-transport"><button type="button" class="moment-card-play" aria-label="Play preview"></button><div class="moment-card-player-body"><div class="moment-card-player-meta"><span class="moment-card-preview-note">Listen to this moment</span><span class="moment-card-clock" aria-label="Playback elapsed and total time"><span class="clock-current" data-seg="text"></span><span class="clock-divider">/</span><span class="clock-total" data-seg="text"></span></span></div><input type="range" class="moment-card-seek" min="0" max="1000" step="1" value="0" aria-label="Seek preview" /></div></div>';
     cardPlayer.querySelector('button').addEventListener('click', togglePlayback);
     cardPlayer.querySelector('input').addEventListener('input', e => {
       if (generating) return;
@@ -578,7 +579,7 @@ export function initMoments(app) {
     for (const [node, value, name] of [[start, moment.start, 'Start'], [end, moment.end, 'End']]) {
       asTimeField(node, `${name} time`); node.value = timeLabel(value); node.title = 'Type a time like 1:23.4, or seconds.';
       node.addEventListener('input', () => node.setCustomValidity(''));
-      const label = el('label'); label.append(el('span', name, 'trim-field-title'), node); range.append(label);
+      const label = el('label'); label.append(el('span', name, 'trim-field-title'), node); range.append(label); segField(node);
     }
     const length = el('input'); asTimeField(length, 'Moment duration in seconds'); length.title = 'Type seconds, 1:25 or 1m 25s.';
     const lengthFace = el('span', null, 'readout-face'); lengthFace.setAttribute('aria-hidden', 'true');
