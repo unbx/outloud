@@ -175,11 +175,7 @@ export function initMoments(app) {
     // Stable partitioning allows retries to resume without retranscribing successful sections.
     const chunkSize = app.canOpus() ? 600 : LIMITS.chunk;
     const count = Math.ceil(duration / chunkSize);
-    if (app.trial?.()) {
-      const data=await app.trialTranscribe(file); check(run);
-      words=normalizeWords(data.words,0,0,0,duration);language=data.language_code;timeline.progress(1);
-    }
-    for (let section = 0; !app.trial?.() && section < count; section++) {
+    for (let section = 0; section < count; section++) {
       if (completed.has(section)) continue;
       check(run); say(`Transcribing section ${section + 1} of ${count}… You can cancel and resume in this tab.`);
       const boundaryStart = section * chunkSize, boundaryEnd = Math.min(duration, (section + 1) * chunkSize);
@@ -190,18 +186,24 @@ export function initMoments(app) {
       catch (e) { if (opus) throw new Error('Audio compression failed. Try a browser with Opus encoding support or upload a shorter recording.'); throw e; }
       check(run);
       if (blob.size > 4400000) throw new Error('This audio section is too large to process. Try a compressed audio recording.');
-      const form = new FormData(); form.append('file', blob, opus ? 'section.ogg' : 'section.wav');
-      form.append('model_id', app.sttModel); form.append('diarize', 'true'); form.append('tag_audio_events', 'false');
-      if (sourceLanguage !== 'auto') form.append('language_code', sourceLanguage);
-      const response = await fetch(app.elevenURL('speech-to-text'), {
-        method: 'POST', headers: app.elevenHeaders(), body: form,
-        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(180000)])
-      });
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(typeof data.error === 'string' ? data.error : `Transcription paused (${response.status}). Check your connection or credits, then resume.`);
+      const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(180000)]);
+      let data;
+      if (app.trial?.()) {
+        // Free sessions: the server holds the key, measures the section and saves its transcript.
+        data = await app.trialSection({ section, count, total: duration, size: file.size,
+          language: sourceLanguage !== 'auto' ? sourceLanguage : '' }, blob, signal);
+      } else {
+        const form = new FormData(); form.append('file', blob, opus ? 'section.ogg' : 'section.wav');
+        form.append('model_id', app.sttModel); form.append('diarize', 'true'); form.append('tag_audio_events', 'false');
+        if (sourceLanguage !== 'auto') form.append('language_code', sourceLanguage);
+        const response = await fetch(app.elevenURL('speech-to-text'), { method: 'POST', headers: app.elevenHeaders(), body: form, signal });
+        if (!response.ok) {
+          const failure = await response.json().catch(() => ({}));
+          throw new Error(typeof failure.error === 'string' ? failure.error : `Transcription paused (${response.status}). Check your connection or credits, then resume.`);
+        }
+        data = await response.json();
       }
-      const data = await response.json(); check(run);
+      check(run);
       const fresh = normalizeWords(data.words, start, section, boundaryStart, boundaryEnd);
       words.push(...fresh); words.sort((a, b) => a.start - b.start);
       if (words.length > LIMITS.words) throw new Error('This transcript is too large. Try a shorter excerpt.');
@@ -218,15 +220,19 @@ export function initMoments(app) {
     find.setAttribute('aria-pressed', String(state === 'working' || analyzed));
     root.querySelector('.analysis-help').textContent = state === 'ready' ? 'Search the transcript or tune and analyze again.' : 'Find suggested moments & unlock transcript search.';
   }
-  async function analyze() {
-    if (!file || busy) return;
-    if (!complete && !app.connected()) { closeWorkspace(); app.connect(); return; }
+  // A transcript made for one declared spoken language is not reused for another.
+  function followSpokenLanguage() {
     if (sourceLanguage && sourceLanguage !== app.sourceLanguage()) {
       words = []; completed.clear(); complete = false; language = null; segments = []; labels = {}; people = {};
       clearChoices(); timeline.speakers([], {}); $('momentTranscriptWrap').hidden = true; $('momentSpeakerWrap').hidden = true;
       $('momentSpeaker').replaceChildren(new Option('Any speaker', '')); $('momentSpeakerFilter').hidden = true;
     }
     sourceLanguage = app.sourceLanguage();
+  }
+  async function analyze() {
+    if (!file || busy) return;
+    if (!complete && !app.connected()) { closeWorkspace(); app.connect(); return; }
+    followSpokenLanguage();
     analysisState('working', 'Analyzing…'); find.textContent = 'ANALYZING';
     const run = epoch; controller = new AbortController(); setBusy(true); stop();
     try {
@@ -574,6 +580,17 @@ export function initMoments(app) {
   $('momentSpeaker').addEventListener('change', () => say('Speaker preference updated. Find more moments to apply it.'));
   return {
     reset, open: openWorkspace, close: closeWorkspace,
+    // The full transcript in recording time, transcribing first if needed. Free sessions caption
+    // through this, so a recording is only ever transcribed once, in sections.
+    async transcript(source) {
+      if (source !== file) throw new Error('The recording changed. Choose it again, then caption.');
+      if (!complete) {
+        followSpokenLanguage();
+        if (!controller || controller.signal.aborted) controller = new AbortController();
+        await transcribe(epoch);
+      }
+      return { words: words.map(w => ({ type: 'word', text: w.text, start: w.start, end: w.end, speaker_id: w.speaker })), language_code: language };
+    },
     cachedTranscript(source, start, end, spoken) {
       if (source !== file || !complete || spoken !== sourceLanguage || !validRange(start, end, duration)) return null;
       return { words: clipWords(words, start, end).map(w => ({ ...w, type: 'word' })), language_code: language };

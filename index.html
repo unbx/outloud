@@ -832,7 +832,7 @@
     <button class="keybtn" id="keyBtn" title="Manage your ElevenLabs connection"><span class="dot" id="keyDot"></span><span class="keybtn-label" id="keyLabel">Connect</span></button>
   </div>
 </header>
-<div id="trialBanner" hidden><span id="trialBannerText">Free session · one recording up to 60s · captions & analysis</span><button type="button" class="foot-link" id="trialRequest" hidden>Request beta access →</button></div>
+<div id="trialBanner" hidden><span id="trialBannerText">Free session · one recording up to 2 hours · captions & analysis</span><button type="button" class="foot-link" id="trialRequest" hidden>Request beta access →</button></div>
 
 
 <!-- Shared holo stroke for the dashed intake frames. A CSS border can't carry a gradient, and
@@ -1240,7 +1240,7 @@
     <div class="info-eyebrow">EARLY ACCESS / OUTLOUD BETA</div>
     <h3 class="beta-headline">Good moments deserve to be heard.</h3>
     <p class="splash-tag">Find the moment. Shape your clip. Share it with your community.</p>
-    <p class="splash-beta">Your first clip is on us. Try one recording up to 60 seconds and 300 MB: find a moment, add captions, design it and download your audiogram. Original audio only; dubbing is reserved for testers. After making your first clip, request beta access.</p>
+    <p class="splash-beta">Your first clip is on us. Try one recording up to 2 hours and 300 MB: find a moment, add captions, design it and download your audiogram. Original audio only; dubbing is reserved for testers. After making your first clip, request beta access.</p>
     <button type="button" class="btn" id="trialStart">TRY A FREE CLIP →</button><p id="trialStatus" role="status" aria-live="polite"></p>
     <form id="betaAccessForm" hidden>
       <div class="beta-fields">
@@ -1279,7 +1279,7 @@
 <details><summary>Do I have to analyze a recording?</summary><p>No. You can trim a passage or use the full recording and create captions directly. Analyze when you want suggested moments or transcript search.</p></details>
 <details><summary>Can I paste a podcast, YouTube, or Space URL?</summary><p>Direct URL import is not available in this version. Upload a recording, use your microphone, or capture tab audio where supported.</p></details>
 <details><summary>Which languages and downloads are supported?</summary><p>Use original-language captions or choose a supported dubbing language in the app. Download audio and SRT / VTT captions. Video format depends on the browser; check the Share tab for the available format.</p></details>
-<details><summary>What do I need to use OutLoud?</summary><p>Try one recording up to 60 seconds without a password: analyze it, add original-audio captions, design an audiogram, and download it. Free sessions have limited daily capacity and do not include dubbing. After making your first clip, request beta access with your email and X account. Existing tester passwords and your own API keys keep their current access. Recording and capture features depend on browser permissions and support.</p></details>
+<details><summary>What do I need to use OutLoud?</summary><p>Try one recording up to 2 hours without a password: analyze it, add original-audio captions, design an audiogram, and download it. Free sessions have limited daily capacity and do not include dubbing. After making your first clip, request beta access with your email and X account. Existing tester passwords and your own API keys keep their current access. Recording and capture features depend on browser permissions and support.</p></details>
 <details><summary>Is all processing local?</summary><p>No. The visual composition renders in your browser. Transcription, dubbing, and optional moment analysis use processing services. Open “How your data is handled” in the app for details before processing a recording.</p></details>
 <p class="end">Built by <a href="https://nana.works/">NANA</a>. Good moments deserve to be heard.</p></div>
 </dialog>
@@ -1451,7 +1451,7 @@
 </div>
 
 <script type="module">
-import { createTrialClient, FREE_CLIP_LIMITS, FREE_CLIP_HINT } from "./trial-client.mjs";
+import { createTrialClient, FREE_CLIP_HINT, checkFreeClip } from "./trial-client.mjs";
 import { initBetaAccess } from "./beta-access.mjs";
 import { initMoments } from "./moments-ui.mjs";
 import { rewindForExport } from "./export-start.mjs";
@@ -1615,7 +1615,7 @@ import { rewindForExport } from "./export-start.mjs";
   let openaiKey = "";
   // Connection can be EITHER the user's own key (calls ElevenLabs directly) or a tester password
   // (routes through our /api/eleven proxy, which injects the owner's server-side key).
-  const trial = createTrialClient(wavBlob);
+  const trial = createTrialClient();
   const isTrial = () => trial.state.active && !apiKey && !testerPass;
   const isConnected = () => !!apiKey || !!testerPass || trial.state.active;
   const useProxy = () => !apiKey && !!testerPass;
@@ -2042,15 +2042,15 @@ import { rewindForExport } from "./export-start.mjs";
     const notice = $("#uploadValidation");
     notice.hidden = true;
     if (file && isTrial()) {
-      notice.hidden = false; notice.style.color = "#27695F"; notice.textContent = "Checking your clip’s size, length and audio…";
+      notice.hidden = false; notice.style.color = "#27695F"; notice.textContent = "Checking your recording’s size and length…";
       notice.setAttribute('role','status');
       try {
-        if (file.size > FREE_CLIP_LIMITS.bytes) throw new Error('Free sessions accept files up to 300 MB and 60 seconds. Choose a smaller file or export a shorter passage, then try again.');
+        // Size and metadata length only. Decoding a long recording twice would double its memory,
+        // so the audio itself is read once, when Find moments transcribes it.
+        checkFreeClip(file);
         const seconds = await Promise.race([probeDuration(file), new Promise(resolve => setTimeout(() => resolve(null), 5000))]);
         if (version !== intakeVersion) return;
-        if (seconds > FREE_CLIP_LIMITS.seconds) throw new Error('This recording is longer than 60 seconds. Export a passage up to 60 seconds, then upload it. Your free clip has not been used.');
-        await trial.prepare(file);
-        if (version !== intakeVersion) return;
+        checkFreeClip(file, seconds || 0);
         notice.hidden = true;
       } catch (error) {
         if (version !== intakeVersion) return;
@@ -2780,6 +2780,15 @@ import { rewindForExport } from "./export-start.mjs";
         return;
       }
     }
+    // Free sessions pay for transcription once, in sections, so captioning adds no cost. The limit
+    // is about the audiogram itself: the same caption length a tester can render at once.
+    if (isTrial() && target === "same") {
+      const capLen = trimActive() ? trimEnd - trimStart : await probeDuration(dubFile);
+      if (capLen && capLen > capFor(true)) {
+        setStatus("Free sessions caption up to " + fmtT(capFor(true)) + " at a time. Choose a moment, or trim the recording.", "err");
+        return;
+      }
+    }
     genBtn.disabled = true;
     busyPanel(createPanel, true);
     scrollPos = 0; hasTiming = false;
@@ -2846,7 +2855,7 @@ import { rewindForExport } from "./export-start.mjs";
         };
         let j = momentsController?.cachedTranscript(dubFile, trimActive() ? trimStart : 0, trimActive() ? trimEnd : clipSeconds, source);
         if (isTrial()) {
-          const raw = await trial.transcribe(dubFile);
+          const raw = await momentsController.transcript(dubFile);
           const a = trimActive() ? trimStart : 0, b = trimActive() ? trimEnd : Infinity;
           j = {...raw, words: (raw.words || []).filter(w => w.start >= a && w.start < b).map(w => ({...w,start:w.start-a,end:Math.min(w.end,b)-a}))};
         }
@@ -3346,7 +3355,7 @@ import { rewindForExport } from "./export-start.mjs";
     $("#trialTerms").hidden = trial.state.complete;
     $("#splashConnect").textContent = apiKey || testerPass ? "Manage my connection" : "I have a password";
     $("#requestBetaAccess").textContent = trial.state.complete ? 'Request beta access' : 'Try a free clip';
-    splash.querySelector('.splash-beta').textContent = trial.state.complete ? 'You made your first moment. Want to keep creating? Leave your email and X account. Sean will review your request and reply with a tester password.' : 'Your first clip is on us. Try one recording up to 60 seconds and 300 MB: find a moment, add captions, design it and download your audiogram. Original audio only; dubbing is reserved for testers. After making your first clip, request beta access.';
+    splash.querySelector('.splash-beta').textContent = trial.state.complete ? 'You made your first moment. Want to keep creating? Leave your email and X account. Sean will review your request and reply with a tester password.' : 'Your first clip is on us. Try one recording up to 2 hours and 300 MB: find a moment, add captions, design it and download your audiogram. Original audio only; dubbing is reserved for testers. After making your first clip, request beta access.';
     $("#trialBanner").hidden = !isTrial();
     $("#freeClipLimits").textContent = FREE_CLIP_HINT;
     $("#freeClipLimits").hidden = !isTrial();
@@ -5164,7 +5173,7 @@ import { rewindForExport } from "./export-start.mjs";
     workspaceOpened: () => { setStudioStage('clip'); requestAnimationFrame(() => window.scrollTo({top:0,left:0,behavior:'instant'})); },
     workspaceClosed: () => { if (document.body.dataset.stage === 'clip') setStudioStage('audio'); },
     workspaceBusy: on => { document.body.dataset.workspaceBusy = String(on); setStudioStage(document.body.dataset.stage || 'audio'); },
-    trial: isTrial, trialTranscribe: file => trial.transcribe(file),
+    trial: isTrial, trialSection: (meta, blob, signal) => trial.transcribeSection(meta, blob, signal),
     connected: isConnected, connect: openKeyModal, testerPass: () => useProxy() ? testerPass : "", analysisKey: () => openaiKey,
     sourceLanguage: () => dubSourceSel.value, sttModel: STT_MODEL,
     elevenURL, elevenHeaders, canOpus, encodeOpus: encodeOpusOgg, wav: wavBlob, probe: probeDuration,
