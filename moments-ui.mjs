@@ -1,48 +1,136 @@
-import { LIMITS, normalizeWords, segmentsFromWords, clipWords, validRange } from './moments-core.mjs';
+import { createTimeline, MOMENT_COLORS, timeLabel, rangeForDuration } from './timeline.mjs';
+import { LIMITS, normalizeWords, segmentsFromWords, clipWords, validRange, transcriptPassages, labeledSpeakersForRange } from './moments-core.mjs';
 
 export function initMoments(app) {
   const $ = id => document.getElementById(id);
   const root = $('momentsPanel'), list = $('momentResults'), status = $('momentStatus');
+  $('studioBody').append(root); // Clip editor is a sibling of the other workstation stages.
   const find = $('findMoments'), cancel = $('cancelMoments'), player = $('momentPlayer');
   let file = null, decoded = null, words = [], completed = new Set(), language = null, sourceLanguage = null;
   let epoch = 0, controller = null, busy = false, complete = false, url = null, stopAt = 0, activeCard = null;
   let segments = [], labels = {}, transcriptPage = 0, duration = 0, playing = false;
+  let previewStart = 0, samplePreview = false, searchPreview = null;
+  let choices = [], selectedId = null, nextId = 1, decoding = null;
+  let generating = false, handoffError = null, analysisFailed = false, analyzed = false;
+  const output = $('momentTarget'), continueButton = $('momentContinue');
+  app.targets().forEach(t => output.add(new Option(t.label, t.value)));
+  const scope = $('momentScope');
+  scope.addEventListener('change', () => { handoffError = null; handoff(); });
+  const usesFullRecording = item => scope.value === 'full' || (item && item.start <= .05 && item.end >= duration - .05);
+  function handoff() {
+    const item = choices.find(m => m.id === selectedId);
+    const full = usesFullRecording(item);
+    $('handoffSelection').textContent = full ? `Full recording · ${timeLabel(duration)}` : item ? `${String(item.number).padStart(2, '0')} · ${item.title} · ${(item.end - item.start).toFixed(1)}s` : 'Choose a moment';
+    continueButton.textContent = output.value === 'same' ? (full ? 'Caption full clip →' : 'Caption selection →') : (full ? 'Dub full clip →' : 'Dub selection →');
+    if (!busy && !handoffError) $('handoffStatus').textContent = output.value === 'same' ? 'Original voice, with captions. Style your audiogram next.' : 'Translate this selection, keeping the speaker’s voice. Uses dubbing credits.';
+    continueButton.disabled = busy || !file || (!full && !item);
+  }
+  output.addEventListener('change', () => { handoffError = null; handoff(); });
+  continueButton.addEventListener('click', async () => {
+    const item = choices.find(m => m.id === selectedId);
+    const full = usesFullRecording(item);
+    if (!file || (!full && !item) || busy || app.busy()) return;
+    const a = full ? 0 : Number(item.startInput.value), b = full ? duration : Number(item.endInput.value), run = epoch;
+    const title = full ? file.name : item.title;
+    if (!validRange(a, b, duration) || (!full && b - a > 90)) { say('Choose a valid selection of up to 90 seconds.', true); return; }
+    const cached = !full && complete && sourceLanguage === app.sourceLanguage();
+    if ((!cached || output.value !== 'same') && !app.connected()) { closeWorkspace(); app.connect(); return; }
+    handoffError = null; controller = new AbortController(); generating = true; setBusy(true); stop();
+    const progress = (message, error = false) => { say(message, error); $('handoffStatus').textContent = message; };
+    try {
+      app.unlockAudio(); progress(output.value === 'same' ? 'Preparing your captions…' : 'Preparing your dub…');
+      if (full && output.value === 'same') {
+        await app.captionFullClip(progress);
+      } else if (cached && output.value === 'same') {
+        await readAudio(run); check(run); const blob = await slice(a, b); check(run);
+        await app.useMoment({file, start:a, end:b, title, blob, words:clipWords(words,a,b), language});
+      } else {
+        await app.generateSelection({file, start:a, end:b, title}, output.value, progress);
+      }
+      check(run); generating = false; closeWorkspace(); app.enterDesign(labeledSpeakersForRange(words, labels, a, b));
+    } catch(e) { if (run === epoch) { handoffError = e.message; progress(e.message, true); } }
+    finally { generating = false; if (run === epoch) setBusy(false); }
+  });
+  const detail = $('momentDetail');
+  const timeline = createTimeline($('clipTimeline'), {
+    select: id => selectMoment(id),
+    change: (start, end) => {
+      const item = choices.find(m => m.id === selectedId);
+      if (!item) return;
+      item.startInput.value = start.toFixed(1); item.endInput.value = end.toFixed(1); item.refresh(true);
+    },
+    seek: time => { stop(); samplePreview = false; const [a,b] = playbackBounds(); player.currentTime = Math.max(a, Math.min(b,time)); timeline.playhead(player.currentTime); syncPlayback(); }
+  });
+  function selectMoment(id, fit = true) {
+    stop(); searchPreview = null; selectedId = id; scope.value = 'selection';
+    choices.forEach(item => {
+      item.tab.setAttribute('aria-pressed', String(item.id === id)); item.article.hidden = item.id !== id;
+    });
+    const item = choices.find(m => m.id === id); if (item) { timeline.select(item, fit); if ($('momentContext').checked) timeline.window(...playbackBounds()); samplePreview = false; player.currentTime = playbackBounds()[0]; } syncPlayback(); handoff();
+  }
+  function clearChoices() { choices = []; selectedId = null; list.replaceChildren(); detail.replaceChildren(); timeline.moments([]); timeline.select(null); }
+  function seedSelection() {
+    if (choices.length || !duration) return;
+    const trim = app.getTrim();
+    list.append(card({ start: trim?.start || 0, end: trim?.end || Math.min(duration, 60), title: 'Selected Moment', reason: 'Drag the waveform edges to choose a passage, or press ANALYZE for recommendations.' }));
+    selectMoment(choices[0].id);
+  }
+  async function openWorkspace() {
+    if (!file) return;
+    output.value = app.target(); handoff();
+    root.hidden = false; app.workspaceOpened();
+    timeline.redraw(); if (!busy) find.focus({ preventScroll: true });
+    if (busy) return;
+    controller = new AbortController(); const run = epoch;
+    try { await readAudio(run); if (run === epoch) { seedSelection(); timeline.redraw(); say(''); } }
+    catch (e) { if (run === epoch) { say(e.message, true); $('tlHint').hidden = false; $('tlHint').textContent = 'Waveform unavailable. You can still set times using the fields below.'; } }
+  }
+  function closeWorkspace() { if (generating) return; stop(); root.hidden = true; app.workspaceClosed(); }
+  $('openMomentWorkspace').addEventListener('click', openWorkspace);
+  $('closeMomentWorkspace').addEventListener('click', closeWorkspace);
+  root.addEventListener('cancel', e => { if (generating) e.preventDefault(); else stop(); });
+  root.addEventListener('close', () => stop());
+  $('newManualMoment').addEventListener('click', () => {
+    if (busy || !duration) return;
+    const start = Math.min(player.currentTime || 0, Math.max(0, duration - .5));
+    list.append(card({ start, end: Math.min(duration, start + 30), title: 'Custom selection', reason: 'A passage you choose from the recording.' }));
+    selectMoment(choices.at(-1).id);
+  });
   const format = value => { const s = Math.max(0, value); return `${Math.floor(s / 60)}:${(s % 60).toFixed(1).padStart(4, '0')}`; };
   const say = (message, error = false) => { status.textContent = message; status.classList.toggle('error', error); };
   const el = (tag, text, cls) => { const n = document.createElement(tag); if (text != null) n.textContent = text; if (cls) n.className = cls; return n; };
   const button = (text, fn) => { const b = el('button', text, 'moment-button'); b.type = 'button'; b.addEventListener('click', fn); return b; };
   const auth = () => ({ ...(app.testerPass() ? { 'x-tester-pass': app.testerPass() } : {}),
-    ...($('momentKey').value.trim() ? { 'x-moments-key': $('momentKey').value.trim() } : {}) });
+    ...(app.analysisKey() ? { 'x-moments-key': app.analysisKey() } : {}) });
   function setBusy(on) {
-    busy = on; find.disabled = on; cancel.hidden = !on;
+    busy = on; app.workspaceBusy(on); timeline.busy(on); find.disabled = on; cancel.hidden = !on || generating; $('closeMomentWorkspace').disabled = generating;
     root.setAttribute('aria-busy', String(on));
-    root.querySelectorAll('[data-edit]').forEach(n => { n.disabled = on; });
+    root.querySelectorAll('[data-edit]').forEach(n => { n.disabled = on; }); handoff(); syncPlayback();
   }
   function stop() {
     playing = false; player.pause();
     if (activeCard) activeCard.querySelectorAll('.is-speaking').forEach(n => n.classList.remove('is-speaking'));
-    activeCard = null;
+    activeCard = null; syncPlayback();
   }
   function reset(next) {
     epoch++; controller?.abort(); controller = null; stop();
     if (url) URL.revokeObjectURL(url);
-    file = next; decoded = null; words = []; segments = []; completed = new Set(); labels = {};
+    file = next; decoded = null; searchPreview = null; $('momentSearch').value = '';  words = []; segments = []; completed = new Set(); labels = {};
     complete = false; sourceLanguage = null; language = null; transcriptPage = 0; duration = 0; url = null;
     player.removeAttribute('src'); player.load();
-    list.replaceChildren(); $('momentTranscript').replaceChildren(); $('momentSpeakers').replaceChildren();
+    clearChoices(); timeline.source(null, 0); timeline.speakers([], {}); timeline.progress(null); decoding = null; closeWorkspace(); $('momentTranscript').replaceChildren(); $('momentSpeakers').replaceChildren();
+    analyzed = false; scope.value = 'selection'; analysisState('idle', 'Not analyzed');
     $('momentTranscriptWrap').hidden = true; $('momentSpeakerWrap').hidden = true;
-    $('momentSpeaker').replaceChildren(new Option('Any speaker', ''));
+    $('momentSpeaker').replaceChildren(new Option('Any speaker', '')); $('momentSpeakerFilter').hidden = true;
     $('momentSource').textContent = next ? next.name : '';
-    $('momentSelection').hidden = true; root.hidden = !next; setBusy(false);
-    find.textContent = 'Find moments'; say('');
-    $('momentUsage').textContent = 'Transcribes the full recording once. Audio goes to ElevenLabs; transcript and brief go to OpenAI for recommendations. Uses connected API credits. Kept in this tab until you replace the file or reload.';
+    $('momentSelection').hidden = true; $('momentLaunch').hidden = !next; setBusy(false);
+    analysisFailed = false; find.textContent = 'ANALYZE'; say('');
     if (next) {
       url = URL.createObjectURL(next); player.src = url;
       const run = epoch;
       app.probe(next).then(d => {
         if (run !== epoch) return;
-        duration = d || 0;
-        $('momentUsage').textContent = `${d ? format(d) + ' to analyze. ' : ''}Transcribes the full recording once, using connected API credits. Audio → ElevenLabs; transcript + brief → OpenAI. Re-ranking reuses this tab’s transcript. Up to 2 hours / 300 MB; keep this tab open.`;
+        duration = d || 0; timeline.source(decoded, duration); seedSelection();
       });
     }
   }
@@ -50,6 +138,11 @@ export function initMoments(app) {
   async function readAudio(run) {
     if (decoded) return decoded;
     if (file.size > LIMITS.bytes || duration > LIMITS.seconds) throw new Error('Find moments supports recordings up to 2 hours and 300 MB. Upload a smaller audio file or excerpt.');
+    if (decoding) return decoding;
+    decoding = decodeSource(run);
+    try { return await decoding; } finally { if (run === epoch) decoding = null; }
+  }
+  async function decodeSource(run) {
     const source = file;
     say('Reading the recording…');
     const ctx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
@@ -59,7 +152,7 @@ export function initMoments(app) {
     finally { await ctx.close(); }
     check(run);
     if (buffer.duration > LIMITS.seconds) throw new Error('This recording is longer than 2 hours. Upload a shorter excerpt.');
-    decoded = buffer; duration = buffer.duration; return buffer;
+    decoded = buffer; duration = buffer.duration; timeline.source(decoded, duration); seedSelection(); return buffer;
   }
   async function slice(start, end, opus = false, rate = 24000) {
     if (!decoded || !validRange(start, end, decoded.duration)) throw new Error('Choose a valid start and end within the recording.');
@@ -81,7 +174,11 @@ export function initMoments(app) {
     // Stable partitioning allows retries to resume without retranscribing successful sections.
     const chunkSize = app.canOpus() ? 600 : LIMITS.chunk;
     const count = Math.ceil(duration / chunkSize);
-    for (let section = 0; section < count; section++) {
+    if (app.trial?.()) {
+      const data=await app.trialTranscribe(file); check(run);
+      words=normalizeWords(data.words,0,0,0,duration);language=data.language_code;timeline.progress(1);
+    }
+    for (let section = 0; !app.trial?.() && section < count; section++) {
       if (completed.has(section)) continue;
       check(run); say(`Transcribing section ${section + 1} of ${count}… You can cancel and resume in this tab.`);
       const boundaryStart = section * chunkSize, boundaryEnd = Math.min(duration, (section + 1) * chunkSize);
@@ -107,37 +204,48 @@ export function initMoments(app) {
       const fresh = normalizeWords(data.words, start, section, boundaryStart, boundaryEnd);
       words.push(...fresh); words.sort((a, b) => a.start - b.start);
       if (words.length > LIMITS.words) throw new Error('This transcript is too large. Try a shorter excerpt.');
-      language ||= data.language_code; completed.add(section);
+      language ||= data.language_code; completed.add(section); timeline.progress(boundaryEnd / duration);
+      $('workspaceAnalysisLabel').textContent = `Transcribed ${Math.round(boundaryEnd / duration * 100)}%`;
     }
-    complete = true; segments = segmentsFromWords(words); updateSpeakers(); renderTranscript();
+    complete = true; choices.forEach(item => item.refresh()); segments = segmentsFromWords(words); updateSpeakers(); renderTranscript(); timeline.speakers(segments, labels);
+    $('workspaceAnalysisLabel').textContent = 'Transcript ready · cached in this tab';
     if (!words.length) throw new Error('No speech was found in this recording. Try a recording with clearer speech.');
+  }
+  function analysisState(state, text) {
+    root.querySelector('.analysis-console').dataset.state = state;
+    $('workspaceAnalysisLabel').textContent = text;
+    find.setAttribute('aria-pressed', String(state === 'working' || analyzed));
+    root.querySelector('.analysis-help').textContent = state === 'ready' ? 'Search the transcript or tune and analyze again.' : 'Find suggested moments & unlock transcript search.';
   }
   async function analyze() {
     if (!file || busy) return;
-    if (!complete && !app.connected()) { app.connect(); return; }
+    if (!complete && !app.connected()) { closeWorkspace(); app.connect(); return; }
     if (sourceLanguage && sourceLanguage !== app.sourceLanguage()) {
       words = []; completed.clear(); complete = false; language = null; segments = []; labels = {};
-      list.replaceChildren(); $('momentTranscriptWrap').hidden = true; $('momentSpeakerWrap').hidden = true;
-      $('momentSpeaker').replaceChildren(new Option('Any speaker', ''));
+      clearChoices(); timeline.speakers([], {}); $('momentTranscriptWrap').hidden = true; $('momentSpeakerWrap').hidden = true;
+      $('momentSpeaker').replaceChildren(new Option('Any speaker', '')); $('momentSpeakerFilter').hidden = true;
     }
     sourceLanguage = app.sourceLanguage();
+    analysisState('working', 'Analyzing…'); find.textContent = 'ANALYZING';
     const run = epoch; controller = new AbortController(); setBusy(true); stop();
     try {
       say('Checking analysis connection…');
-      await request('/api/moments', { method: 'GET', headers: auth() }); check(run);
+      await request(app.trial?.() ? '/api/trial?op=analyze' : '/api/moments', { method: 'GET', headers: auth() }); check(run);
       if (!complete) await transcribe(run);
       check(run); say('Finding distinct moments with a strong hook and a complete takeaway…');
       const [min, max] = $('momentLength').value.split('-').map(Number);
       const mapped = segments.map(s => ({ id: s.id, start: s.start, end: s.end, text: s.text, speaker: labels[s.speaker]?.trim() || s.speaker }));
-      const data = await request('/api/moments', { method: 'POST', headers: { ...auth(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ segments: mapped, min, max, brief: $('momentBrief').value, speaker: $('momentSpeaker').value }) });
-      check(run); list.replaceChildren();
+      const data = await request(app.trial?.() ? '/api/trial?op=analyze' : '/api/moments', { method: 'POST', headers: { ...auth(), 'Content-Type': 'application/json' },
+        body: JSON.stringify(app.trial?.() ? {brief:$('momentBrief').value} : { segments: mapped, min, max, brief: $('momentBrief').value, speaker: $('momentSpeaker').value }) });
+      check(run); analysisFailed = false; analyzed = true; analysisState('ready', 'Transcript analyzed'); clearChoices();
       (data.moments || []).forEach((moment, i) => list.append(card(moment, i + 1)));
+      if (choices.length) selectMoment(choices[0].id); else seedSelection();
       say(data.moments?.length ? `${data.moments.length} recommended moments. Listen and check context before creating. Rankings use the transcript, not vocal delivery.` : 'No complete moments fit this brief and length. Try a wider length, any speaker, or select a passage from the transcript.');
     } catch (e) {
-      if (run === epoch) say(e.name === 'AbortError' ? 'Stopped. Completed sections are kept in this tab. Find moments to resume.' : e.message, e.name !== 'AbortError');
+      if (run === epoch) { analysisFailed = true; analyzed = false; analysisState('error', e.name === 'AbortError' ? 'Analysis paused' : 'Analysis incomplete'); }
+      if (run === epoch) say(e.name === 'AbortError' ? 'Stopped. Completed sections are kept in this tab. Press ANALYZE to resume.' : e.message, e.name !== 'AbortError');
     } finally {
-      if (run === epoch) { setBusy(false); find.textContent = complete ? 'Find more moments' : completed.size ? 'Resume finding moments' : 'Find moments'; }
+      if (run === epoch) { setBusy(false); find.textContent = analyzed ? 'ANALYZED' : 'ANALYZE'; find.disabled = !!app.trial?.() && analyzed; find.title = analyzed ? 'Analyze again with your current settings' : 'Analyze the recording'; }
     }
   }
   function speakerLabel(id) {
@@ -148,9 +256,10 @@ export function initMoments(app) {
   function updateSpeakerOptions() {
     const previous = $('momentSpeaker').value;
     const ids = [...new Set(segments.map(s => labels[s.speaker]?.trim() || s.speaker))];
-    $('momentSpeaker').replaceChildren(new Option('Any speaker', ''));
+    $('momentSpeaker').replaceChildren(new Option('Any speaker', '')); $('momentSpeakerFilter').hidden = true;
     ids.forEach(id => $('momentSpeaker').add(new Option(speakerLabel(id), id)));
-    if (ids.includes(previous)) $('momentSpeaker').value = previous;
+    $('momentSpeakerFilter').hidden = ids.length < 2;
+    if (ids.length > 1 && ids.includes(previous)) $('momentSpeaker').value = previous;
   }
   function updateSpeakers() {
     const box = $('momentSpeakers'); box.replaceChildren();
@@ -160,24 +269,99 @@ export function initMoments(app) {
       const input = el('input'); input.id = `moment-speaker-${i}`; label.htmlFor = input.id;
       input.placeholder = 'Name (optional)'; input.maxLength = 80; input.value = labels[id] || '';
       input.dataset.edit = 'true';
-      input.addEventListener('change', () => { labels[id] = input.value.trim(); updateSpeakerOptions(); renderTranscript(); });
+      input.addEventListener('change', () => { labels[id] = input.value.trim(); updateSpeakerOptions(); renderTranscript(); timeline.speakers(segments, labels); });
       row.append(label, input, button('Hear sample', () => preview(first.start, Math.min(duration, first.start + 8)))); box.append(row);
     });
     $('momentSpeakerWrap').hidden = !box.children.length; updateSpeakerOptions();
   }
-  function preview(start, end, cardElement = null) {
-    if (!validRange(start, end, duration)) { say('Choose a valid start and end within the recording.', true); return; }
-    stop(); app.pause(); activeCard = cardElement; stopAt = end; playing = true;
-    player.currentTime = start;
-    player.play().catch(() => { stop(); say('Playback was blocked. Try Play again, or upload an audio-only file.', true); });
+  function playbackBounds() {
+    const item = choices.find(m => m.id === selectedId);
+    if (!item) return [0, 0];
+    const pad = $('momentContext').checked ? 10 : 0;
+    return [Math.max(0,item.start-pad), Math.min(duration,item.end+pad)];
   }
+  function syncPlayback() {
+    const item = choices.find(m => m.id === selectedId);
+    const [a,b] = samplePreview ? [previewStart,stopAt] : playbackBounds();
+    const t = Math.max(a,Math.min(b,player.currentTime || a));
+    const action = playing ? 'Pause' : t >= b && b > a ? 'Replay' : 'Play';
+    const icons = { Play: '<path d="M7 4.8C7 3.6 8.3 2.9 9.3 3.6l11 7c1 .6 1 2.2 0 2.8l-11 7C8.3 21.1 7 20.4 7 19.2z" fill="currentColor"/>', Pause: '<path d="M7 5h4v14H7zM14 5h4v14h-4z" fill="currentColor"/>', Replay: '<path d="M4 10a8 8 0 1 1 1 8M4 4v6h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' };
+    root.querySelectorAll('#momentPlayToggle, .moment-card-play').forEach(control => {
+      control.disabled = !item || generating; control.title = action; control.setAttribute('aria-label', action + ' preview');
+      if (control.dataset.action !== action) { control.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">' + icons[action] + '</svg>'; control.dataset.action = action; }
+    });
+    root.querySelectorAll('.moment-card-clock').forEach(n => { n.querySelector('.clock-current').textContent = timeLabel(t-a); n.querySelector('.clock-total').textContent = timeLabel(b-a); });
+    root.querySelectorAll('.moment-card-seek').forEach(n => { n.value = b > a ? (t-a)/(b-a)*1000 : 0; n.disabled = !item || generating; n.setAttribute('aria-valuetext', `${timeLabel(t-a)} of ${timeLabel(b-a)}`); });
+    root.querySelectorAll('.moment-card-preview-note').forEach(n => n.textContent = samplePreview ? (searchPreview ? 'Search preview · not added to moments' : 'Speaker sample') : $('momentContext').checked ? 'Preview includes surrounding audio' : 'Listen to this moment');
+    root.querySelectorAll('[data-transport]').forEach(control => { control.disabled = !item || generating; });
+    $('momentPlaybackTime').querySelector('.clock-current').textContent = timeLabel(t-a);
+    $('momentPlaybackTime').querySelector('.clock-total').textContent = timeLabel(b-a);
+    $('transportState').textContent = playing ? 'PLAYING' : t >= b && b > a ? 'END' : 'READY';
+    $('transportState').classList.toggle('is-playing', playing);
+    $('momentPlaybackNote').textContent = samplePreview ? (searchPreview ? 'Search preview · not added to moments' : 'Speaker sample') : $('momentContext').checked ? 'Preview up to 10 seconds before and after your clip. Export includes only your selection.' : 'Preview selected clip';
+    root.querySelectorAll('[data-search-preview]').forEach(control => {
+      const active = playing && samplePreview && searchPreview?.id === Number(control.dataset.searchPreview);
+      control.textContent = active ? 'Pause preview' : 'Preview';
+      control.setAttribute('aria-pressed', String(active));
+    });
+    const caption = root.querySelector('.playback-clock .display-caption');
+    if (caption) caption.textContent = samplePreview && searchPreview ? 'SEARCH PREVIEW' : 'PLAYBACK';
+    if (item) $('momentTransport').style.setProperty('--moment-color',item.color);
+  }
+  function preview(start, end, cardElement = null, searchResult = null) {
+    if (!validRange(start, end, duration)) return;
+    stop(); app.pause(); searchPreview = searchResult; samplePreview = !cardElement; previewStart = start; activeCard = cardElement; stopAt = end; playing = true;
+    player.currentTime = start; syncPlayback();
+    player.play().catch(() => { stop(); say('Playback was blocked. Try Play again.',true); });
+  }
+  function togglePlayback() {
+    if (generating) return;
+    if (playing) { stop(); return; }
+    const item = choices.find(m => m.id === selectedId); if (!item) return;
+    const [a,b] = samplePreview ? [previewStart,stopAt] : playbackBounds();
+    const t = player.currentTime >= a && player.currentTime < b ? player.currentTime : a;
+    const sample = samplePreview;
+    preview(t,b,sample ? null : item.article, searchPreview); previewStart = a; syncPlayback();
+  }
+  $('momentPlayToggle').addEventListener('click', togglePlayback);
+  root.querySelectorAll('[data-transport]').forEach(control => control.addEventListener('click', () => {
+    const item = choices.find(m => m.id === selectedId);
+    if (!item || generating) return;
+    const resume = playing;
+    const current = player.currentTime;
+    stop(); samplePreview = false;
+    const [a,b] = playbackBounds();
+    const action = control.dataset.transport;
+    const target = action === 'start' ? item.start : action === 'end' ? item.end : current + (action === 'back' ? -15 : 15);
+    const t = Math.max(a, Math.min(b, target));
+    player.currentTime = t; timeline.playhead(t);
+    if (resume && action !== 'end' && t < b) { preview(t,b,item.article); previewStart = a; }
+    syncPlayback();
+  }));
+  $('momentContext').addEventListener('change', () => {
+    stop(); samplePreview = false; const [a,b] = playbackBounds(); player.currentTime = a;
+    timeline.window(a,b); syncPlayback();
+  });
   player.addEventListener('timeupdate', () => {
-    if (!playing) return;
-    if (player.currentTime >= stopAt) { stop(); return; }
+    if (playing && player.currentTime >= stopAt) { player.currentTime = stopAt; stop(); }
+    timeline.playhead(player.currentTime); syncPlayback();
     if (activeCard) activeCard.querySelectorAll('[data-word-start]').forEach(n =>
       n.classList.toggle('is-speaking', player.currentTime >= Number(n.dataset.wordStart) && player.currentTime < Number(n.dataset.wordEnd)));
   });
   player.addEventListener('ended', stop);
+  let meterFrame = 0, lastMeterFrame = 0;
+  function stopMeter() { cancelAnimationFrame(meterFrame); meterFrame = 0; timeline.levels(player.currentTime, false); }
+  function animatePlayback(now) {
+    if (!playing || player.paused || player.ended) { stopMeter(); return; }
+    if (player.currentTime >= stopAt) { player.currentTime = stopAt; stop(); return; }
+    if (now - lastMeterFrame >= 50) {
+      timeline.levels(player.currentTime, true); timeline.playhead(player.currentTime); lastMeterFrame = now;
+    }
+    meterFrame = requestAnimationFrame(animatePlayback);
+  }
+  player.addEventListener('playing', () => { stopMeter(); meterFrame = requestAnimationFrame(animatePlayback); });
+  for (const event of ['pause','ended','waiting','emptied']) player.addEventListener(event, stopMeter);
+
   function textFor(start, end, target) {
     target.replaceChildren();
     words.filter(w => w.end > start && w.start < end).forEach(w => {
@@ -185,76 +369,166 @@ export function initMoments(app) {
     });
   }
   function card(moment, rank) {
-    const article = el('article', null, 'moment-card');
-    article.append(el('div', rank ? `MOMENT ${String(rank).padStart(2, '0')}` : 'YOUR SELECTION', 'moment-eyebrow'));
-    article.append(el('h3', moment.title));
-    if (moment.speakers?.length) article.append(el('p', moment.speakers.map(speakerLabel).join(' / '), 'moment-meta'));
+    const color = MOMENT_COLORS[(choices.length) % MOMENT_COLORS.length];
+    const number = Math.max(0, ...choices.map(item => item.number || 0)) + 1;
+    const item = { ...moment, id: nextId++, color, number, recommended: !!rank };
+    const numberLabel = String(number).padStart(2, '0');
+    const article = el('article', null, 'moment-card'); article.hidden = true; article.style.setProperty('--moment-color', color);
+    const tab = button('', () => selectMoment(item.id)); tab.className = 'moment-choice'; tab.style.setProperty('--moment-color', color); tab.dataset.edit = 'true';
+    const tabNo = el('span', numberLabel, 'moment-choice-no');
+    const tabBody = el('span', null, 'moment-choice-body'); const tabTitle = el('strong', moment.title); const tabMeta = el('small');
+    tabBody.append(tabTitle, tabMeta); tab.append(tabNo, tabBody); tab.setAttribute('aria-pressed', 'false');
+    article.append(el('div', `MOMENT ${numberLabel} · SELECTED`, 'moment-eyebrow'));
+    const heading = el('h3');
+    const titleButton = button(item.title, () => beginRename());
+    titleButton.className = 'moment-title-button'; titleButton.dataset.edit = 'true';
+    titleButton.title = 'Rename moment'; titleButton.setAttribute('aria-label', `Rename moment: ${item.title}`);
+    const titleInput = el('input'); titleInput.type = 'text'; titleInput.maxLength = 160;
+    titleInput.className = 'moment-title-input'; titleInput.hidden = true; titleInput.dataset.edit = 'true';
+    titleInput.setAttribute('aria-label', 'Moment title');
+    titleInput.title = 'Enter to save · Escape to cancel';
+    const renameActions = el('div', null, 'moment-rename-actions'); renameActions.hidden = true;
+    const saveTitle = button('Save', () => finishRename(true, true));
+    const cancelTitle = button('Cancel', () => finishRename(false, true));
+    saveTitle.dataset.edit = 'true'; cancelTitle.dataset.edit = 'true';
+    renameActions.append(saveTitle, cancelTitle);
+    let renaming = false;
+    function beginRename() {
+      if (busy) return;
+      renaming = true; titleInput.value = item.title; titleButton.hidden = true; titleInput.hidden = false; renameActions.hidden = false;
+      titleInput.focus(); titleInput.select();
+    }
+    function finishRename(save, refocus = false) {
+      if (!renaming) return;
+      renaming = false;
+      const value = titleInput.value.trim();
+      if (save && value) {
+        item.title = value; tabTitle.textContent = value; titleButton.textContent = value;
+        titleButton.setAttribute('aria-label', `Rename moment: ${value}`);
+        timeline.moments(choices); handoff();
+      }
+      titleInput.hidden = true; titleButton.hidden = false; renameActions.hidden = true;
+      if (refocus) titleButton.focus({ preventScroll: true });
+    }
+    // Explicit Save/Cancel prevents a mobile blur from saving before Cancel is tapped.
+    titleInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === 'Escape') {
+        e.preventDefault(); e.stopPropagation(); finishRename(e.key === 'Enter', true);
+      }
+    });
+    heading.append(titleButton, titleInput); article.append(heading, renameActions);
+    const cardPlayer = el('div', null, 'moment-card-player');
+    cardPlayer.innerHTML = '<div class="moment-card-transport"><button type="button" class="moment-card-play" aria-label="Play preview"></button><div class="moment-card-player-body"><div class="moment-card-player-meta"><span class="moment-card-preview-note">Listen to this moment</span><span class="moment-card-clock" aria-label="Playback elapsed and total time"><span class="clock-current"></span><span class="clock-divider">/</span><span class="clock-total"></span></span></div><input type="range" class="moment-card-seek" min="0" max="1000" step="1" value="0" aria-label="Seek preview" /></div></div>';
+    cardPlayer.querySelector('button').addEventListener('click', togglePlayback);
+    cardPlayer.querySelector('input').addEventListener('input', e => {
+      if (generating) return;
+      const [a,b] = samplePreview ? [previewStart,stopAt] : playbackBounds();
+      player.currentTime = a+(b-a)*Number(e.target.value)/1000; timeline.playhead(player.currentTime); syncPlayback();
+    });
+    article.append(cardPlayer);
     const meta = el('p', '', 'moment-meta'), quote = el('p', '', 'moment-quote');
-    const range = el('div', null, 'moment-range');
+    const range = el('div', null, 'moment-range moment-card-readouts');
+    range.setAttribute('role','group'); range.setAttribute('aria-label','Adjust this moment');
     const start = el('input'), end = el('input');
     for (const [node, value, name] of [[start, moment.start, 'Start (seconds)'], [end, moment.end, 'End (seconds)']]) {
       node.type = 'number'; node.step = '0.1'; node.min = '0'; node.max = String(duration); node.value = value.toFixed(1);
       node.setAttribute('aria-label', name); node.dataset.edit = 'true';
-      const label = el('label', name); label.append(node); range.append(label);
+      const label = el('label'); label.append(el('span', name.startsWith('Start') ? 'Start · s' : 'End · s', 'trim-field-title'), node); range.append(label);
     }
-    const refresh = () => { stop(); const a = Number(start.value), b = Number(end.value);
-      meta.textContent = `${format(a)} – ${format(b)} · ${(b - a).toFixed(1)} seconds`;
-      textFor(a, b, quote); };
-    start.addEventListener('change', refresh); end.addEventListener('change', refresh); refresh();
-    article.append(meta, el('p', moment.reason, 'moment-reason'));
-    if (moment.context) article.append(el('p', 'Context: ' + moment.context, 'moment-context'));
-    const actions = el('div', null, 'moment-actions');
-    actions.append(button('Play moment', () => preview(Number(start.value), Number(end.value), article)),
-      button('Hear context', () => preview(Math.max(0, Number(start.value) - 10), Math.min(duration, Number(end.value) + 10), article)),
-      button('Stop', stop));
-    const use = button('Create audiogram →', async () => {
-      if (busy || app.busy()) return;
-      const a = Number(start.value), b = Number(end.value), run = epoch;
-      if (!start.value || !end.value || !validRange(a, b, duration)) { say('Choose a valid start and end within the recording.', true); return; }
-      if (b - a > 90) { say('Keep the selected moment within 90 seconds for this first version.', true); return; }
-      controller = new AbortController(); setBusy(true); stop();
-      try {
-        app.unlockAudio(); await readAudio(run); check(run);
-        const blob = await slice(a, b); check(run);
-        await app.useMoment({ file, start: a, end: b, title: moment.title, blob, words: clipWords(words, a, b), language });
-        check(run);
-        $('momentSelection').hidden = false;
-        $('momentSelection').textContent = `Selected ${format(a)}–${format(b)} from ${file.name}. Original audio and captions are ready. Choose a language below to dub this selection.`;
-        say('Audiogram ready in the editor. Your other moments are kept here.');
-      } catch (e) { if (run === epoch) say(e.message, true); }
-      finally { if (run === epoch) setBusy(false); }
+    const length = el('input'); length.type = 'number'; length.min = String(Math.min(.3,duration)); length.max = String(duration); length.step = '0.1'; length.dataset.edit = 'true';
+    length.setAttribute('aria-label','Moment duration in seconds');
+    const lengthLabel = el('label', null, 'moment-card-duration'); lengthLabel.append(el('span','Duration · s','trim-field-title'),length); range.append(lengthLabel);
+    cardPlayer.append(range);
+    const refresh = (fromTimeline = false) => {
+      stop(); const a = Number(start.value), b = Number(end.value);
+      if (!start.value || !end.value || !validRange(a, b, duration)) { say('Start must be before end, within the recording.', true); return; }
+      if (selectedId === item.id && (a !== item.start || b !== item.end)) scope.value = 'selection';
+      item.start = a; item.end = b; length.value = (b-a).toFixed(1);
+      meta.textContent = `${timeLabel(a)} – ${timeLabel(b)} · ${(b - a).toFixed(1)} seconds`;
+      tabMeta.textContent = `${timeLabel(a)} — ${timeLabel(b)}`;
+      textFor(a, b, quote);
+      if (!complete) quote.textContent = 'Preview the original audio now. Press ANALYZE to add transcript search and suggested moments.';
+      if (!fromTimeline && selectedId === item.id) timeline.range(a, b);
+      timeline.moments(choices); syncPlayback(); handoff();
+    };
+    start.addEventListener('change', () => refresh()); end.addEventListener('change', () => refresh());
+    length.addEventListener('change', () => {
+      if (busy) return;
+      if (!length.value || !length.checkValidity()) { length.reportValidity(); return; }
+      const next = rangeForDuration(item.start, length.valueAsNumber, duration);
+      if (!next) return;
+      start.value = next[0].toFixed(1); end.value = next[1].toFixed(1); refresh();
     });
-    use.classList.add('moment-use'); use.dataset.edit = 'true'; actions.append(use);
-    article.append(quote, range, actions); return article;
+    for (const field of [start,end,length]) field.addEventListener('keydown', e => { if(e.key === 'Enter') { e.preventDefault(); field.blur(); } });
+    item.startInput = start; item.endInput = end; item.refresh = refresh; item.article = article; item.tab = tab;
+    choices.push(item); refresh();
+    article.append(el('p', moment.reason, 'moment-reason'));
+    if (moment.context) article.append(el('p', 'Context: ' + moment.context, 'moment-context'));
+    article.append(quote);
+    detail.append(article); timeline.moments(choices); return tab;
   }
   function renderTranscript() {
     $('momentTranscriptWrap').hidden = !segments.length;
     const box = $('momentTranscript'); box.replaceChildren();
-    const query = $('momentSearch').value.toLowerCase().trim();
-    const filtered = segments.filter(s => !query || s.text.toLowerCase().includes(query));
-    const shown = filtered.slice(0, (transcriptPage + 1) * 80);
+    const query = $('momentSearch').value.trim();
+    const filtered = transcriptPassages(segments, words, query, duration);
+    $('momentSearchCount').textContent = query ? `${filtered.length} matching passage${filtered.length === 1 ? '' : 's'} for “${query}”` : `${filtered.length} transcript passages. Search a topic or name to narrow them down.`;
+    const shown = filtered.slice(0, (transcriptPage + 1) * 20);
     shown.forEach(s => {
-      const row = el('div', null, 'moment-transcript-row');
-      row.append(el('small', `${format(s.start)} · ${speakerLabel(s.speaker)}`), el('p', s.text));
-      row.append(button('Start here', () => { $('manualMomentStart').value = s.start.toFixed(1); }),
-        button('End here', () => { $('manualMomentEnd').value = s.end.toFixed(1); })); box.append(row);
+      const row = el('article', null, 'moment-transcript-row');
+      row.append(el('small', `${format(s.start)} – ${format(s.end)} · ${(s.end-s.start).toFixed(1)}s · ${speakerLabel(s.speaker)}`));
+      const excerpt = el('p');
+      const passageWords = words.filter(w => w.end > s.start && w.start < s.end);
+      const text = passageWords.length ? passageWords.map(w => w.text).join(' ') : s.text;
+      let cursor = 0, at;
+      if (query) while ((at = text.toLowerCase().indexOf(query.toLowerCase(), cursor)) !== -1) {
+        excerpt.append(document.createTextNode(text.slice(cursor, at)), el('mark', text.slice(at, at + query.length))); cursor = at + query.length;
+      }
+      excerpt.append(document.createTextNode(text.slice(cursor))); row.append(excerpt);
+      const actions = el('div', null, 'transcript-result-actions');
+      const hear = button('Preview', () => {
+        if (busy) return;
+        if (playing && samplePreview && searchPreview?.id === s.id) { stop(); return; }
+        timeline.window(s.start, s.end); preview(s.start, s.end, null, s); timeline.playhead(s.start);
+      });
+      hear.dataset.searchPreview = String(s.id); hear.dataset.edit = 'true'; hear.disabled = busy;
+      const saved = choices.find(item => item.transcriptSegmentId === s.id);
+      const add = button(saved ? 'Load moment' : 'Add to moments', () => {
+        if (busy) return;
+        stop(); app.pause();
+        let existing = choices.find(item => item.transcriptSegmentId === s.id);
+        if (!existing) {
+          const title = query ? `${query} · ${format(s.start)}` : s.text.slice(0, 70);
+          list.append(card({start:s.start, end:s.end, title, transcriptSegmentId:s.id, reason:'Selected from transcript search. Adjust the edges in the waveform.'}));
+          existing = choices.at(-1);
+        }
+        selectMoment(existing.id); renderTranscript();
+        $('momentSearchFeedback').textContent = `Loaded “${existing.title}” in moments. Press Play to preview, or adjust Start, End, and Duration.`;
+        const transport = $('momentTransport'); transport.scrollIntoView({block:'center',behavior:'auto'}); $('momentPlayToggle').focus({preventScroll:true});
+      });
+      add.dataset.edit = 'true'; add.disabled = busy; add.classList.add('moment-primary');
+      actions.append(hear, add); if (saved) actions.append(el('span','In moments','transcript-saved'));
+      row.append(actions); box.append(row);
     });
-    if (shown.length < filtered.length) box.append(button('Show more transcript', () => { transcriptPage++; renderTranscript(); }));
-    if (!filtered.length) box.append(el('p', 'No matching passages.'));
+    if (shown.length < filtered.length) box.append(button('Show more passages', () => { transcriptPage++; renderTranscript(); }));
+    if (!filtered.length) box.append(el('p', 'No passages found. Try a shorter phrase or another spelling.'));
+    syncPlayback();
   }
-  $('momentSearch').addEventListener('input', () => { transcriptPage = 0; renderTranscript(); });
+  $('momentSearch').addEventListener('input', () => {
+    if (searchPreview) { stop(); searchPreview = null; samplePreview = false; }
+    transcriptPage = 0; $('momentSearchFeedback').textContent = ''; renderTranscript();
+  });
   $('manualMomentAdd').addEventListener('click', () => {
     const a = Number($('manualMomentStart').value), b = Number($('manualMomentEnd').value);
     if (!$('manualMomentStart').value || !$('manualMomentEnd').value || !validRange(a, b, duration) || b - a > 90) { say('Select a passage between 0.25 and 90 seconds within the recording.', true); return; }
     const selected = card({ start: a, end: b, title: 'Your selected passage', reason: 'A passage you selected from the original recording.' });
-    list.prepend(selected); selected.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    list.append(selected); selectMoment(choices.at(-1).id);
   });
   find.addEventListener('click', analyze);
   cancel.addEventListener('click', () => controller?.abort());
   $('momentSpeaker').addEventListener('change', () => say('Speaker preference updated. Find more moments to apply it.'));
-  $('momentKeyClear').addEventListener('click', () => { $('momentKey').value = ''; say('Analysis key cleared from this page.'); });
   return {
-    reset,
+    reset, open: openWorkspace, close: closeWorkspace,
     cachedTranscript(source, start, end, spoken) {
       if (source !== file || !complete || spoken !== sourceLanguage || !validRange(start, end, duration)) return null;
       return { words: clipWords(words, start, end).map(w => ({ ...w, type: 'word' })), language_code: language };

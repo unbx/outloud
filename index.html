@@ -17,23 +17,30 @@
     gtag("config", window.GA_MEASUREMENT_ID);
   }
 </script>
-<title>OutLoud · Any clip. Any language. Same voice.</title>
-<meta name="description" content="Turn any clip into a live-captioned audiogram that keeps the original voice, intonation, and expression. Dub it into any language, same voice. Powered by ElevenLabs." />
+<title>OutLoud — Clip moments that deserve to be heard</title>
+<meta name="description" content="Find the moments worth sharing in your recordings. Trim your clip, add captions, design an audiogram, and share it with the world." />
+<link rel="canonical" href="https://outloud.nana.works/" />
+<meta name="robots" content="index,follow,max-image-preview:large" />
 <meta property="og:type" content="website" />
+<meta property="og:site_name" content="OutLoud" />
+<meta property="og:locale" content="en_US" />
 <meta property="og:url" content="https://outloud.nana.works/" />
-<meta property="og:title" content="OutLoud. Any clip. Any language. Same voice." />
-<meta property="og:description" content="Turn any clip into a live-captioned audiogram that keeps the original voice, intonation, and expression. Dub it into any language, same voice. Powered by ElevenLabs." />
-<meta property="og:image" content="https://outloud.nana.works/outloud-og-v4.png" />
-<meta property="og:image:width" content="1440" />
-<meta property="og:image:height" content="806" />
+<meta property="og:title" content="Clip moments that deserve to be heard. | OutLoud" />
+<meta property="og:description" content="Find the moments worth sharing in your recordings. Trim your clip, add captions, design an audiogram, and share it with the world." />
+<meta property="og:image" content="https://outloud.nana.works/outloud-og-v9.png" />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="OutLoud: Clip moments that deserve to be heard. A real captioned audiogram with the teal NANA profile graphic, alongside the Input, Clip, Design, Share workflow." />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="OutLoud. Any clip. Any language. Same voice." />
-<meta name="twitter:description" content="Turn any clip into a live-captioned audiogram that keeps the original voice, intonation, and expression. Dub it into any language, same voice. Powered by ElevenLabs." />
-<meta name="twitter:image" content="https://outloud.nana.works/outloud-og-v4.png" />
+<meta name="twitter:title" content="Clip moments that deserve to be heard. | OutLoud" />
+<meta name="twitter:description" content="Find the moments worth sharing in your recordings. Trim your clip, add captions, design an audiogram, and share it with the world." />
+<meta name="twitter:image" content="https://outloud.nana.works/outloud-og-v9.png" />
+<meta name="twitter:image:alt" content="OutLoud: Clip moments that deserve to be heard. A real captioned audiogram with the teal NANA profile graphic, alongside the Input, Clip, Design, Share workflow." />
+<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "Organization", "@id": "https://outloud.nana.works/#publisher", "name": "NANA", "url": "https://nana.works/"}, {"@type": "WebSite", "@id": "https://outloud.nana.works/#website", "name": "OutLoud", "url": "https://outloud.nana.works/", "publisher": {"@id": "https://outloud.nana.works/#publisher"}, "inLanguage": "en"}, {"@type": "WebApplication", "@id": "https://outloud.nana.works/#app", "name": "OutLoud", "url": "https://outloud.nana.works/", "description": "Find the moments worth sharing in your recordings. Trim your clip, add captions, design an audiogram, and share it with the world.", "applicationCategory": "MultimediaApplication", "operatingSystem": "Web browser", "browserRequirements": "JavaScript enabled; recording and capture depend on browser support.", "publisher": {"@id": "https://outloud.nana.works/#publisher"}, "featureList": ["Upload audio or video", "Record microphone audio", "Capture tab audio in supported browsers", "Find and trim moments", "Search transcripts", "Create captioned audiograms", "Dub into supported languages while preserving the speaker’s voice", "Download video, audio, SRT and VTT captions"]}]}</script>
 <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
 <link href="https://api.fontshare.com/v2/css?f[]=clash-display@600,500,700&f[]=general-sans@500,600&display=swap" rel="stylesheet" />
-<!-- Geist Mono (SIL OFL) backs the SIGNAL theme: apefest.com loads it alongside three custom
-     faces that are licensed and not ours to ship, so this is the part of their stack we can use. -->
+<!-- Geist Mono (SIL OFL) supports the SIGNAL theme. -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@500;700&display=swap" rel="stylesheet" />
@@ -789,8 +796,9 @@
   .why-maxim { font-family: var(--display); font-size: 17px; font-weight: 600; color: var(--text); margin: 0; }
   .why-maxim .hl { color: var(--accent); }
 </style>
+<link rel="stylesheet" href="studio.css" />
 </head>
-<body>
+<body data-stage="audio" data-input-mode="dub">
 <header>
   <div class="brand">
     <a class="brand-mark" id="brandMark" href="https://nana.works" target="_blank" rel="noopener" aria-label="NANA — nana.works"></a>
@@ -817,13 +825,15 @@
         </text>
       </svg>
     </span>
-    <span class="tagline">any clip · any language · same voice</span>
+    <span class="tagline">CLIP MOMENTS THAT DESERVE TO BE HEARD</span>
   </div>
   <div class="header-right">
     <button type="button" class="beta" id="betaBtn" title="What beta means, and what's coming">Beta</button>
     <button class="keybtn" id="keyBtn" title="Manage your ElevenLabs connection"><span class="dot" id="keyDot"></span><span class="keybtn-label" id="keyLabel">Connect</span></button>
   </div>
 </header>
+<div id="trialBanner" hidden><span id="trialBannerText">Free session · one recording up to 60s · captions & analysis</span><button type="button" class="foot-link" id="trialRequest" hidden>Request beta access →</button></div>
+
 
 <!-- Shared holo stroke for the dashed intake frames. A CSS border can't carry a gradient, and
      an SVG stroke can also be marched with stroke-dashoffset, which a border never could. -->
@@ -837,45 +847,44 @@
   </defs>
 </svg>
 
-<main>
+<div class="studio-workstation" id="studioWorkstation">
+<nav class="studio-progress" aria-label="Workflow"><button type="button" data-stage-label="audio" aria-current="step"><small>01</small>INPUT</button><button type="button" data-stage-label="clip" disabled><small>02</small>CLIP</button><button type="button" data-stage-label="design" disabled><small>03</small>DESIGN</button><button type="button" data-stage-label="export" disabled><small>04</small>SHARE</button></nav>
+<main id="studioBody">
   <!-- LEFT COLUMN, STEP 1: the source -->
   <section class="panel" id="createPanel">
     <div class="panel-aura" aria-hidden="true"></div>
-    <div class="kicker">
-      <span class="num">01</span><span class="ttl">Create</span>
+    <div class="kicker stage-header">
+      <span class="num stage-number" aria-hidden="true">01</span><div class="stage-heading"><span class="stage-eyebrow">AUDIO INPUT</span><h1 id="inputTitle">Start with your sound.</h1></div>
       <button type="button" class="panel-toggle" id="createToggle" hidden>Change clip</button>
     </div>
     <div class="panel-body" id="createBody">
 
-    <!-- MODE — caption an uploaded clip (primary), or write a script -->
-    <div class="seg mode-seg" id="modeSeg" role="group" aria-label="Input mode">
-      <button type="button" data-mode="dub">Caption a clip</button>
-      <button type="button" data-mode="write" class="sel">Write a script</button>
-    </div>
-
     <!-- CLIP MODE — caption in place, or dub into another language; original voice either way -->
     <div id="dubControls" hidden>
-      <p class="hint" style="margin:14px 0 0;">Upload a clip, record a voice note, or capture audio playing in another tab. OutLoud renders a live-captioned audiogram that keeps the voice, intonation, and expression of the original. Or dub it into another language, <strong>still in the original speaker's voice</strong>.</p>
-      <label for="dubFile">Clip</label>
-      <div class="intake" id="dropzone">
-        <button type="button" class="intake-opt io-drop" id="pickBtn">
-          <svg class="io-frame" aria-hidden="true"><rect rx="12" ry="12" /></svg>
-          <span class="ic" data-icon="upload"></span>
-          <span class="io-main">Upload</span>
-          <span class="io-sub">Audio or video</span>
-        </button>
-        <button type="button" class="intake-opt" id="recBtn">
-          <svg class="io-frame" aria-hidden="true"><rect rx="12" ry="12" /></svg>
-          <span class="ic" data-icon="mic"></span>
-          <span class="io-main">Record</span>
-          <span class="io-sub">Voice note</span>
-        </button>
-        <button type="button" class="intake-opt" id="tabBtn" hidden>
-          <svg class="io-frame" aria-hidden="true"><rect rx="12" ry="12" /></svg>
-          <span class="ic" data-icon="monitor"></span>
-          <span class="io-main">Capture</span>
-          <span class="io-sub">Tab audio</span>
-        </button>
+      <div class="studio-intake-title"><p class="hint">Load a recording, capture a performance, or record your voice. Choose the passage next, then add captions and shape the final output.</p></div>
+      <p id="freeClipLimits" class="hint" hidden></p><p id="uploadValidation" role="status" aria-live="polite" hidden></p>
+      <div class="intake" id="dropzone" role="group" aria-label="Choose an audio source">
+        <div class="input-key">
+          <label class="input-key-label" id="uploadLabel" for="pickBtn">Upload</label>
+          <button type="button" class="intake-opt io-drop" id="pickBtn" aria-labelledby="uploadLabel" aria-describedby="uploadHint">
+            <span class="ic" data-icon="upload" aria-hidden="true"></span>
+          </button>
+          <span class="input-key-hint" id="uploadHint">Audio or video</span>
+        </div>
+        <div class="input-key">
+          <label class="input-key-label" id="recordLabel" for="recBtn">Record</label>
+          <button type="button" class="intake-opt" id="recBtn" aria-labelledby="recordLabel" aria-describedby="recordHint">
+            <span class="ic" data-icon="mic" aria-hidden="true"></span>
+          </button>
+          <span class="input-key-hint" id="recordHint">Voice note</span>
+        </div>
+        <div class="input-key">
+          <label class="input-key-label" id="captureLabel" for="tabBtn">Capture</label>
+          <button type="button" class="intake-opt" id="tabBtn" aria-labelledby="captureLabel" aria-describedby="captureHint" hidden>
+            <span class="ic" data-icon="monitor" aria-hidden="true"></span>
+          </button>
+          <span class="input-key-hint" id="captureHint">Tab audio</span>
+        </div>
       </div>
       <input type="file" id="dubFile" accept="audio/*,video/*" hidden />
       <div class="rec-help" id="recHelpRow" hidden>
@@ -889,44 +898,54 @@
         <button type="button" id="recStop"><span class="rec-sq"></span>Stop &amp; use</button>
         <button type="button" id="recCancel" title="Discard recording" aria-label="Discard recording">&times;</button>
       </div>
+      <div class="loaded-source">
       <div class="dz-file" id="dubFileInfo" hidden>
-        <span class="dz-name" id="dubFileName"></span>
-        <button type="button" class="dz-trim" id="trimBtn" title="Caption only part of this clip">Trim</button>
-        <button type="button" id="dubFileClear" title="Remove clip" aria-label="Remove clip">&times;</button>
+        <div class="loaded-source-meta"><span class="loaded-source-label">RECORDING LOADED</span>
+        <span class="dz-name" id="dubFileName"></span><span class="loaded-source-hint">Your source is ready. Pick up where you left off.</span></div>
+        <button type="button" class="dz-trim" id="trimBtn" title="Open waveform, trim and moments">Edit clip</button>
+        <button type="button" id="dubFileClear" title="Remove clip" aria-label="Remove clip">Remove</button>
       </div>
-      <section class="moments-panel" id="momentsPanel" aria-label="Find moments" hidden>
-        <div class="moment-heading"><h2>Find moments</h2><span class="moment-beta">Beta</span></div>
-        <p class="moment-source" id="momentSource"></p>
-        <p class="hint">Find the passages worth sharing. Listen, adjust the cut, then make an audiogram.</p>
-        <label for="momentBrief">What should we look for? <span class="sub">· optional</span></label>
-        <textarea id="momentBrief" maxlength="600" data-edit placeholder="Practical advice for creatives. Prioritize originality, career insights, and complete takeaways."></textarea>
-        <div class="moment-filters">
-          <div><label for="momentLength">Clip length</label><select id="momentLength" data-edit><option value="15-30">15–30 seconds</option><option value="30-60" selected>30–60 seconds</option><option value="60-90">60–90 seconds</option></select></div>
-          <div><label for="momentSpeaker">Featured speaker</label><select id="momentSpeaker" data-edit><option value="">Any speaker</option></select></div>
+      <div class="moment-launch" id="momentLaunch" hidden>
+        <button type="button" class="moment-button moment-primary" id="openMomentWorkspace">CONTINUE TO CLIP <span aria-hidden="true">→</span></button>
+        
+      </div>
+      </div>
+      <section class="moments-panel clip-workspace" id="momentsPanel" aria-labelledby="workspaceTitle" hidden>
+        <div class="workspace-top stage-header"><span class="stage-number" aria-hidden="true">02</span><div class="stage-heading"><div class="workspace-eyebrow stage-eyebrow">MOMENT SELECTOR</div><h2 id="workspaceTitle">Clip the moment</h2><p class="moment-source" id="momentSource"></p></div><button type="button" class="workspace-close" id="closeMomentWorkspace" aria-label="Back to audio input">←</button></div>
+        <div class="workspace-prompt analysis-console" data-state="idle">
+          <div class="analysis-main">
+            <button type="button" class="moment-button moment-primary" id="findMoments" aria-pressed="false">ANALYZE</button>
+            <div class="analysis-readout"><span class="workspace-analysis-label" id="workspaceAnalysisLabel" role="status">Not analyzed</span><span class="analysis-help">Find suggested moments &amp; unlock transcript search.</span></div>
+            <label for="momentLength">LENGTH<select id="momentLength" data-edit><option value="15-90" selected>Auto</option><option value="15-30">15–30 sec</option><option value="30-60">30–60 sec</option><option value="60-90">60–90 sec</option></select></label>
+            <button type="button" class="moment-button" id="cancelMoments" hidden>Cancel</button>
+          </div>
+          <details class="analysis-guidance"><summary>Tune analysis <span class="sub">· optional</span></summary><div class="analysis-options"><label for="momentBrief">What should we listen for?<input id="momentBrief" maxlength="600" data-edit placeholder="A topic, audience, or type of moment…" /></label><label for="momentSpeaker" id="momentSpeakerFilter" hidden>Focus on a speaker<select id="momentSpeaker" data-edit><option value="">Any speaker</option></select></label></div></details>
         </div>
-        <p class="moment-usage" id="momentUsage"></p>
-        <div class="moment-actions"><button type="button" class="moment-button moment-primary" id="findMoments">Find moments</button><button type="button" class="moment-button" id="cancelMoments" hidden>Cancel</button></div>
         <p class="moment-status" id="momentStatus" role="status" aria-live="polite"></p>
-        <details class="moment-settings"><summary>Analysis connection</summary>
-          <p>Your tester code uses the app’s analysis connection. With your own ElevenLabs key, add an OpenAI key here. It stays in this page’s memory and passes through OutLoud’s server to OpenAI; it is not saved.</p>
-          <label for="momentKey">OpenAI API key</label><input id="momentKey" type="password" autocomplete="off" spellcheck="false" data-edit placeholder="Optional with a configured tester code" />
-          <button type="button" class="moment-button" id="momentKeyClear" data-edit>Clear analysis key</button>
-        </details>
-        <details class="moment-settings" id="momentSpeakerWrap" hidden><summary>Name the speakers</summary>
-          <p>Listen to samples to identify the guest. Speaker numbers may change between sections. Give matching voices the same name, then choose that name above and find more moments.</p>
-          <div id="momentSpeakers"></div>
-        </details>
-        <div class="moment-results" id="momentResults"></div>
-        <details class="moment-settings" id="momentTranscriptWrap" hidden><summary>Explore transcript &amp; select your own passage</summary>
-          <label for="momentSearch">Search transcript</label><input id="momentSearch" type="search" placeholder="Search for a topic or phrase" />
+        <div class="workspace-timeline" id="clipTimeline"></div>
+
+        <div class="workspace-edit"><div class="workspace-moments"><div class="workspace-section-title">MOMENTS <button type="button" id="newManualMoment">+ New selection</button></div><div class="moment-results" id="momentResults"></div></div><div class="moment-detail" id="momentDetail"></div></div>
+        <details class="moment-settings transcript-search" id="momentTranscriptWrap" hidden open><summary>Search transcript &amp; create moments</summary>
+          <p class="hint">Find a topic or name. Preview a passage, then add it to your moments to load and trim it.</p>
+          <label for="momentSearch">Search transcript</label><input id="momentSearch" type="search" placeholder="Search for a topic, name, or phrase" />
+          <p id="momentSearchCount" class="transcript-count" role="status"></p><p id="momentSearchFeedback" role="status"></p>
           <div id="momentTranscript" class="moment-transcript"></div>
+          <details class="transcript-manual"><summary>Set a custom passage by time</summary>
           <div class="moment-range"><label>Start (seconds)<input id="manualMomentStart" type="number" min="0" step="0.1" /></label><label>End (seconds)<input id="manualMomentEnd" type="number" min="0" step="0.1" /></label></div>
-          <button type="button" id="manualMomentAdd" class="moment-button" data-edit>Preview this passage</button>
+          <button type="button" id="manualMomentAdd" class="moment-button" data-edit>Add selection to timeline</button></details>
         </details>
-        <p class="moment-selection" id="momentSelection" hidden></p>
-        <audio id="momentPlayer" preload="metadata" hidden></audio>
+        <div class="workspace-bottom">
+          <details class="moment-settings" id="momentSpeakerWrap" hidden><summary>Name the speakers</summary><p>Listen to identify each voice. Speaker numbers can change between sections; give matching voices the same name to group them.</p><div id="momentSpeakers"></div></details>
+        </div>
+        <div class="workspace-handoff">
+          <label class="handoff-scope" for="momentScope">USE<select id="momentScope" data-edit><option value="selection">Selected moment</option><option value="full">Full recording</option></select></label>
+          <label for="momentTarget">Audio &amp; captions<select id="momentTarget" data-edit></select></label>
+          <button type="button" class="moment-button moment-primary" id="momentContinue" data-edit>Continue to Design →</button>
+          <div class="handoff-meta"><p id="handoffSelection">Choose a moment</p><p id="handoffStatus" role="status" aria-live="polite">Original voice, with captions. Style your audiogram next.</p></div>
+        </div>
+        <p class="moment-selection" id="momentSelection" hidden></p><audio id="momentPlayer" preload="metadata" hidden></audio>
       </section>
-      <div>
+      <div class="legacy-language">
         <label for="dubTarget">Language <span class="sub">· captions, or a dub</span></label>
         <select id="dubTarget"><option value="same" selected>Original · captions only</option></select>
         <div class="src-line">
@@ -940,7 +959,7 @@
       </div>
     </div>
 
-    <div id="writeControls">
+    <div id="writeControls" hidden>
     <p class="hint">Paste a post (or any text). OutLoud narrates it in a real ElevenLabs voice and renders a feed-ready audiogram.</p>
 
     <label for="text">Script</label>
@@ -1044,8 +1063,8 @@
   <!-- LEFT COLUMN, STEP 2: everything that changes how it looks -->
   <section class="panel" id="designPanel">
     <div class="panel-aura" aria-hidden="true"></div>
-    <div class="kicker"><span class="num">02</span><span class="ttl">Design</span></div>
-    <p class="hint">Brand it and shape the canvas. Everything here updates the preview as you go.</p>
+    <div class="kicker stage-header"><span class="num stage-number" aria-hidden="true">03</span><div class="stage-heading"><span class="stage-eyebrow">VISUAL DESIGNER</span><h2>Design the moment</h2></div><button type="button" class="panel-toggle" id="designEditClip" hidden>Edit clip</button></div>
+    <p class="hint">Make it yours. Set the format, shape the captions, and watch your changes live.</p>
 
     <!-- CREATOR — image, name & description that brand the audiogram (shared by both modes) -->
     <label for="handle">Creator image &amp; name</label>
@@ -1055,7 +1074,7 @@
         <img class="pfp-thumb" id="pfpThumb" alt="" />
         <button type="button" class="pfp-remove" id="pfpClear" title="Remove photo" aria-label="Remove photo">&times;</button>
       </div>
-      <input id="handle" type="text" value="@yourname" />
+      <input id="handle" type="text" value="NAME" />
     </div>
     <input type="file" id="pfpFile" accept="image/*" hidden />
 
@@ -1090,11 +1109,17 @@
           </label>
         </div>
 
+        <label>Visualizer <span class="sub">· waveform style</span></label>
+        <div class="seg" id="visualizerSeg" role="group" aria-label="Visualizer style">
+          <button type="button" data-visualizer="digital" class="sel" aria-pressed="true">Digital</button>
+          <button type="button" data-visualizer="analog" aria-pressed="false">Analog</button>
+        </div>
+
         <label>Captions <span class="sub">· how the words are set</span></label>
         <div class="seg capstyle-seg" id="capStyleSeg" role="group" aria-label="Caption style">
-          <button type="button" data-cap="flow" title="Continuous text, wrapping like a paragraph">Flow</button>
-          <button type="button" data-cap="sentence" class="sel" title="A line break at the end of every sentence">Sentences</button>
           <button type="button" data-cap="focus" title="Only a few words on screen at a time, in step with the audio">Focus</button>
+          <button type="button" data-cap="sentence" class="sel" title="A line break at the end of every sentence">Sentences</button>
+          <button type="button" data-cap="flow" title="Continuous text, wrapping like a paragraph">Flow</button>
         </div>
 
         <label>Theme <span class="sub">· background + waveform colors</span></label>
@@ -1128,11 +1153,9 @@
   </section>
 
   <!-- RIGHT COLUMN: the artifact and what you do with it -->
-  <section class="panel preview-panel" id="previewPanel">
+  <section class="panel preview-panel" id="previewPanel" aria-label="Audiogram preview">
+    <div class="stage-header share-header"><span class="stage-number" aria-hidden="true">04</span><div class="stage-heading"><span class="stage-eyebrow">FINAL OUTPUT</span><h2>Share the moment</h2></div></div>
     <div class="panel-aura" aria-hidden="true"></div>
-    <!-- Deliberately unnumbered: the preview is not a step, it is the result, present the whole
-         time. Numbering it forced a sequence the layout kept breaking. -->
-    <div class="kicker preview-kicker"><span class="ic" data-icon="play"></span><span class="ttl">Preview &amp; export</span></div>
     <div class="preview-wrap portrait" id="previewWrap">
       <canvas id="stage" width="1080" height="1350" title="Click the image, name, or description to edit it"></canvas>
     </div>
@@ -1140,14 +1163,20 @@
     <!-- Play, directly under the preview — lights up once a clip is generated -->
     <div class="playbar" id="playbar">
       <button class="play-under" id="playBtn" disabled title="Play" aria-label="Play"><span class="ic" data-icon="play"></span></button>
-      <span class="ptime" id="tCur">0:00</span>
+      <span class="ptime" id="tCur" aria-label="Elapsed time">0:00</span>
       <input type="range" id="scrub" min="0" max="1000" value="0" step="1" disabled aria-label="Seek" />
-      <span class="ptime" id="tRem">-0:00</span>
+      <span class="ptime" id="tRem" aria-label="Remaining time">-0:00</span>
     </div>
     <button type="button" class="chip cap-edit" id="editCapsBtn" hidden><span class="ic chip-plus" data-icon="pencil"></span>Edit captions</button>
 
+
+    <audio id="player" crossorigin="anonymous"></audio>
+  </section>
+</main>
+<div class="stage-action-dock" id="designDock"><div><span class="stage-eyebrow">NEXT · SHARE</span><strong>Your moment, your style.</strong><p>Preview your changes, then choose your download.</p></div></div>
     <!-- Export -->
-    <div class="export-group" id="exportGroup">
+    <div class="export-group stage-action-dock" id="exportGroup">
+      <div class="export-heading"><span class="stage-eyebrow">READY TO SHARE</span><h2>Send the moment out.</h2><p>Save your video, audio, or captions.</p></div>
       <div class="export-row">
         <button class="btn" id="videoBtn" disabled><span class="ic" data-icon="video"></span><span class="lbl">Record &amp; download video</span></button>
         <button class="btn secondary" id="audioBtn" disabled><span class="ic" data-icon="download"></span><span class="lbl">Download audio</span></button>
@@ -1161,21 +1190,20 @@
       <p class="mp4-note" id="mp4Note" hidden>Heads up: this browser records <strong>WebM</strong>, not MP4. For an MP4 (best for X and Instagram), open OutLoud in <strong>Safari or Chrome</strong>.</p>
     </div>
 
-    <audio id="player" crossorigin="anonymous"></audio>
-  </section>
-</main>
+<div class="studio-footer-grille" aria-hidden="true"></div>
+</div>
 
-<section class="why" aria-label="Why OutLoud">
-  <p class="why-label">Why OutLoud</p>
-  <p class="why-copy">Built for global communities and the creators who grow them. A town hall can't fit every timezone, so the culture runs on replays and clips. OutLoud carries the message across the language border, in the same voice. Ambassadors localize the moments that matter, creators meet their audience in its own language, and a builder in Seoul gets heard in New York.</p>
-  <p class="why-maxim">The message travels. <span class="hl">The voice stays.</span></p>
-</section>
+
 
 <footer>
-  Caption it. Dub it. Keep the voice. Audio is processed by ElevenLabs; Find moments uses OpenAI to analyze your transcript. See how your data is handled below.
+  <p class="footer-mission">Good moments deserve to be heard.</p>
+  <p class="footer-description">Turn the best parts of your recordings into moments worth sharing. Find your passage, shape the clip, and make it heard.</p>
   <div class="foot-links">
-    <button type="button" class="foot-link" id="aboutLink">About &amp; roadmap</button>
+    <a class="foot-link" id="howLink" href="/about.html" aria-haspopup="dialog" aria-controls="howModal">How OutLoud works</a>
+    <button type="button" class="foot-link" id="whyLink">Why OutLoud</button>
+    <button type="button" class="foot-link" id="aboutLink">Roadmap</button>
     <button type="button" class="foot-link" id="feedbackBtn">Send feedback</button>
+    <button type="button" class="foot-link" id="footerBetaAccess">Request full beta access</button>
     <button type="button" class="foot-link" id="privacyBtn">How your data is handled</button>
   </div>
   <a class="nana-credit" id="nanaCredit" href="https://nana.works" target="_blank" rel="noopener" title="nana.works" aria-label="Made by NANA — nana.works"></a>
@@ -1184,6 +1212,7 @@
 <!-- First-run splash -->
 <div class="splash" id="splash" role="dialog" aria-modal="true" aria-label="Welcome to OutLoud">
   <div class="splash-card">
+    <div id="accessWelcome">
     <div class="splash-mark" id="splashMark" aria-hidden="true"></div>
     <h2 class="splash-title" aria-label="OutLoud">
       <svg class="wordmark-svg" viewBox="0 0 300 60" role="img" xmlns="http://www.w3.org/2000/svg">
@@ -1208,38 +1237,79 @@
         </text>
       </svg>
     </h2>
-    <p class="splash-tag">Any clip. Any language. Same voice.</p>
-    <div class="splash-feats">
-      <div class="splash-feat"><span class="ic" data-icon="audio-lines"></span><span>Caption any clip with karaoke captions, keeping the original voice.</span></div>
-      <div class="splash-feat"><span class="ic" data-icon="mic"></span><span>Dub into 19 languages, still in the original speaker's voice.</span></div>
-      <div class="splash-feat"><span class="ic" data-icon="video"></span><span>Or write a script and narrate it with expressive AI voices.</span></div>
-    </div>
-    <p class="splash-beta">OutLoud is in beta and actively in development. Bring your own ElevenLabs key, or request a tester code.</p>
+    <div class="info-eyebrow">EARLY ACCESS / OUTLOUD BETA</div>
+    <h3 class="beta-headline">Good moments deserve to be heard.</h3>
+    <p class="splash-tag">Find the moment. Shape your clip. Share it with your community.</p>
+    <p class="splash-beta">Your first clip is on us. Try one recording up to 60 seconds and 300 MB: find a moment, add captions, design it and download your audiogram. Original audio only; dubbing is reserved for testers. After making your first clip, request beta access.</p>
+    <button type="button" class="btn" id="trialStart">TRY A FREE CLIP →</button><p id="trialStatus" role="status" aria-live="polite"></p>
+    <form id="betaAccessForm" hidden>
+      <div class="beta-fields">
+        <label for="betaEmail">EMAIL<input id="betaEmail" name="email" type="email" autocomplete="email" maxlength="120" required placeholder="you@example.com" /></label>
+        <label for="betaX">X ACCOUNT<input id="betaX" name="xAccount" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="100" required placeholder="@yourhandle" aria-describedby="betaXHelp" /></label>
+      </div>
+      <p class="fine" id="betaXHelp">Enter your @handle or X profile link.</p>
+      <div class="beta-honey" aria-hidden="true"><label>Website<input name="website" tabindex="-1" autocomplete="off" /></label></div>
+      <p class="fine">Your email and X account go to NANA to review and respond to your access request.</p>
+      <button type="submit" class="btn" id="betaSubmit">REQUEST BETA ACCESS →</button>
+      <p id="betaRequestStatus" role="status" aria-live="polite" tabindex="-1"></p>
+      <a id="betaEmailFallback" href="mailto:sean@nana.works?subject=OutLoud%20beta%20access" hidden>Email your request instead</a>
+    </form>
+    <p class="fine" id="trialTerms">One recording per session. Free capacity is limited each day. No password or signup needed to try.</p>
     <div class="splash-actions">
-      <button class="btn" id="splashStart">Start creating</button>
-      <button class="btn secondary" id="splashAbout">What's coming</button>
+      <button type="button" class="btn secondary" id="splashConnect">I have a password</button>
+      <button type="button" class="foot-link" id="splashStart">Explore the workspace</button>
+      <button type="button" class="foot-link" id="splashAbout">Roadmap</button>
+    </div>
     </div>
   </div>
 </div>
 
-<!-- About / roadmap modal -->
-<div class="modal" id="aboutModal">
-  <div class="card">
-    <h3>About OutLoud</h3>
-    <p>OutLoud turns any clip into a captioned audiogram that keeps the speaker's voice, or dubs it into another language in that same voice. Built on ElevenLabs, rendered in your browser.</p>
+<dialog class="studio-info-modal how-modal" id="howModal" aria-labelledby="howTitle">
+  <div class="how-heading"><div><div class="info-eyebrow">OUTLOUD / GETTING STARTED</div><h3 id="howTitle">How OutLoud works</h3></div><button type="button" class="foot-link how-close" id="howClose" aria-label="Close How OutLoud works">×</button></div>
+  <div class="how-content" tabindex="0" aria-label="How OutLoud works guide"><h2>Good moments deserve to be heard.</h2>
+<p class="lead">Every recording holds a moment worth sharing. OutLoud helps you find it, shape it, and make it heard.</p>
+<p>OutLoud is a browser-based audio clipping and audiogram tool. Find a passage in a recording, trim it, add synchronized captions, and share it as video. When your audience speaks another language, dub the clip into a supported language while preserving the speaker’s voice and delivery.</p>
+
+<h2>From a recording to a moment worth sharing</h2>
+<ol><li><strong>Input.</strong> Upload an audio or video file, record your microphone, or capture tab audio in a supported desktop browser.</li><li><strong>Clip.</strong> Preview and trim a passage. Analyze the recording for suggested moments and transcript search, or caption your chosen clip directly. Analysis is optional.</li><li><strong>Design.</strong> Add a creator name and image. Choose your format, caption layout, colors, and a digital or analog waveform visualizer.</li><li><strong>Share.</strong> Preview the result and download video, audio, or SRT / VTT captions.</li></ol>
+<h2>Find the part people will remember.</h2>
+<p>A town hall cannot fit every timezone. A podcast conversation can hold one idea worth passing on. OutLoud helps community teams, audio producers, and creators turn those recordings into focused clips people can watch, read, and hear in their language.</p>
+<h2>Questions before you start</h2>
+<details><summary>What is an audiogram?</summary><p>An audiogram turns audio into a shareable video with a visualizer, captions, and optional creator imagery. OutLoud renders the composition in your browser.</p></details>
+<details><summary>Do I have to analyze a recording?</summary><p>No. You can trim a passage or use the full recording and create captions directly. Analyze when you want suggested moments or transcript search.</p></details>
+<details><summary>Can I paste a podcast, YouTube, or Space URL?</summary><p>Direct URL import is not available in this version. Upload a recording, use your microphone, or capture tab audio where supported.</p></details>
+<details><summary>Which languages and downloads are supported?</summary><p>Use original-language captions or choose a supported dubbing language in the app. Download audio and SRT / VTT captions. Video format depends on the browser; check the Share tab for the available format.</p></details>
+<details><summary>What do I need to use OutLoud?</summary><p>Try one recording up to 60 seconds without a password: analyze it, add original-audio captions, design an audiogram, and download it. Free sessions have limited daily capacity and do not include dubbing. After making your first clip, request beta access with your email and X account. Existing tester passwords and your own API keys keep their current access. Recording and capture features depend on browser permissions and support.</p></details>
+<details><summary>Is all processing local?</summary><p>No. The visual composition renders in your browser. Transcription, dubbing, and optional moment analysis use processing services. Open “How your data is handled” in the app for details before processing a recording.</p></details>
+<p class="end">Built by <a href="https://nana.works/">NANA</a>. Good moments deserve to be heard.</p></div>
+</dialog>
+
+<div class="modal studio-info-modal" id="whyModal" role="dialog" aria-modal="true" aria-labelledby="whyTitle">
+  <div class="card" tabindex="-1">
+    <div class="info-eyebrow">OUTLOUD / OUR PURPOSE</div><h3 id="whyTitle">Why OutLoud</h3>
+  <p class="why-copy">Built for global communities and the creators who grow them. A town hall can't fit every timezone, so the culture runs on replays and clips. OutLoud carries the message across the language border, in the same voice. Ambassadors localize the moments that matter, creators meet their audience in its own language, and a builder in Seoul gets heard in New York.</p>
+  <p class="why-maxim">The message travels. <span class="hl">The voice stays.</span></p>
+    <p>Long recordings hold moments worth sharing. OutLoud helps you find them, shape them into clips, and reach people across languages while keeping the speaker’s voice.</p>
     <p class="about-h">What you can do</p>
     <ul class="data-list">
+      <li><strong>Find and shape moments.</strong> Search your transcript, preview passages, and trim them into a numbered queue.</li>
       <li><strong>Caption a clip.</strong> Live karaoke captions in the original language and voice.</li>
       <li><strong>Dub into 19 languages.</strong> Translated captions, still the original voice.</li>
-      <li><strong>Write a script.</strong> Expressive Eleven v3 narration with audio tags.</li>
-      <li><strong>Style it.</strong> Two layouts, themes, backgrounds, and MP4 or audio export.</li>
+      <li><strong>Make it yours.</strong> Shape the layout, colors, and background. Download video, audio, or SRT / VTT captions.</li>
     </ul>
+    <button class="btn secondary" id="whyClose" style="margin-top:16px">Close</button>
+  </div>
+</div>
+
+<!-- Roadmap modal -->
+<div class="modal studio-info-modal" id="aboutModal" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
+  <div class="card">
+    <div class="info-eyebrow">OUTLOUD / WHAT’S NEXT</div><h3 id="aboutTitle">Roadmap</h3>
     <p class="about-h">On the roadmap</p>
     <ul class="data-list">
-      <li><strong>Transcript export.</strong> Download SRT / VTT captions. <span class="road-tag next">Next</span></li>
-      <li><strong>Trim clips.</strong> Cut to the moment before captioning. <span class="road-tag next">Next</span></li>
+      
+      
       <li><strong>Accounts.</strong> Sign in to save your work and manage usage. <span class="road-tag soon">Soon</span></li>
-      <li><strong>Your own voice.</strong> Clone your voice for Write a script. <span class="road-tag planned">Planned</span></li>
       <li><strong>API + agent access.</strong> Caption and dub from your own app or an AI agent. <span class="road-tag api">Early access</span> <button type="button" class="foot-link" id="apiEarlyAccess">Join the list</button></li>
       <li><strong>Chapters + timed visuals.</strong> Show photos at moments in your clip, mark chapters. <span class="road-tag exploring">Exploring</span></li>
       <li><strong>Caption styles + brand kits.</strong> Save your fonts, colors, and layouts. <span class="road-tag exploring">Exploring</span></li>
@@ -1251,10 +1321,10 @@
 </div>
 
 <!-- Feedback modal -->
-<div class="modal" id="feedbackModal">
+<div class="modal studio-info-modal" id="feedbackModal" role="dialog" aria-modal="true" aria-labelledby="feedbackTitle">
   <div class="card">
-    <h3>Send feedback</h3>
-    <p>Found a bug, want a feature, or made something cool? It lands straight in Sean's inbox.</p>
+    <div class="info-eyebrow">OUTLOUD / FEEDBACK</div><h3 id="feedbackTitle">Send feedback</h3>
+    <p>Help shape the instrument. Tell us what felt good, what got in your way, or what you’d like to make next. Your message goes to Sean.</p>
     <label for="fbTopic">Topic</label>
     <select id="fbTopic">
       <option value="Feedback" selected>General feedback</option>
@@ -1273,15 +1343,17 @@
 </div>
 
 <!-- Privacy / data-handling modal -->
-<div class="modal" id="privacyModal">
+<div class="modal studio-info-modal" id="privacyModal" role="dialog" aria-modal="true" aria-labelledby="privacyTitle">
   <div class="card">
-    <h3>How your data is handled</h3>
+    <div class="info-eyebrow">OUTLOUD / YOUR DATA</div><h3 id="privacyTitle">How your data is handled</h3>
     <p>No accounts, no logins, no analytics or tracking cookies. Here's where things go:</p>
     <ul class="data-list">
       <li><strong>Your API key</strong> is stored only in your browser and sent straight to ElevenLabs with each request. It never reaches NANA's servers. Disconnecting clears it.</li>
-      <li><strong>Clips and scripts</strong> you upload or write are sent to ElevenLabs to transcribe, narrate, or dub. Translations use Google Translate. NANA doesn't store any of it.</li>
-      <li><strong>Find moments</strong> sends recording sections to ElevenLabs for transcription, then the transcript and your brief through OutLoud to OpenAI for recommendations. OutLoud keeps the transcript in this tab only, until the recording is replaced or the page reloads. An optional OpenAI key stays in page memory and passes through the server without being saved.</li>
+      <li><strong>Your recordings</strong> are sent to ElevenLabs when you request transcription or dubbing. Translations use Google Translate. NANA does not retain uploaded audio. Free-session transcript storage is described below.</li>
+      <li><strong>Find moments</strong> sends recording sections to ElevenLabs for transcription, then the transcript and your brief through OutLoud to OpenAI for recommendations. For connected testers, OutLoud keeps the transcript in this tab only, until the recording is replaced or the page reloads. Free sessions also use temporary private server storage. An optional OpenAI key stays in page memory and passes through the server without being saved.</li>
       <li><strong>Your audiogram</strong> (captions, audio, and video) is rendered in your browser and downloaded by you. Nothing is uploaded to NANA.</li>
+      <li><strong>Beta access requests</strong> send your email and X account to NANA via our email provider so Sean can review and respond to your request.</li>
+      <li><strong>Free sessions</strong> use a temporary cookie and a hashed network identifier to limit usage. Audio is processed for captions; we temporarily store the transcript, analysis and session usage in private storage to support retries and prevent repeat charges. Records older than three days are removed during subsequent session creation. The free session lasts 24 hours.</li>
       <li><strong>Tester mode</strong> routes requests through a NANA proxy that adds the owner's key server-side. Your clip passes through on its way to ElevenLabs and isn't retained.</li>
     </ul>
     <p class="fine">ElevenLabs, OpenAI and Google process data under their own policies. See <a href="https://openai.com/policies/privacy-policy/" target="_blank" rel="noopener">OpenAI</a>, <a href="https://elevenlabs.io/privacy" target="_blank" rel="noopener">ElevenLabs</a> and <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google</a>.</p>
@@ -1291,7 +1363,7 @@
 
 <!-- Trim modal -->
 <!-- Screen-recording how-to: the mobile path, since getDisplayMedia is desktop-only -->
-<div class="modal" id="howtoModal">
+<div class="modal studio-info-modal" id="howtoModal">
   <div class="card howto-card">
     <h3>Capture audio on your phone</h3>
     <p>Your phone can record whatever it is playing, including a Space replay in the X app. Record just the part you want, then upload the file here.</p>
@@ -1342,10 +1414,11 @@
 </div>
 
 <!-- Caption editor modal -->
-<div class="modal" id="capModal">
+<div class="modal studio-info-modal" id="capModal" role="dialog" aria-modal="true" aria-labelledby="capEditorTitle">
   <div class="card">
-    <h3>Edit captions</h3>
+    <div class="info-eyebrow">OUTLOUD / CAPTION EDITOR</div><h3 id="capEditorTitle">Edit captions</h3>
     <p>Fix wording, cut filler, or break lines. Words you keep stay perfectly synced; words you change blend between their neighbors. <strong>Enter</strong> starts a new line, a <strong>blank line</strong> starts a new paragraph.</p>
+    <label for="capText">Caption text</label>
     <textarea id="capText" style="min-height:220px;" spellcheck="true"></textarea>
     <button class="btn" id="capApply" style="margin-top:14px;">Apply captions</button>
     <button class="btn secondary" id="capCancel" style="margin-top:10px;">Cancel</button>
@@ -1353,36 +1426,35 @@
 </div>
 
 <!-- API key modal -->
-<div class="modal" id="keyModal">
+<div class="modal studio-info-modal" id="keyModal">
   <div class="card">
-    <h3>Connect ElevenLabs</h3>
-    <p>OutLoud is in beta. Connect with your own <a href="https://elevenlabs.io/app/settings/api-keys" target="_blank" rel="noopener">ElevenLabs key</a>, or a tester password. Your credentials stay in your browser and are never sent to us.</p>
-    <label for="keyInput">API key</label>
-    <input id="keyInput" type="password" placeholder="sk_…" />
-    <details class="perm-note">
-      <summary>What permissions does my key need?</summary>
-      <div class="perm-body">
-        <ul>
-          <li><strong>Text to Speech</strong> <em>Access</em> <span>narrate scripts</span></li>
-          <li><strong>Speech to Text</strong> <em>Access</em> <span>caption clips</span></li>
-          <li><strong>Dubbing</strong> <em>Write</em> <span>translate clips</span></li>
-          <li><strong>Voices</strong> <em>Read</em> <span>load your voices</span></li>
-          <li><strong>Models</strong> <em>Access</em> <span>Eleven v3</span></li>
-        </ul>
-        <p>A restricted key with just these is enough. Add a monthly credit cap as a safety net.</p>
-      </div>
-    </details>
-    <div class="or-divider"><span>or</span></div>
-    <label for="passInput">Tester password</label>
-    <input id="passInput" type="password" placeholder="tester password" />
-    <p class="hint" style="margin-top:8px;">No key? Enter a <strong>tester password</strong> to try it on the owner's account. Need one? Email <a href="mailto:sean@nana.works?subject=OutLoud%20test%20code">sean@nana.works</a>.</p>
-    <button class="btn" id="saveKey" style="margin-top:14px;">Save &amp; load voices</button>
-    <button class="btn secondary" id="closeKey" style="margin-top:10px;">Cancel</button>
+    <h3>Connect OutLoud</h3>
+    <p>One connection for captions, dubbing and finding moments.</p>
+    <label for="connectionMode">Connect with</label>
+    <select id="connectionMode"><option value="tester">Tester code</option><option value="own">My own API keys</option></select>
+    <div id="testerConnectionFields">
+      <label for="passInput">Tester code</label>
+      <input id="passInput" type="password" autocomplete="off" placeholder="Enter your tester code" />
+      <p class="hint">Use the tester password sent to you. No API keys needed.</p><button type="button" class="foot-link" id="requestBetaAccess">Need a password? Request beta access</button>
+    </div>
+    <div id="ownConnectionFields" hidden>
+      <label for="keyInput">ElevenLabs API key</label>
+      <input id="keyInput" type="password" autocomplete="off" placeholder="For captions, dubbing and narration" />
+      <label for="openaiKeyInput">OpenAI API key</label>
+      <input id="openaiKeyInput" type="password" autocomplete="off" spellcheck="false" placeholder="For finding moments" />
+      <p class="hint">Your ElevenLabs key is saved in this browser. Your OpenAI key stays in this tab until you reload. Audio goes to ElevenLabs; transcript analysis goes through OutLoud to OpenAI.</p>
+      <details class="perm-note"><summary>API key permissions</summary><div class="perm-body"><p>ElevenLabs: Speech to Text, Dubbing write, Text to Speech, Voices read and Models access. OpenAI: Responses write. Both keys are needed for the full workflow; ElevenLabs alone can caption and dub.</p></div></details>
+    </div>
+    <button class="btn" id="saveKey" style="margin-top:14px;">Connect</button>
+    <button class="btn secondary" id="closeKey" style="margin-top:10px;">Back to welcome</button>
   </div>
 </div>
 
 <script type="module">
+import { createTrialClient, FREE_CLIP_LIMITS, FREE_CLIP_HINT } from "./trial-client.mjs";
+import { initBetaAccess } from "./beta-access.mjs";
 import { initMoments } from "./moments-ui.mjs";
+import { rewindForExport } from "./export-start.mjs";
 (() => {
   "use strict";
   const $ = (s) => document.querySelector(s);
@@ -1463,6 +1535,9 @@ import { initMoments } from "./moments-ui.mjs";
   // a = highlight/accent, b = handle/right-of-gradient, stops = waveform gradient (holo = multi-stop),
   // glow2 = optional second background glow, ink = text color on the highlight pill.
   const THEMES = [
+    { name: "OutLoud Studio", a: "#FF5A14", b: "#27695F", bg1: "#F4F1EC", bg2: "#E4E1DC",
+      stops: ["#27695F", "#D6A72F", "#FF5A14"], fg: "#242424", ink: "#191919",
+      glow: 0, font: '"Barlow", sans-serif', bodyFont: '"Barlow", sans-serif', watermark: "#27695F", studio: true },
     // — NANA Holo: the actual nana.works palette. Its .holo-text gradient runs amber → pink →
     //   purple → blue → green over a near-black page, so the waveform carries all five while
     //   purple and blue (the two Sean kept for OutLoud's own chrome) stay the accents. —
@@ -1472,12 +1547,7 @@ import { initMoments } from "./moments-ui.mjs";
     //   over near-black, so the waveform runs cream → amber → rust → deep red. —
     { name: "RetroGleam", a: "#e66430", b: "#e9dac7", bg1: "#180304", bg2: "#121212",
       stops: ["#e9dac7", "#ff9400", "#e66430", "#bd271f"], glow2: "#ff9400", ink: "#180304", fg: "#e9dac7" },
-    { name: "Holo Aurora", a: "#7af5d0", b: "#a78bfa", bg1: "#04201c", bg2: "#0a0a22",
-      stops: ["#7af5d0", "#76d7ff", "#a78bfa", "#ff9fe6"], glow2: "#a78bfa", ink: "#06231d" },
-    { name: "Holo Sunset", a: "#ffb37a", b: "#c0a0e0", bg1: "#230c1e", bg2: "#120a22",
-      stops: ["#ffd28a", "#ff9fb0", "#d6a0f0", "#9fb8ff"], glow2: "#ff9fb0", ink: "#2a0f1e" },
     // — Color-theory palettes —
-    { name: "Nebula",   a: "#6c5ce7", b: "#00d2ff", bg1: "#13042b", bg2: "#04142b" },           // analogous violet→cyan
     { name: "Indigo/Gold", a: "#7c6cff", b: "#ffd166", bg1: "#0c0a2b", bg2: "#080614" },          // complementary
     { name: "Ember",    a: "#ff6b6b", b: "#ffd166", bg1: "#2b0a04", bg2: "#1a0a02" },             // warm analogous
     { name: "Vaporwave",a: "#ff61d2", b: "#36e0ff", bg1: "#1c0726", bg2: "#070a1e" },             // pink↔cyan split
@@ -1542,9 +1612,12 @@ import { initMoments } from "./moments-ui.mjs";
   // ---------- State ----------
   let apiKey = localStorage.getItem(LS_KEY) || "";
   let testerPass = localStorage.getItem(LS_PASS) || "";
+  let openaiKey = "";
   // Connection can be EITHER the user's own key (calls ElevenLabs directly) or a tester password
   // (routes through our /api/eleven proxy, which injects the owner's server-side key).
-  const isConnected = () => !!apiKey || !!testerPass;
+  const trial = createTrialClient(wavBlob);
+  const isTrial = () => trial.state.active && !apiKey && !testerPass;
+  const isConnected = () => !!apiKey || !!testerPass || trial.state.active;
   const useProxy = () => !apiKey && !!testerPass;
   const elevenURL = (path) => useProxy() ? ("/api/eleven/" + path) : ("https://api.elevenlabs.io/v1/" + path);
   // ---------- Which design controls actually get used ----------
@@ -1595,7 +1668,7 @@ import { initMoments } from "./moments-ui.mjs";
   const proxyMissing = (resp) => useProxy() && resp.status === 404 &&
     (resp.headers.get("content-type") || "").includes("text/html");
   const PROXY_MISSING_MSG = "Tester mode needs the deployed site — this local server has no /api proxy. Open the live site, run “npx vercel dev”, or connect your own ElevenLabs API key.";
-  let audioCtx, analyser, sourceNode, streamDest, freqData;
+  let audioCtx, analyser, sourceNode, streamDest, freqData, waveData;
   let rafId = null;
   let recording = false;   // true while exporting video — frames are driven by a Worker, not rAF
   let lastAudioBlob = null;
@@ -1746,17 +1819,30 @@ import { initMoments } from "./moments-ui.mjs";
   }
 
   // ---------- Dub a clip (ElevenLabs Dubbing API — keeps the original speaker's voice) ----------
-  let mode = "write";
+  let mode = "dub";
   // Canvas layout per mode: "classic" (full-bleed karaoke + creator footer) or "cover"
   // (creator header + big captions). Each mode remembers its own choice.
   const styleByMode = { write: "classic", dub: "cover" };
   // How the caption text is set: "flow" (continuous), "sentence" (break per sentence, the
   // default — transcripts otherwise read as one undifferentiated wall), "focus" (a few words
   // at a time, in step with the audio).
-  let capStyle = localStorage.getItem(LS_CAPSTYLE) || "sentence";
+  let capStyle = localStorage.getItem(LS_CAPSTYLE) || "focus";
+  let visualizerStyle = localStorage.getItem('outloud_visualizer_v2') === 'analog' ? 'analog' : 'digital';
+  const visualizerButtons = document.querySelectorAll('#visualizerSeg button');
+  function refreshVisualizer() {
+    visualizerButtons.forEach(button => {
+      const selected = button.dataset.visualizer === visualizerStyle;
+      button.classList.toggle('sel', selected); button.setAttribute('aria-pressed', String(selected));
+    });
+  }
+  visualizerButtons.forEach(button => button.addEventListener('click', () => {
+    visualizerStyle = button.dataset.visualizer;
+    try { localStorage.setItem('outloud_visualizer_v2', visualizerStyle); } catch (_) {}
+    refreshVisualizer(); drawPoster();
+  }));
+  refreshVisualizer();
   let dubFile = null;
   let momentsController = null;
-  const modeSeg = $("#modeSeg");
   const dubControls = $("#dubControls"), writeControls = $("#writeControls");
   const dropzone = $("#dropzone"), dubFileInput = $("#dubFile");
   const dubFileInfo = $("#dubFileInfo"), dubFileName = $("#dubFileName"), dubFileClear = $("#dubFileClear");
@@ -1823,6 +1909,7 @@ import { initMoments } from "./moments-ui.mjs";
   const capNote = $("#capNote");
   let clipSeconds = 0; // best-known duration of the loaded clip, 0 until probed
   function syncCapNote() {
+    if (isTrial()) { capNote.hidden = false; capNote.textContent = FREE_CLIP_HINT; return; }
     if (!useProxy() || mode !== "dub") { capNote.hidden = true; return; }
     const isCap = captionOnly();
     const cap = capFor(isCap);
@@ -1877,7 +1964,7 @@ import { initMoments } from "./moments-ui.mjs";
 
   function setMode(m) {
     mode = m;
-    modeSeg.querySelectorAll("button").forEach(b => b.classList.toggle("sel", b.dataset.mode === m));
+    document.body.dataset.inputMode = m;
     dubControls.hidden = m !== "dub";
     writeControls.hidden = m !== "write";
     setStatus("");
@@ -1889,7 +1976,6 @@ import { initMoments } from "./moments-ui.mjs";
     syncCapNote();       // the length allowance only applies to the clip flow
     drawPoster();
   }
-  modeSeg.querySelectorAll("button").forEach(b => b.addEventListener("click", () => setMode(b.dataset.mode)));
 
   // ---------- Create step settles once there's a result ----------
   // The source is decided at that point and design becomes the job, so step 01 folds away and
@@ -1902,15 +1988,23 @@ import { initMoments } from "./moments-ui.mjs";
     createToggle.hidden = false;
     createToggle.textContent = on ? "Change clip" : "Hide";
   }
-  function settleCreate() {
-    setCreateCollapsed(true);
-    // On one column the preview sits above Create, so scroll UP to the result rather than
-    // leaving the user staring at a collapsed step.
-    if (window.matchMedia("(max-width: 940px)").matches) {
-      const p = $("#previewPanel");
-      if (p) p.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+  function setStudioStage(stage) {
+    const changed = document.body.dataset.stage !== stage;
+    document.body.dataset.stage = stage;
+    if (changed) requestAnimationFrame(() => window.scrollTo({top:0,left:0,behavior:'instant'}));
+    $('#momentsPanel').hidden = stage !== 'clip';
+    if (stage === 'audio') setCreateCollapsed(false);
+    document.querySelectorAll('[data-stage-label]').forEach(node => {
+      node.disabled = document.body.dataset.workspaceBusy === 'true' || (node.dataset.stageLabel === 'clip' ? !dubFile : ['design','export'].includes(node.dataset.stageLabel) ? !$('#exportGroup').classList.contains('ready') : false);
+      if (node.dataset.stageLabel === stage) node.setAttribute('aria-current', 'step');
+      else node.removeAttribute('aria-current');
+    });
   }
+  function settleCreate() {
+    setStudioStage('design');
+    setCreateCollapsed(true);
+  }
+
   createToggle.addEventListener("click", () => setCreateCollapsed(!createPanel.classList.contains("collapsed")));
 
   // Caption style: a design choice, so it persists and repaints immediately.
@@ -1942,8 +2036,34 @@ import { initMoments } from "./moments-ui.mjs";
   }));
 
   // File selection — click, keyboard, and drag & drop.
-  function setDubFile(file) {
+  let intakeVersion = 0;
+  async function setDubFile(file) {
+    const version = ++intakeVersion;
+    const notice = $("#uploadValidation");
+    notice.hidden = true;
+    if (file && isTrial()) {
+      notice.hidden = false; notice.style.color = "#27695F"; notice.textContent = "Checking your clip’s size, length and audio…";
+      notice.setAttribute('role','status');
+      try {
+        if (file.size > FREE_CLIP_LIMITS.bytes) throw new Error('Free sessions accept files up to 300 MB and 60 seconds. Choose a smaller file or export a shorter passage, then try again.');
+        const seconds = await Promise.race([probeDuration(file), new Promise(resolve => setTimeout(() => resolve(null), 5000))]);
+        if (version !== intakeVersion) return;
+        if (seconds > FREE_CLIP_LIMITS.seconds) throw new Error('This recording is longer than 60 seconds. Export a passage up to 60 seconds, then upload it. Your free clip has not been used.');
+        await trial.prepare(file);
+        if (version !== intakeVersion) return;
+        notice.hidden = true;
+      } catch (error) {
+        if (version !== intakeVersion) return;
+        notice.setAttribute('role','alert'); notice.style.color = '#9B3425'; notice.textContent = error.message;
+        dubFileInput.value = ''; return;
+      }
+    }
+
     dubFile = file || null;
+    $("#inputTitle").textContent = dubFile ? "Your sound, ready to clip." : "Start with your sound.";
+    setStudioStage(dubFile ? 'clip' : 'audio');
+    setCreateCollapsed(false);
+    resetTrim();
     momentsController?.reset(dubFile);
     resetTrim(); // a new (or removed) clip invalidates any trim selection
     if (dubFile) {
@@ -1959,6 +2079,7 @@ import { initMoments } from "./moments-ui.mjs";
     syncCapNote();
     if (dubFile) { const probedFile = dubFile; probeDuration(probedFile).then((d) => { if (dubFile !== probedFile) return; clipSeconds = d || 0; syncCapNote(); }); }
     if (mode === "dub") drawPoster();
+    if (dubFile) { const chosen = dubFile; queueMicrotask(() => { if (dubFile === chosen) momentsController?.open(); }); }
   }
   $("#pickBtn").addEventListener("click", () => dubFileInput.click());
   dubFileInput.addEventListener("change", () => setDubFile(dubFileInput.files[0]));
@@ -1992,7 +2113,7 @@ import { initMoments } from "./moments-ui.mjs";
 
   function refreshTrimBtn() {
     if (!trimBtn) return;
-    trimBtn.textContent = trimActive() ? fmtT(trimStart) + "–" + fmtT(trimEnd) : "Trim"; // chip stays simple; tenths live in the modal
+    trimBtn.textContent = trimActive() ? fmtT(trimStart) + "–" + fmtT(trimEnd) : "Edit clip"; // chip stays simple; tenths live in the modal
     trimBtn.classList.toggle("on", trimActive());
   }
   function resetTrim() { trimStart = trimEnd = null; trimFileRef = null; trimPeaks = null; trimDur = 0; refreshTrimBtn(); }
@@ -2160,7 +2281,7 @@ import { initMoments } from "./moments-ui.mjs";
     }).catch(() => setStatus("Couldn't preview this clip's audio in the browser. The trim itself will still work.", "err"));
   });
 
-  trimBtn.addEventListener("click", openTrim);
+  trimBtn.addEventListener("click", () => momentsController ? momentsController.open() : openTrim());
   $("#trimReset").addEventListener("click", () => { selL = 0; selR = trimDur || selR; layoutTrim(); });
   $("#trimCancel").addEventListener("click", closeTrim);
   trimModal.addEventListener("click", (e) => { if (e.target === trimModal) closeTrim(); });
@@ -2613,6 +2734,7 @@ import { initMoments } from "./moments-ui.mjs";
     if (!isConnected()) { openKeyModal(); return; }
     if (!dubFile) { setStatus("Upload an audio or video clip first.", "err"); return; }
     const target = dubTargetSel.value, source = dubSourceSel.value;
+    if (isTrial() && target !== "same") { setStatus("Dubbing is available with a tester password. Your free session includes original-audio captions.", "err"); return; }
 
     // iOS only lets a media element be play()'d later if it was first play()'d inside a user
     // gesture. If we might need the real-time capture fallback (tester + a video clip
@@ -2671,7 +2793,7 @@ import { initMoments } from "./moments-ui.mjs";
       // duration metadata the dubbing ingest needs — re-rendering to WAV is what makes them
       // accepted upstream).
       const trimmed = trimActive();
-      if (trimmed || dubFile.isRecorded || (useProxy() && (dubFile.type.startsWith("video") || dubFile.size > 4_000_000))) {
+      if (isTrial() || trimmed || dubFile.isRecorded || (useProxy() && (dubFile.type.startsWith("video") || dubFile.size > 4_000_000))) {
         let usedFallback = false;
         setStatus(trimmed ? "Trimming the clip…" : "Compressing clip…");
         try {
@@ -2723,6 +2845,11 @@ import { initMoments } from "./moments-ui.mjs";
           return fetch(elevenURL("speech-to-text"), { method: "POST", headers: elevenHeaders(), body: sf });
         };
         let j = momentsController?.cachedTranscript(dubFile, trimActive() ? trimStart : 0, trimActive() ? trimEnd : clipSeconds, source);
+        if (isTrial()) {
+          const raw = await trial.transcribe(dubFile);
+          const a = trimActive() ? trimStart : 0, b = trimActive() ? trimEnd : Infinity;
+          j = {...raw, words: (raw.words || []).filter(w => w.start >= a && w.start < b).map(w => ({...w,start:w.start-a,end:Math.min(w.end,b)-a}))};
+        }
         if (!j) {
         let r = await sttCall(STT_MODEL);
         if (!r.ok && (r.status === 400 || r.status === 404 || r.status === 422) && STT_MODEL !== STT_MODEL_FALLBACK) {
@@ -2758,7 +2885,8 @@ import { initMoments } from "./moments-ui.mjs";
         $("#exportGroup").classList.add("ready");
         setStatus(hasTiming ? "Captioned — words highlight in sync. Hit Play." : "Captioned, but no word timings came back. Hit Play.", "ok");
         drawPoster();
-        return;
+        if (isTrial()) await finishTrial();
+        return true;
       }
 
       setStatus("Uploading clip…");
@@ -2847,6 +2975,7 @@ import { initMoments } from "./moments-ui.mjs";
         : "Dubbed, but no caption transcript came back (see browser console) — playing without live captions.", "ok");
       drawPoster();
       settleCreate();
+      return true;
     } catch (e) {
       setStatus(e.message, "err");
       drawPoster();
@@ -2868,7 +2997,13 @@ import { initMoments } from "./moments-ui.mjs";
     sw.style.background = isLightTheme(t)
       ? `linear-gradient(135deg, ${t.bg1} 58%, ${t.a} 58%)`
       : `linear-gradient(135deg, ${t.a}, ${t.b})`;
-    sw.title = t.name;
+    sw.title = t.name + (t.studio ? ' · default' : '');
+    if (t.studio) { sw.classList.add('studio-theme-swatch'); sw.textContent = 'OUTLOUD'; }
+    sw.setAttribute('role', 'button'); sw.tabIndex = 0;
+    sw.setAttribute('aria-label', sw.title);
+    sw.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); sw.click(); }
+    });
     sw.addEventListener("click", () => {
       theme = t;
       clearThemeSel(); sw.classList.add("sel");
@@ -3038,37 +3173,46 @@ import { initMoments } from "./moments-ui.mjs";
   // ---------- API key modal ----------
   const keyModal = $("#keyModal"), keyInput = $("#keyInput"), passInput = $("#passInput"), keyDot = $("#keyDot");
   const keyBtn = $("#keyBtn"), keyLabel = $("#keyLabel");
+  const openaiKeyInput = $("#openaiKeyInput"), connectionMode = $("#connectionMode");
+  const syncConnectionFields = () => {
+    const own = connectionMode.value === "own";
+    $("#ownConnectionFields").hidden = !own; $("#testerConnectionFields").hidden = own;
+  };
+  connectionMode.addEventListener("change", syncConnectionFields);
   const genLbl = genBtn.querySelector(".lbl"), genIc = genBtn.querySelector(".ic");
   const refreshKeyUI = () => {
     const connected = isConnected();
     keyDot.classList.toggle("ok", connected);
     keyBtn.classList.toggle("connected", connected);
-    keyLabel.textContent = !connected ? "Connect" : (useProxy() ? "Tester mode" : "Connected");
+    keyLabel.textContent = !connected ? "Connect" : (isTrial() ? "Free session" : useProxy() ? "Tester mode" : "Connected");
     keyBtn.title = !connected
-      ? "Add your ElevenLabs API key, or a tester password"
-      : (useProxy() ? "Connected via tester password — click to manage" : "Connected with your API key — click to manage");
+      ? "Connect both services with a tester code or your own API keys"
+      : (isTrial() ? "Free session — manage access" : useProxy() ? "Connected via tester password — click to manage" : "Connected with your API key — click to manage");
     // Generate button guides to connect when there's no connection yet (mode-aware).
     updateGenLabel();
     syncCapNote(); // caps only apply in tester mode, so they follow the connection state
   };
   const openKeyModal = () => {
-    keyInput.value = apiKey;
+    keyInput.value = apiKey; openaiKeyInput.value = openaiKey;
     passInput.value = testerPass;
-    keyModal.classList.add("open");
+    connectionMode.value = apiKey || openaiKey ? "own" : "tester"; syncConnectionFields();
+    showAccess("connect");
     // Focus + select the field so the user can paste (⌘/Ctrl+V) immediately, without an extra click.
-    requestAnimationFrame(() => { keyInput.focus(); keyInput.select(); });
+    requestAnimationFrame(() => { const field = connectionMode.value === "own" ? keyInput : passInput; field.focus(); field.select(); });
   };
-  const closeKeyModal = () => keyModal.classList.remove("open");
+  const closeKeyModal = () => showAccess("welcome");
   const saveKey = async () => {
-    apiKey = keyInput.value.trim();
-    testerPass = passInput.value.trim();
+    const own = connectionMode.value === "own";
+    apiKey = own ? keyInput.value.trim() : "";
+    openaiKey = own ? openaiKeyInput.value.trim() : "";
+    testerPass = own ? "" : passInput.value.trim();
     localStorage.setItem(LS_KEY, apiKey);
     localStorage.setItem(LS_PASS, testerPass);
-    closeKeyModal();
-    refreshKeyUI();
+    dismissSplash();
+    refreshTrialUI();
     await loadVoices();
   };
-  keyBtn.addEventListener("click", openKeyModal);
+  keyBtn.addEventListener("click", () => showAccess("welcome"));
   $("#closeKey").addEventListener("click", closeKeyModal);
   $("#saveKey").addEventListener("click", saveKey);
   // Enter saves, Escape cancels — so paste-then-Enter just works (from either field).
@@ -3078,11 +3222,37 @@ import { initMoments } from "./moments-ui.mjs";
   };
   keyInput.addEventListener("keydown", modalKeys);
   passInput.addEventListener("keydown", modalKeys);
+  openaiKeyInput.addEventListener("keydown", modalKeys);
   // Click the dark backdrop (outside the card) to dismiss.
   keyModal.addEventListener("click", (e) => { if (e.target === keyModal) closeKeyModal(); });
   refreshKeyUI();
 
-  // ---------- About / roadmap modal ----------
+  // Keep the guide in the app, preserving the current clip and scroll position.
+  const howModal = $('#howModal'), howLink = $('#howLink');
+  let howScrollY=0, howOverflow='';
+  howLink.addEventListener('click', e => {
+    if(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)return;
+    e.preventDefault(); howScrollY=window.scrollY; howOverflow=document.body.style.overflow;
+    document.body.style.overflow='hidden'; howModal.showModal(); $('#howClose').focus({preventScroll:true});
+  });
+  $('#howClose').addEventListener('click',()=>howModal.close());
+  howModal.addEventListener('click',e=>{if(e.target===howModal){const r=howModal.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)howModal.close();}});
+  howModal.addEventListener('close',()=>{document.body.style.overflow=howOverflow;window.scrollTo({top:howScrollY,behavior:'instant'});howLink.focus({preventScroll:true});});
+
+  const whyModal = $("#whyModal");
+  let whyReturnFocus;
+  const closeWhy = () => { whyModal.classList.remove('open'); whyReturnFocus?.focus({preventScroll:true}); };
+  $('#whyLink').addEventListener('click', () => {
+    whyReturnFocus = document.activeElement;
+    whyModal.classList.add('open'); whyModal.querySelector('.card').focus({preventScroll:true});
+  });
+  $('#whyClose').addEventListener('click', closeWhy);
+  whyModal.addEventListener('click', e => { if (e.target === whyModal) closeWhy(); });
+  whyModal.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { e.stopPropagation(); closeWhy(); }
+    if (e.key === 'Tab') { e.preventDefault(); $('#whyClose').focus(); }
+  });
+  // ---------- Roadmap modal ----------
   const aboutModal = $("#aboutModal");
   const openAbout = () => aboutModal.classList.add("open");
   const closeAbout = () => aboutModal.classList.remove("open");
@@ -3137,11 +3307,84 @@ import { initMoments } from "./moments-ui.mjs";
     }
   });
 
+  // One tactile dismiss control across all dialogs; retain existing close handlers.
+  const closeIcon='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>';
+  for (const [id,label] of [['howClose','How OutLoud works'],['whyClose','Why OutLoud'],['aboutClose','Roadmap'],['fbCancel','feedback'],['privacyClose','data information'],['howtoClose','help'],['trimCancel','trim editor'],['capCancel','caption editor']]) {
+    const button=$('#'+id);
+    button.className='modal-close';button.removeAttribute('style');button.type='button';
+    button.innerHTML=closeIcon;button.setAttribute('aria-label','Close '+label);button.title='Close';
+    if(id!=='howClose')button.closest('.card').prepend(button);
+  }
+
   // ---------- First-run splash (shown once, then remembered) ----------
   const splash = $("#splash");
-  const LS_SEEN = "outloud_seen_intro";
-  const dismissSplash = () => { splash.classList.remove("open"); try { localStorage.setItem(LS_SEEN, "1"); } catch (_) {} };
-  if (!localStorage.getItem(LS_SEEN)) splash.classList.add("open");
+  const LS_SEEN = "outloud_seen_free_trial_v1";
+  const accessWelcome = $("#accessWelcome");
+  const accessClose=document.createElement('button');accessClose.type='button';accessClose.id='accessClose';accessClose.className='modal-close';accessClose.innerHTML=closeIcon;accessClose.setAttribute('aria-label','Close welcome and connection');accessClose.title='Close';
+  splash.querySelector('.splash-card').prepend(accessClose);
+  accessClose.addEventListener('click',()=>dismissSplash());
+  splash.querySelector('.splash-card').append(keyModal);
+  keyModal.classList.remove('modal'); keyModal.hidden=true;
+  let accessReturnFocus=null;
+  function showAccess(view='welcome') {
+    if (!splash.classList.contains('open')) accessReturnFocus=document.activeElement;
+    const connecting=view==='connect';
+    accessWelcome.hidden=connecting; keyModal.hidden=!connecting;
+    splash.setAttribute('aria-label',connecting?'Connect OutLoud':'Welcome to OutLoud');
+    splash.classList.add('open');
+    requestAnimationFrame(()=>{
+      const target=connecting ? (connectionMode.value==='own'?keyInput:passInput) : trial.state.complete ? $("#betaEmail") : isConnected() && !isTrial() ? $("#splashConnect") : $("#trialStart");
+      target.focus();
+    });
+  }
+  const dismissSplash = () => { splash.classList.remove("open"); accessReturnFocus?.focus({preventScroll:true}); try { localStorage.setItem(LS_SEEN, "1"); } catch (_) {} };
+  let seenWelcome=false;try{seenWelcome=!!localStorage.getItem(LS_SEEN);}catch(_){}
+  if (!isConnected() && !seenWelcome) showAccess();
+  function refreshTrialUI() {
+    $("#betaAccessForm").hidden = !trial.state.complete;
+    $("#trialStart").hidden = trial.state.complete;
+    $("#trialTerms").hidden = trial.state.complete;
+    $("#splashConnect").textContent = apiKey || testerPass ? "Manage my connection" : "I have a password";
+    $("#requestBetaAccess").textContent = trial.state.complete ? 'Request beta access' : 'Try a free clip';
+    splash.querySelector('.splash-beta').textContent = trial.state.complete ? 'You made your first moment. Want to keep creating? Leave your email and X account. Sean will review your request and reply with a tester password.' : 'Your first clip is on us. Try one recording up to 60 seconds and 300 MB: find a moment, add captions, design it and download your audiogram. Original audio only; dubbing is reserved for testers. After making your first clip, request beta access.';
+    $("#trialBanner").hidden = !isTrial();
+    $("#freeClipLimits").textContent = FREE_CLIP_HINT;
+    $("#freeClipLimits").hidden = !isTrial();
+    syncCapNote();
+    $("#trialRequest").hidden = !trial.state.complete;
+    $("#trialStart").textContent = trial.state.active ? 'CONTINUE MY FREE CLIP →' : 'TRY A FREE CLIP →';
+    for (const select of [dubTargetSel, $("#momentTarget")]) {
+      if (!select) continue;
+      for (const option of select.options) option.disabled = isTrial() && option.value !== 'same';
+      if (isTrial()) { select.value='same'; select.dispatchEvent(new Event('change')); }
+    }
+    $("#momentLength").disabled=isTrial();
+    $("#momentLength").title=isTrial()?'Free sessions include one automatic moment analysis':'';
+    refreshKeyUI();
+  }
+  async function finishTrial() {
+    try { await trial.finish(); refreshTrialUI(); }
+    catch (_) { $("#trialBannerText").textContent='Clip ready. Reopen beta access to check your session.'; }
+  }
+  $("#trialStart").addEventListener('click', async () => {
+    const button=$("#trialStart"); button.disabled=true; $("#trialStatus").textContent='Starting your free session…';
+    try { await trial.start(); refreshTrialUI(); dismissSplash(); $("#trialStatus").textContent=''; }
+    catch(e) { $("#trialStatus").textContent=e.message; }
+    finally { button.disabled=false; }
+  });
+  $("#trialRequest").addEventListener("click",()=>showAccess());
+  $("#footerBetaAccess").addEventListener("click",()=>showAccess());
+  setTimeout(()=>{refreshTrialUI();trial.refresh().then(refreshTrialUI).catch(()=>{});},0);
+  initBetaAccess($("#betaAccessForm"));
+  $("#splashConnect").addEventListener("click", openKeyModal);
+  $("#requestBetaAccess").addEventListener("click", () => showAccess());
+  splash.addEventListener("keydown", e => {
+    if (e.key !== "Tab") return;
+    const nodes = [...splash.querySelectorAll('button:not(:disabled),input:not([tabindex="-1"]),a[href]')].filter(n => n.getClientRects().length);
+    const first = nodes[0], last = nodes.at(-1);
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  });
   $("#splashStart").addEventListener("click", dismissSplash);
   $("#splashAbout").addEventListener("click", () => { dismissSplash(); openAbout(); });
   splash.addEventListener("click", (e) => { if (e.target === splash) dismissSplash(); });
@@ -3180,7 +3423,7 @@ import { initMoments } from "./moments-ui.mjs";
   }
 
   async function loadVoices() {
-    if (!isConnected()) return;
+    if (!isConnected() || isTrial()) return;
     // Voices only matter in Write-a-script mode; load them in the background otherwise so the
     // status line doesn't announce "N voices loaded" on the Caption-a-clip tab (which has no voice picker).
     const voiceMsg = (msg, kind) => { if (mode === "write") setStatus(msg, kind); };
@@ -3265,13 +3508,16 @@ import { initMoments } from "./moments-ui.mjs";
   });
 
   // ---------- Status helper ----------
+  let workspaceProgress = null;
   function setStatus(msg, kind) {
+    workspaceProgress?.(msg, kind === "err");
     status.textContent = msg || "";
     status.className = "status" + (kind ? " " + kind : "");
   }
 
   // ---------- Generate ----------
   async function generate() {
+    if (isTrial()) { setStatus("Voice generation requires a tester password.", "err"); return; }
     if (!isConnected()) { openKeyModal(); return; }
     const t = text.value.trim();
     if (!t) { setStatus("Write something first.", "err"); return; }
@@ -3432,6 +3678,7 @@ import { initMoments } from "./moments-ui.mjs";
       // speech band across the meter without several bars reading the same bin.
       analyser.fftSize = 2048;
       freqData = new Uint8Array(analyser.frequencyBinCount);
+      waveData = new Uint8Array(analyser.fftSize);
       streamDest = audioCtx.createMediaStreamDestination();
       sourceNode.connect(analyser);
       analyser.connect(audioCtx.destination);
@@ -3464,7 +3711,7 @@ import { initMoments } from "./moments-ui.mjs";
   const face = () => theme.font || `"Clash Display", "General Sans", ${FB}`;
   const capFont   = (g) => `600 ${g.cap}px ${face()}`;
   const handleFont= (g) => `600 ${Math.round(g.cap * 0.62)}px ${face()}`;
-  const brandFont = (g) => `500 ${Math.round(g.cap * 0.4)}px "General Sans", ${FB}`;
+  const brandFont = (g) => `500 ${Math.round(g.cap * 0.4)}px ${theme.bodyFont || '"General Sans"'}, ${FB}`;
 
   // build the waveform / accent gradient (supports holo multi-stop)
   function lineGradient(x0, x1) {
@@ -3515,7 +3762,7 @@ import { initMoments } from "./moments-ui.mjs";
     ctx.globalAlpha = 0.3;
     ctx.translate(x0, y0);
     ctx.scale(Lw / NANA_VB.w, Lh / NANA_VB.h);
-    ctx.fillStyle = lineGradient(0, NANA_VB.w); // holo shimmer across the mark
+    ctx.fillStyle = theme.watermark || lineGradient(0, NANA_VB.w);
     ctx.fill(nanaLogo);
     ctx.restore();
   }
@@ -3995,7 +4242,7 @@ import { initMoments } from "./moments-ui.mjs";
       ctx.save();
       ctx.textAlign = "center";
       ctx.textBaseline = "top";
-      ctx.font = `500 ${Math.round(g.cap * 0.32)}px "General Sans", ${FB}`;
+      ctx.font = `500 ${Math.round(g.cap * 0.32)}px ${theme.bodyFont || '"General Sans"'}, ${FB}`;
       ctx.fillStyle = fgc(0.55);
       ctx.fillText("Translated to " + translatedLang, g.cw / 2, Math.round(g.ch * 0.026));
       ctx.restore();
@@ -4026,13 +4273,13 @@ import { initMoments } from "./moments-ui.mjs";
     // same right edge as the description below, so a long name never reaches the watermark
     const nMaxW = (g.cw - g.pad - g.cap * 1.3) - tx;
     const nFont = (px) => `600 ${px}px ${face()}`;
-    const nFit = fitLine(handle.value || "@yourname", nMaxW, Math.round(tile * 0.40), Math.round(tile * 0.26), nFont);
+    const nFit = fitLine(handle.value || "NAME", nMaxW, Math.round(tile * 0.40), Math.round(tile * 0.26), nFont);
     ctx.font = nFont(nFit.px);
     // with no description the name is the whole footer, so centre it on the tile
     let dl = descLine();
     ctx.fillText(nFit.text, tx, dl ? cy - Math.round(tile * 0.20) : cy);
     if (dl) {
-      ctx.font = `500 ${Math.round(tile * 0.27)}px "General Sans", ${FB}`;
+      ctx.font = `500 ${Math.round(tile * 0.27)}px ${theme.bodyFont || '"General Sans"'}, ${FB}`;
       ctx.fillStyle = fgc(0.62);
       // ellipsize so a long description never runs into the watermark, bottom-right
       const dMaxW = (g.cw - g.pad - g.cap * 1.3) - tx;
@@ -4046,9 +4293,26 @@ import { initMoments } from "./moments-ui.mjs";
     drawLogo(g); // NANA holo wordmark, bottom-right
   }
 
+  function paintAnalog(values, x0, x1, baseY, maxH) {
+    const center = baseY - maxH / 2;
+    const points = 360;
+    ctx.save(); ctx.beginPath();
+    for (let i = 0; i <= points; i++) {
+      const t = i / points;
+      // Live and recorded frames use the actual time-domain audio signal.
+      // The idle poster uses a quiet illustrative waveform.
+      const sample = values && waveData ? (waveData[Math.min(waveData.length - 1, Math.floor(t * waveData.length))] - 128) / 128
+        : (Math.sin(t * Math.PI * 28) * .55 + Math.sin(t * Math.PI * 62) * .18) * (0.35 + 0.65 * Math.pow(Math.sin(t * Math.PI * 3), 2));
+      const x = x0 + t * (x1 - x0), y = center - sample * maxH * .46;
+      if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+    }
+    ctx.strokeStyle = lineGradient(x0, x1);
+    ctx.lineWidth = Math.max(2, canvas.width / 380); ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke(); ctx.restore();
+  }
   function paintBars(values) {
     const g = geo();
     const baseY = g.waveBase, n = 48;
+    if (visualizerStyle === 'analog') { paintAnalog(values, g.pad, g.cw - g.pad, baseY, g.waveMax); return; }
     const w = g.cw - g.pad * 2, bw = w / n;
     ctx.fillStyle = lineGradient(g.pad, g.pad + w);
     const rr = Math.max(3, bw * 0.18);
@@ -4098,6 +4362,7 @@ import { initMoments } from "./moments-ui.mjs";
   }
 
   function paintBarsIn(values, x0, x1, baseY, maxH) {
+    if (visualizerStyle === 'analog') { paintAnalog(values, x0, x1, baseY, maxH); return; }
     const n = 36, w = x1 - x0, bw = w / n;
     ctx.fillStyle = lineGradient(x0, x1);
     const rr = Math.max(3, bw * 0.18);
@@ -4142,7 +4407,7 @@ import { initMoments } from "./moments-ui.mjs";
     // name + description line, right of the tile
     const hx = tx + tile + Math.round(g.pad * 0.6);
     const hw = g.cw - g.pad - hx;
-    const name = (handle.value || "@yourname").toUpperCase();
+    const name = (handle.value || "NAME").toUpperCase();
     const hFont = (px) => `700 ${px}px ${face()}`;
     // shrink to fit the header, down to a still-legible floor; ellipsize only past that
     const nf = fitLine(name, hw, Math.round(tile * 0.3), Math.round(tile * 0.17), hFont);
@@ -4162,7 +4427,7 @@ import { initMoments } from "./moments-ui.mjs";
       // below that the glyphs stop holding their shape, which is why it used to be exempted
       // from the grid entirely. Bigger is the better fix than excluded.
       const ds = Math.round(tile * (theme.fx === "dot" ? 0.21 : 0.155));
-      ctx.font = `500 ${ds}px "General Sans", ${FB}`;
+      ctx.font = `500 ${ds}px ${theme.bodyFont || '"General Sans"'}, ${FB}`;
       ctx.fillStyle = fgc(0.78);
       const dline = descLine();
       const dy = ty + Math.round(hs * 1.2);
@@ -4178,7 +4443,7 @@ import { initMoments } from "./moments-ui.mjs";
         // draw on the offscreen layer so the ends can fade out instead of cutting off
         const L = layerReady();
         L.textBaseline = "top";
-        L.font = `500 ${ds}px "General Sans", ${FB}`;
+        L.font = `500 ${ds}px ${theme.bodyFont || '"General Sans"'}, ${FB}`;
         L.fillStyle = fgc(0.78);
         if (bgImage) { L.shadowColor = shadowCol(); L.shadowBlur = ds * 0.3; L.shadowOffsetY = 1; }
         L.fillText(dline, hx - off, dy);
@@ -4232,7 +4497,7 @@ import { initMoments } from "./moments-ui.mjs";
     if (note) {
       ctx.save();
       ctx.textBaseline = "alphabetic";
-      ctx.font = `500 ${Math.max(14, Math.round(g.cw * 0.018))}px "General Sans", ${FB}`;
+      ctx.font = `500 ${Math.max(14, Math.round(g.cw * 0.018))}px ${theme.bodyFont || '"General Sans"'}, ${FB}`;
       ctx.fillStyle = fgc(0.45);
       ctx.fillText(note, g.pad, g.ch - Math.round(g.ch * 0.028));
       ctx.restore();
@@ -4259,6 +4524,7 @@ import { initMoments } from "./moments-ui.mjs";
   // animation loop while playing / recording
   function loop() {
     analyser.getByteFrequencyData(freqData);
+      analyser.getByteTimeDomainData(waveData);
     paintScene(freqData, activeWordIndex(player.currentTime));
     rafId = requestAnimationFrame(loop);
   }
@@ -4290,7 +4556,7 @@ import { initMoments } from "./moments-ui.mjs";
     tCur.textContent = fmtTime(t);
     tRem.textContent = "-" + fmtTime(ready ? Math.max(0, d - t) : 0);
     const p = ready ? (t / d) * 100 : 0;
-    scrub.style.background = `linear-gradient(90deg, var(--accent-2), var(--accent) ${p}%, var(--line-2) ${p}%)`;
+    scrub.style.setProperty('--played', `${p}%`);
   }
   player.addEventListener("loadedmetadata", updatePlaybar);
   player.addEventListener("durationchange", updatePlaybar);
@@ -4303,6 +4569,7 @@ import { initMoments } from "./moments-ui.mjs";
     player.currentTime = t;
     tCur.textContent = fmtTime(t);
     tRem.textContent = "-" + fmtTime(Math.max(0, d - t));
+    scrub.style.setProperty('--played', `${scrub.value / 10}%`);
     // paused scrubbing still moves the captions to the right spot
     if (player.paused && !recording) paintScene(null, activeWordIndex(t));
   });
@@ -4725,6 +4992,7 @@ import { initMoments } from "./moments-ui.mjs";
     }
   });
 
+  let preparingRecord = false;
   let activeRec = null, recordCancelled = false, hiddenCancel = false, stallCancel = false;
   videoBtn.addEventListener("click", async () => {
     if (recording) {
@@ -4735,8 +5003,24 @@ import { initMoments } from "./moments-ui.mjs";
       try { if (activeRec && activeRec.state !== "inactive") activeRec.stop(); } catch (_) {}
       return;
     }
-    if (!lastAudioBlob) return;
-    await setupAudioGraph();
+    if (!lastAudioBlob || preparingRecord) return;
+    preparingRecord = true; videoBtn.disabled = true;
+    setBtn(videoBtn, 'video', 'Preparing clip…');
+    cancelAnimationFrame(rafId);
+    try {
+      await setupAudioGraph();
+      await rewindForExport(player, () => {
+        scrollPos = 0;
+        freqData.fill(0); waveData.fill(128);
+        paintScene(freqData, activeWordIndex(0));
+        updatePlaybar();
+      });
+    } catch (error) {
+      setStatus(error.message, 'err');
+      preparingRecord = false; videoBtn.disabled = false;
+      setBtn(videoBtn, 'video', 'Record & download video'); return;
+    }
+    preparingRecord = false; videoBtn.disabled = false;
     const FPS = 30;
     // Prefer captureStream(0): the browser captures only when we call requestFrame(), so every
     // emitted frame is one we just finished drawing. Fall back to auto-sampling at FPS where
@@ -4776,6 +5060,7 @@ import { initMoments } from "./moments-ui.mjs";
     const drawFrame = () => {
       lastFrameTs = Date.now();
       analyser.getByteFrequencyData(freqData);
+      analyser.getByteTimeDomainData(waveData);
       paintScene(freqData, activeWordIndex(player.currentTime));
       // DOM work only once per second — per-frame label/icon rewrites jank weaker machines
       const sec = Math.floor(player.currentTime);
@@ -4806,6 +5091,7 @@ import { initMoments } from "./moments-ui.mjs";
 
     rec.onstop = async () => {
       stopTicker();
+      updatePlaybar();
       player.removeEventListener("timeupdate", stallCheck); // per-take watchdog, don't stack across takes
       dropWakeLock();
       drawPoster(); // the worker paints past the 'ended' redraw — reset to a clean poster
@@ -4836,12 +5122,13 @@ import { initMoments } from "./moments-ui.mjs";
     videoBtn.classList.add("cancel"); setBtn(videoBtn, "x", "Cancel · 0:00");
     setStatus("Recording. Keep this tab in front until it finishes: switching tabs cancels the take.");
     grabWakeLock();
-    player.currentTime = 0;
+    scrollPos = 0;
     recording = true;
     busyPanel(exportPanel, true);
     cancelAnimationFrame(rafId); // stop the rAF loop; the Worker drives frames now
     drawFrame();                 // prime the first frame so the take never opens on a stale canvas
-    rec.start();                 // recorder live BEFORE playback (no timeslice: chunked MP4 muxing is Chrome's flakiest path)
+    rec.start();                 // recorder live BEFORE playback
+    if (manualFrames) videoTrack.requestFrame();
     await player.play();
     ticker.postMessage({ start: true });
     player.onended = () => { setTimeout(() => rec.stop(), 250); player.onended = null; };
@@ -4874,14 +5161,56 @@ import { initMoments } from "./moments-ui.mjs";
   })();
 
   momentsController = initMoments({
-    connected: isConnected, connect: openKeyModal, testerPass: () => testerPass,
+    workspaceOpened: () => { setStudioStage('clip'); requestAnimationFrame(() => window.scrollTo({top:0,left:0,behavior:'instant'})); },
+    workspaceClosed: () => { if (document.body.dataset.stage === 'clip') setStudioStage('audio'); },
+    workspaceBusy: on => { document.body.dataset.workspaceBusy = String(on); setStudioStage(document.body.dataset.stage || 'audio'); },
+    trial: isTrial, trialTranscribe: file => trial.transcribe(file),
+    connected: isConnected, connect: openKeyModal, testerPass: () => useProxy() ? testerPass : "", analysisKey: () => openaiKey,
     sourceLanguage: () => dubSourceSel.value, sttModel: STT_MODEL,
     elevenURL, elevenHeaders, canOpus, encodeOpus: encodeOpusOgg, wav: wavBlob, probe: probeDuration,
     busy: () => genBtn.disabled || recording,
+    getTrim: () => trimActive() ? { start: trimStart, end: trimEnd } : null,
+    stageSelection: (start, end) => {
+      trimStart = start; trimEnd = end; refreshTrimBtn(); syncCapNote();
+      setStatus("Selection saved. Choose captions or a dub, then generate your audiogram.", "ok");
+    },
     pause: () => player.pause(),
     unlockAudio: () => {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === "suspended") audioCtx.resume();
+    },
+    targets: () => [...dubTargetSel.options].map(o => ({ value: o.value, label: o.textContent })),
+    target: () => dubTargetSel.value,
+    async generateSelection(result, target, progress) {
+      if (dubFile !== result.file) throw new Error("The recording changed. Reopen your clip.");
+      trimStart = result.start; trimEnd = result.end; refreshTrimBtn();
+      dubTargetSel.value = target; updateGenLabel(); syncCapNote();
+      dubDesc.value = result.title;
+      workspaceProgress = progress;
+      try {
+        if (!await runDub()) throw new Error(status.textContent || "Generation did not finish. Try again.");
+      } finally { workspaceProgress = null; }
+    },
+    async captionFullClip(progress) {
+      resetTrim(); dubTargetSel.value = 'same'; updateGenLabel(); syncCapNote();
+      workspaceProgress = progress;
+      try { if (!await runDub()) throw new Error(status.textContent || 'Captioning did not finish. Try again.'); }
+      finally { workspaceProgress = null; }
+    },
+    enterDesign(speakerName) {
+      if (isTrial()) finishTrial();
+      if (!designTouched.has('name')) handle.value = speakerName || 'NAME';
+      drawPoster();
+      settleCreate();
+      $("#designEditClip").hidden = false;
+      const panel = $("#designPanel"); panel.tabIndex = -1;
+      panel.focus({ preventScroll: true });
+      // Wait for stage visibility and the captioning busy state to settle before scrolling.
+      requestAnimationFrame(() => {
+        if (document.body.dataset.stage !== 'design') return;
+        window.scrollTo({top:0,left:0,behavior:'instant'});
+      });
+      setStatus("Ready to design. Choose your layout, captions and colors, then preview and export.", "ok");
     },
     async useMoment(result) {
       if (dubFile !== result.file) throw new Error("The recording changed. Select a moment from the current file.");
@@ -4898,9 +5227,30 @@ import { initMoments } from "./moments-ui.mjs";
       playBtn.disabled = false; audioBtn.disabled = false; videoBtn.disabled = false;
       $("#exportGroup").classList.add("ready");
       drawPoster(); setStatus("Your moment is ready. Preview it, customize the design, or choose a language to dub.", "ok");
-      $("#previewPanel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+
     }
   });
+
+  function navigateStudio(stage) {
+    if (document.body.dataset.workspaceBusy === 'true') return;
+    if (stage === 'clip') { momentsController.open(); return; }
+    momentsController.close();
+    setStudioStage(stage);
+    const panel = stage === 'audio' ? createPanel : stage === 'export' ? $('#previewPanel') : $('#designPanel');
+    panel.tabIndex = -1; panel.focus({preventScroll:true});
+    requestAnimationFrame(() => {
+      drawPoster();
+      window.scrollTo({top:0,left:0,behavior:'instant'});
+    });
+  }
+  document.querySelectorAll('.studio-progress button').forEach(button => button.addEventListener('click', () => {
+    if (!button.disabled) navigateStudio(button.dataset.stageLabel);
+  }));
+  const exportNext = document.createElement('button');
+  exportNext.type = 'button'; exportNext.className = 'moment-button moment-primary studio-export-next';
+  exportNext.textContent = 'Continue to Share →'; exportNext.addEventListener('click', () => navigateStudio('export'));
+  $('#designDock').append(exportNext);
+  $("#designEditClip").addEventListener("click", () => momentsController.open());
 
   // initial state: open on "Caption a clip" (also paints the initial poster)
   setMode("dub");
@@ -4908,11 +5258,14 @@ import { initMoments } from "./moments-ui.mjs";
   if (document.fonts && document.fonts.ready) {
     Promise.all([
       document.fonts.load('600 54px "Clash Display"').catch(() => {}),
+      document.fonts.load('600 54px Barlow').catch(() => {}),
+      document.fonts.load('500 24px Barlow').catch(() => {}),
       document.fonts.load('700 54px "Geist Mono"').catch(() => {}),
       document.fonts.load('500 24px "General Sans"').catch(() => {}),
     ]).then(() => document.fonts.ready).then(() => drawPoster());
   }
 })();
 </script>
+<script type="module" src="./header-type.mjs"></script>
 </body>
 </html>

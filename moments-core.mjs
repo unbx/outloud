@@ -86,3 +86,34 @@ export const candidateSchema = {
       } } }
   }
 };
+
+// Search results are bounded, ready-to-preview passages. Literal, case-insensitive matching.
+export function transcriptPassages(segments, words, query, duration) {
+  const needle = query.trim().toLowerCase();
+  return segments.filter(s => !needle || s.text.toLowerCase().includes(needle)).map(s => {
+    let start = s.start, end = Math.min(duration, s.end);
+    if (end - start > 90) {
+      const offset = Math.max(0, s.text.toLowerCase().indexOf(needle));
+      let chars = 0, anchor = s.start;
+      for (const w of words.slice(s.firstWord, s.lastWord + 1)) {
+        anchor = w.start;
+        if (chars + w.text.length > offset) break;
+        chars += w.text.length + 1;
+      }
+      start = Math.max(s.start, Math.min(anchor - 10, end - 90));
+      end = Math.min(end, start + 90);
+    }
+    return { ...s, start, end };
+  }).filter(s => validRange(s.start, s.end, duration));
+}
+
+// Use only names explicitly assigned to voices present in the selected time range.
+export function labeledSpeakersForRange(words, labels, start, end) {
+  const names = [];
+  for (const word of words) {
+    if (word.end <= start || word.start >= end) continue;
+    const name = labels[word.speaker]?.trim();
+    if (name && !names.includes(name)) names.push(name);
+  }
+  return names.join(' & ');
+}

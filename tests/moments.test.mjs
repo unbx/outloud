@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { normalizeWords, segmentsFromWords, validateSegments, validateCandidates, clipWords, validRange } from '../moments-core.mjs';
-import handler from '../api/moments.js';
+import handler, { analysisError } from '../api/moments.js';
 
 const segments = Array.from({ length: 12 }, (_, i) => ({ id: i, start: i * 10, end: (i + 1) * 10,
   text: `Sentence ${i}.`, speaker: i < 6 ? 'guest' : 'host' }));
@@ -60,9 +60,58 @@ test('API authenticates before calling the model and validates its output', asyn
     assert.equal(malformed.code, 400); assert.equal(calls, 0);
     const result = response(); await handler({ method: 'POST', headers: { 'x-tester-pass': 'test-only' }, body: { segments, min: 30, max: 60 } }, result);
     assert.equal(result.code, 200); assert.equal(result.body.moments.length, 1); assert.equal(calls, 1);
+    const auto = response(); await handler({ method: 'POST', headers: { 'x-tester-pass': 'test-only' }, body: { segments, min: 15, max: 90 } }, auto);
+    assert.equal(auto.code, 200); assert.equal(auto.body.moments.length, 1);
   } finally {
     globalThis.fetch = oldFetch;
     if (oldPass === undefined) delete process.env.TESTER_PASSWORD; else process.env.TESTER_PASSWORD = oldPass;
     if (oldKey === undefined) delete process.env.OPENAI_API_KEY; else process.env.OPENAI_API_KEY = oldKey;
   }
+});
+
+
+test('own-key analysis forwards only to OpenAI and reports model access failures', async () => {
+  const oldFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async (url, options) => {
+      assert.equal(url, 'https://api.openai.com/v1/responses');
+      assert.equal(options.headers.Authorization, 'Bearer unit-test-key');
+      return { ok: false, status: 404, json: async () => ({error:{code:"model_not_found"}}) };
+    };
+    const result = response();
+    await handler({method:'POST', headers:{'x-moments-key':'unit-test-key'}, body:{segments,min:30,max:60}}, result);
+    assert.equal(result.code, 502);
+    assert.match(result.body.error, /model is not available/);
+    assert.doesNotMatch(JSON.stringify(result.body), /unit-test-key/);
+  } finally { globalThis.fetch = oldFetch; }
+});
+
+
+test('billing exhaustion is distinguished from temporary rate limits without exposing provider details', () => {
+  const exhausted = analysisError(429, {code:'credit_balance_exhausted',type:'insufficient_quota',message:'secret detail'});
+  assert.equal(exhausted.code, 'credits_exhausted');
+  assert.match(exhausted.error, /add credits/);
+  assert.doesNotMatch(exhausted.error, /secret detail/);
+  assert.equal(analysisError(429, {code:'rate_limit_exceeded'}).code, 'rate_limited');
+});
+
+test('transcript search matches literal phrases without case sensitivity and keeps every passage', async () => {
+  const { transcriptPassages } = await import('../moments-core.mjs');
+  const segments = [
+    { id: 0, start: 0, end: 8, text: 'ApeFest starts here.' },
+    { id: 1, start: 20, end: 30, text: 'We met at APEFEST.' },
+    { id: 2, start: 40, end: 50, text: 'Another topic.' }
+  ];
+  assert.deepEqual(transcriptPassages(segments, [], ' apefest ', 60).map(s => s.id), [0, 1]);
+  assert.equal(transcriptPassages(segments, [], '[.*]', 60).length, 0);
+  assert.equal(transcriptPassages(segments, [], '', 60).length, 3);
+});
+test('long search passages stay within the clip limit and include the matching word', async () => {
+  const { transcriptPassages } = await import('../moments-core.mjs');
+  const words = [{text:'Before',start:0,end:1},{text:'APEFEST',start:110,end:111},{text:'after.',start:130,end:131}];
+  const segment = {id:0,start:0,end:131,text:'Before APEFEST after.',firstWord:0,lastWord:2};
+  const [result] = transcriptPassages([segment],words,'APEFEST',131);
+  assert.ok(result.end-result.start <= 90);
+  assert.ok(result.start <= 110 && result.end >= 111);
+  assert.ok(result.start >= 0 && result.end <= 131);
 });
