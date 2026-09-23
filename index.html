@@ -1110,8 +1110,9 @@
 
         <label>Visualizer <span class="sub">· waveform style</span></label>
         <div class="seg" id="visualizerSeg" role="group" aria-label="Visualizer style">
-          <button type="button" data-visualizer="digital" class="sel" aria-pressed="true">Digital</button>
+          <button type="button" data-visualizer="digital" class="sel" aria-pressed="true">Modern</button>
           <button type="button" data-visualizer="analog" aria-pressed="false">Analog</button>
+          <button type="button" data-visualizer="led" aria-pressed="false">LED</button>
         </div>
 
         <label>Captions <span class="sub">· how the words are set</span></label>
@@ -1584,14 +1585,14 @@ import { rewindForExport } from "./export-start.mjs";
     { name: "LCD", a: "#FF5A14", b: "#F4F1EA", bg1: "#0A0B0B", bg2: "#131617",
       stops: ["#F4F1EA", "#F4F1EA", "#FF5A14"], ink: "#0A0B0B", fg: "#F4F1EA",
       // Silkscreen: a pixel face like the small LCD labels on the K.O. II screen.
-      fx: "lcd", glow: 0, fontId: "silkscreen",
+      fx: "lcd", glow: 0, fontId: "silkscreen", visualizer: "led",
       ladder: { segs: 16, on: "#F25A2A", off: "#3A0D05", glow: "#FF4A1A" } },
     // — Retro LCD: a reflective watch or sampler display. Grey-green glass, dark segments with
     //   the faint unlit ghosts behind them, the soft shadow real segments cast on the reflector,
     //   and red for the active word and the top of the ladders. Screen approximations. —
     { name: "Retro LCD", a: "#C8262B", b: "#3E4A34", bg1: "#C3CCA8", bg2: "#AFB894",
       stops: ["#1D2418", "#1D2418", "#C8262B"], fg: "#1D2418", ink: "#C3CCA8", glow: 0,
-      fontId: "dseg14", segShadow: true,
+      fontId: "dseg14", segShadow: true, visualizer: "led",
       ladder: { segs: 14, on: "#1D2418", off: "#1D24181A", hot: "#C8262B", hotOff: "#C8262B26" } },
     { name: "Contrast", a: "#ffffff", b: "#d4d4d4", bg1: "#0a0a0a", bg2: "#000000", ink: "#000000" },
     // The one light theme. `fg` flips the canvas text from white to ink; cream is NANA
@@ -1866,7 +1867,8 @@ import { rewindForExport } from "./export-start.mjs";
   // default — transcripts otherwise read as one undifferentiated wall), "focus" (a few words
   // at a time, in step with the audio).
   let capStyle = localStorage.getItem(LS_CAPSTYLE) || "focus";
-  let visualizerStyle = localStorage.getItem('outloud_visualizer_v2') === 'analog' ? 'analog' : 'digital';
+  // "digital" is the Modern bars; the value keeps its old name so saved choices still load.
+  let visualizerStyle = ['analog', 'led'].includes(localStorage.getItem('outloud_visualizer_v2')) ? localStorage.getItem('outloud_visualizer_v2') : 'digital';
   const visualizerButtons = document.querySelectorAll('#visualizerSeg button');
   function refreshVisualizer() {
     visualizerButtons.forEach(button => {
@@ -3069,6 +3071,8 @@ import { rewindForExport } from "./export-start.mjs";
     sw.addEventListener("click", () => {
       theme = t;
       fontChoice = null; syncFontMenu();
+      // a theme built around a display suggests its visualizer too; others keep the current one
+      if (t.visualizer) { visualizerStyle = t.visualizer; refreshVisualizer(); }
       clearThemeSel(); sw.classList.add("sel");
       customTheme.hidden = true; // hide hue controls when a preset is chosen
       drawPoster();
@@ -4208,11 +4212,14 @@ import { rewindForExport } from "./export-start.mjs";
   }
   const glowLayer = document.createElement("canvas");
   const gtx = glowLayer.getContext("2d");
-  // LED ladders after the K.O. Sidekick's display: thin segments stacked in narrow columns, with
-  // unlit segments left visible so the whole ladder reads. Colours come from `theme.ladder`; an
+  // The LED visualizer, after the K.O. Sidekick's display: thin segments stacked in narrow columns,
+  // with unlit segments left visible so the whole ladder reads. Colours come from `theme.ladder`; an
   // optional `hot` colour takes the top fifth. Each colour is one path, so a glow is one pass.
   function ledLadders(cols, baseY, maxH) {
-    const L = theme.ladder, segs = L.segs;
+    // Themes without their own ladder colours light theirs with the waveform gradient, and
+    // leave the unlit segments as a faint wash of the caption colour.
+    const L = theme.ladder || { segs: 14, on: lineGradient(cols[0].x, cols[cols.length - 1].x + cols[0].w), off: fgc(0.08) };
+    const segs = L.segs;
     const pitch = maxH / segs, segH = Math.max(2, pitch * 0.5), hotFrom = L.hot ? Math.floor(segs * 0.8) : segs;
     const on = new Path2D(), off = new Path2D(), hotOn = new Path2D(), hotOff = new Path2D();
     for (const c of cols) {
@@ -4466,7 +4473,7 @@ import { rewindForExport } from "./export-start.mjs";
     const baseY = g.waveBase, n = 48;
     if (visualizerStyle === 'analog') { paintAnalog(values, g.pad, g.cw - g.pad, baseY, g.waveMax); return; }
     const w = g.cw - g.pad * 2, bw = w / n;
-    if (theme.ladder) {
+    if (visualizerStyle === "led") {
       // 24 wider ladders rather than 48 thin ones, so each segment still reads as a block
       const m = 32, mw = w / m, cols = [];
       for (let i = 0; i < m; i++) {
@@ -4526,7 +4533,7 @@ import { rewindForExport } from "./export-start.mjs";
   function paintBarsIn(values, x0, x1, baseY, maxH) {
     if (visualizerStyle === 'analog') { paintAnalog(values, x0, x1, baseY, maxH); return; }
     const n = 36, w = x1 - x0, bw = w / n;
-    if (theme.ladder) {
+    if (visualizerStyle === "led") {
       const m = 24, mw = w / m, cols = [];
       for (let i = 0; i < m; i++) {
         const v = values ? barLevel(values, i, m) : 0.2 + 0.68 * Math.abs(Math.sin(i * 0.9) * Math.sin(i * 0.37));
