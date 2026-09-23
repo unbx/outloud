@@ -1597,9 +1597,11 @@ import { rewindForExport } from "./export-start.mjs";
       ladder: { segs: 16, on: "#F25A2A", off: "#3A0D05", glow: "#FF4A1A" } },
     // — Retro LCD: a reflective watch or sampler display. Grey-green glass, dark segments with
     //   the faint unlit ghosts behind them, the soft shadow real segments cast on the reflector,
-    //   and red for the active word and the top of the ladders. Screen approximations. —
-    { name: "Retro LCD", a: "#C8262B", b: "#3E4A34", bg1: "#C3CCA8", bg2: "#AFB894",
+    //   the active word inverted (a dark block with glass-coloured letters, as an LCD highlights),
+    //   and red for the name and the top of the ladders. Screen approximations. —
+    { name: "Retro LCD", a: "#1D2418", b: "#3E4A34", bg1: "#C3CCA8", bg2: "#AFB894",
       stops: ["#1D2418", "#1D2418", "#C8262B"], fg: "#1D2418", ink: "#C3CCA8", glow: 0,
+      nameCol: "#C8262B", ghost: 0.055,
       fontId: "dseg14", segShadow: true, visualizer: "led",
       ladder: { segs: 14, on: "#1D2418", off: "#1D24181A", hot: "#C8262B", hotOff: "#C8262B26" } },
     { name: "Contrast", a: "#ffffff", b: "#d4d4d4", bg1: "#0a0a0a", bg2: "#000000", ink: "#000000" },
@@ -1612,14 +1614,15 @@ import { rewindForExport } from "./export-start.mjs";
 
   // Fonts for the artwork. Each theme suggests one (`fontId`); the Font menu can override it
   // until another theme is picked. `weight` pins a face that only works at one cut, `upper`
-  // sets captions in capitals, `ghost` draws the unlit segments behind each character.
+  // sets captions in capitals, `ghost` draws the unlit segments behind each character, and
+  // `matchBody` carries the face into the description line too, so an LCD never mixes in a sans.
   const FONTS = [
     { id: "clash", label: "Clash Display", family: '"Clash Display", "General Sans"' },
     { id: "general", label: "General Sans", family: '"General Sans"' },
     { id: "barlow", label: "Barlow", family: '"Barlow"' },
     { id: "geist", label: "Geist Mono", family: '"Geist Mono", ui-monospace, monospace' },
-    { id: "silkscreen", label: "Silkscreen · pixel LCD", family: '"Silkscreen", "Geist Mono", monospace', weight: 400 },
-    { id: "dseg14", label: "DSEG14 · segment LCD", family: '"DSEG14 Classic", "Geist Mono", monospace', weight: 700, upper: true, ghost: true },
+    { id: "silkscreen", label: "Silkscreen · pixel LCD", family: '"Silkscreen", "Geist Mono", monospace', weight: 400, matchBody: true },
+    { id: "dseg14", label: "DSEG14 · segment LCD", family: '"DSEG14 Classic", "Geist Mono", monospace', weight: 700, upper: true, ghost: true, matchBody: true },
   ];
   let fontChoice = null; // a FONTS id picked in the menu, or null for the theme's own
   const curFont = () => FONTS.find(f => f.id === (fontChoice || theme.fontId || "clash")) || FONTS[0];
@@ -3900,12 +3903,16 @@ import { rewindForExport } from "./export-start.mjs";
   // A font can pin the weight: a pixel face like Silkscreen only reads as a display at its
   // regular cut, and the bold one turns M and W into solid blocks.
   const wt = (w) => curFont().weight || w;
+  // The description line's face: the theme's body font, unless the caption font asks to carry over.
+  const bodyFont = (px) => curFont().matchBody
+    ? `${wt(500)} ${px}px ${curFont().family}, ${FB}`
+    : `500 ${px}px ${theme.bodyFont || '"General Sans"'}, ${FB}`;
   // Unlit segments: every character becomes the all-segments glyph, except the zero-width
   // points and colons, which sit between characters in DSEG and would push the ghosts out of step.
   const ghostOf = (t) => t.replace(/[^.:\s]/g, "~");
   function ghostText(L, text, x, y) {
     const fill = L.fillStyle, sc = L.shadowColor;
-    L.shadowColor = "transparent"; L.fillStyle = fgc(0.09);
+    L.shadowColor = "transparent"; L.fillStyle = fgc(theme.ghost ?? 0.09);
     L.fillText(ghostOf(text), x, y);
     L.fillStyle = fill; L.shadowColor = sc;
   }
@@ -3917,7 +3924,7 @@ import { rewindForExport } from "./export-start.mjs";
   }
   const capFont   = (g) => `${wt(600)} ${g.cap}px ${face()}`;
   const handleFont= (g) => `${wt(600)} ${Math.round(g.cap * 0.62)}px ${face()}`;
-  const brandFont = (g) => `500 ${Math.round(g.cap * 0.4)}px ${theme.bodyFont || '"General Sans"'}, ${FB}`;
+  const brandFont = (g) => bodyFont(Math.round(g.cap * 0.4));
 
   // build the waveform / accent gradient (supports holo multi-stop)
   function lineGradient(x0, x1) {
@@ -4526,7 +4533,7 @@ import { rewindForExport } from "./export-start.mjs";
       ctx.save();
       ctx.textAlign = "center";
       ctx.textBaseline = "top";
-      ctx.font = `500 ${Math.round(g.cap * 0.32)}px ${theme.bodyFont || '"General Sans"'}, ${FB}`;
+      ctx.font = bodyFont(Math.round(g.cap * 0.32));
       ctx.fillStyle = fgc(0.55);
       ctx.fillText("Translated to " + translatedLang, g.cw / 2, Math.round(g.ch * 0.026));
       ctx.restore();
@@ -4553,7 +4560,7 @@ import { rewindForExport } from "./export-start.mjs";
       tx = g.pad + tile + Math.round(tile * 0.26);
     }
     ctx.textBaseline = "middle";
-    ctx.fillStyle = theme.b;
+    ctx.fillStyle = theme.nameCol || theme.b;
     // same right edge as the description below, so a long name never reaches the watermark
     const nMaxW = (g.cw - g.pad - g.cap * 1.3) - tx;
     const nFont = (px) => `${wt(600)} ${px}px ${face()}`;
@@ -4563,11 +4570,12 @@ import { rewindForExport } from "./export-start.mjs";
     let dl = descLine();
     ctx.fillText(nFit.text, tx, dl ? cy - Math.round(tile * 0.20) : cy);
     if (dl) {
-      ctx.font = `500 ${Math.round(tile * 0.27)}px ${theme.bodyFont || '"General Sans"'}, ${FB}`;
+      ctx.font = bodyFont(Math.round(tile * 0.27));
       ctx.fillStyle = fgc(0.62);
       // ellipsize so a long description never runs into the watermark, bottom-right
       const dMaxW = (g.cw - g.pad - g.cap * 1.3) - tx;
       while (ctx.measureText(dl).width > dMaxW && dl.length > 2) dl = dl.slice(0, -2).trimEnd() + "…";
+      if (curFont().ghost) ghostText(ctx, dl, tx, cy + Math.round(tile * 0.24));
       ctx.fillText(dl, tx, cy + Math.round(tile * 0.24));
     }
     ctx.textBaseline = "top";
@@ -4720,7 +4728,7 @@ import { rewindForExport } from "./export-start.mjs";
     const nf = fitLine(name, hw, Math.round(tile * 0.3), Math.round(tile * 0.17), hFont);
     const hs = nf.px;
     ctx.font = hFont(hs);
-    ctx.fillStyle = fgc(1);
+    ctx.fillStyle = theme.nameCol || fgc(1);
     ctx.fillText(nf.text, hx, ty);
 
     // Drawn as a closure and called after the dot mesh below. At roughly 7.6 dots of
@@ -4734,7 +4742,7 @@ import { rewindForExport } from "./export-start.mjs";
       // below that the glyphs stop holding their shape, which is why it used to be exempted
       // from the grid entirely. Bigger is the better fix than excluded.
       const ds = Math.round(tile * (theme.fx === "dot" ? 0.21 : 0.155));
-      ctx.font = `500 ${ds}px ${theme.bodyFont || '"General Sans"'}, ${FB}`;
+      ctx.font = bodyFont(ds);
       ctx.fillStyle = fgc(0.78);
       const dline = descLine();
       const dy = ty + Math.round(hs * 1.2);
@@ -4742,6 +4750,7 @@ import { rewindForExport } from "./export-start.mjs";
       if (!dline) {
         /* nothing typed: leave the header as just the name */
       } else if (dw <= hw) {
+        if (curFont().ghost) ghostText(ctx, dline, hx, dy);
         ctx.fillText(dline, hx, dy);
       } else {
         const gap = ds * 2.5, speed = ds * 1.6; // px/second — calm, readable drift
@@ -4750,9 +4759,10 @@ import { rewindForExport } from "./export-start.mjs";
         // draw on the offscreen layer so the ends can fade out instead of cutting off
         const L = layerReady();
         L.textBaseline = "top";
-        L.font = `500 ${ds}px ${theme.bodyFont || '"General Sans"'}, ${FB}`;
+        L.font = bodyFont(ds);
         L.fillStyle = fgc(0.78);
         if (bgImage) { L.shadowColor = shadowCol(); L.shadowBlur = ds * 0.3; L.shadowOffsetY = 1; }
+        if (curFont().ghost) { ghostText(L, dline, hx - off, dy); ghostText(L, dline, hx - off + dw + gap, dy); }
         L.fillText(dline, hx - off, dy);
         L.fillText(dline, hx - off + dw + gap, dy); // seamless wrap-around copy
         // directional fades: the right end always signals overflow; the left only once it has moved
@@ -4804,7 +4814,7 @@ import { rewindForExport } from "./export-start.mjs";
     if (note) {
       ctx.save();
       ctx.textBaseline = "alphabetic";
-      ctx.font = `500 ${Math.max(14, Math.round(g.cw * 0.018))}px ${theme.bodyFont || '"General Sans"'}, ${FB}`;
+      ctx.font = bodyFont(Math.max(14, Math.round(g.cw * 0.018)));
       ctx.fillStyle = fgc(0.45);
       ctx.fillText(note, g.pad, g.ch - Math.round(g.ch * 0.028));
       ctx.restore();
