@@ -1593,7 +1593,7 @@ import { rewindForExport } from "./export-start.mjs";
     { name: "LCD", a: "#FF5A14", b: "#F4F1EA", bg1: "#0A0B0B", bg2: "#131617",
       stops: ["#F4F1EA", "#F4F1EA", "#FF5A14"], ink: "#0A0B0B", fg: "#F4F1EA",
       // Silkscreen: a pixel face like the small LCD labels on the K.O. II screen.
-      fx: "lcd", glow: 0, fontId: "silkscreen", visualizer: "led",
+      fx: "lcd", glow: 0, fontId: "silkscreen", visualizer: "led", swatch: "lcd",
       ladder: { segs: 16, on: "#F25A2A", off: "#3A0D05", glow: "#FF4A1A" } },
     // — Retro LCD: a reflective watch or sampler display. Grey-green glass, dark segments with
     //   the faint unlit ghosts behind them, the soft shadow real segments cast on the reflector,
@@ -1603,8 +1603,17 @@ import { rewindForExport } from "./export-start.mjs";
       // one solid segment colour for Modern and Analog; red stays on the LED ladders only
       stops: ["#1D2418", "#1D2418"], fg: "#1D2418", ink: "#C3CCA8", glow: 0,
       nameCol: "#C8262B", ghost: 0.055,
-      fontId: "dseg14", segShadow: true, visualizer: "led",
+      fontId: "dseg14", segShadow: true, visualizer: "led", swatch: "retro",
       ladder: { segs: 14, on: "#1D2418", off: "#1D24181A", hot: "#C8262B", hotOff: "#C8262B26" } },
+    // — Indiglo: Retro LCD inverted, after a night-light digital watch (named at Sean's request;
+    //   Indiglo is a Timex trademark). A dark green panel lit from behind, brightest in the
+    //   middle, mint segments glowing on it with their unlit ghosts, the active word lit as a
+    //   solid block, and a green halo instead of the LCD theme's indigo. Screen approximations. —
+    { name: "Indiglo", a: "#62F2BE", b: "#0F3D2C", bg1: "#021109", bg2: "#010604",
+      stops: ["#62F2BE", "#62F2BE"], fg: "#62F2BE", ink: "#021109", glow: 0,
+      fx: "lcd", glowTint: "#1FE39E", backlight: "#0C4631", tile: "#0C3325", ghost: 0.07, nameCol: "#62F2BE",
+      fontId: "dseg14", visualizer: "led", swatch: "indiglo",
+      ladder: { segs: 14, on: "#62F2BE", off: "#62F2BE14", glow: "#1FE39E" } },
     { name: "Contrast", a: "#ffffff", b: "#d4d4d4", bg1: "#0a0a0a", bg2: "#000000", ink: "#000000" },
     // The one light theme. `fg` flips the canvas text from white to ink; cream is NANA
     // LIFESTYLE's --cream (#e1e0cc), the colour its own body copy and logo use.
@@ -3078,8 +3087,8 @@ import { rewindForExport } from "./export-start.mjs";
       : `linear-gradient(135deg, ${t.a}, ${t.b})`;
     sw.title = t.name + (t.studio ? ' · default' : '');
     if (t.studio) { sw.classList.add('studio-theme-swatch'); sw.textContent = 'OUTLOUD'; }
-    if (t.fx === 'lcd') { sw.classList.add('lcd-theme-swatch'); sw.innerHTML = '<span aria-hidden="true">88</span>'; }
-    if (t.fontId === 'dseg14') { sw.classList.add('retro-lcd-swatch'); sw.innerHTML = '<span aria-hidden="true">88</span>'; }
+    // display themes show a lit "88" on their own glass
+    if (t.swatch) { sw.classList.add(t.swatch + '-theme-swatch'); sw.innerHTML = '<span aria-hidden="true">88</span>'; }
     sw.setAttribute('role', 'button'); sw.tabIndex = 0;
     sw.setAttribute('aria-label', sw.title);
     sw.addEventListener('keydown', event => {
@@ -4016,6 +4025,12 @@ import { rewindForExport } from "./export-start.mjs";
     const g = ctx.createLinearGradient(0, 0, cw, ch);
     g.addColorStop(0, theme.bg1); g.addColorStop(1, theme.bg2);
     ctx.fillStyle = g; ctx.fillRect(0, 0, cw, ch);
+    if (theme.backlight) {
+      // an electroluminescent panel glows unevenly: brightest in the middle, falling off to the rim
+      const bl = ctx.createRadialGradient(cw / 2, ch * 0.46, 0, cw / 2, ch * 0.46, Math.max(cw, ch) * 0.72);
+      bl.addColorStop(0, theme.backlight); bl.addColorStop(1, theme.backlight + "00");
+      ctx.fillStyle = bl; ctx.fillRect(0, 0, cw, ch);
+    }
     // Accent glows. `glow` lets a theme dial them back — an emissive look wants its light coming
     // from the type, not from a wash behind it.
     const gm = theme.glow == null ? 1 : theme.glow;
@@ -4706,9 +4721,9 @@ import { rewindForExport } from "./export-start.mjs";
       // at this pitch they cancelled on alternating rows.
       ctx.fillStyle = mixHex(theme.bg1, theme.a, 0.45);
       ctx.fillRect(tx, ty, tile, tile);
-    } else if (theme.segShadow) {
+    } else if (theme.tile || theme.segShadow) {
       // on an LCD the placeholder is a flat panel of darker glass, not a colour gradient
-      ctx.fillStyle = mixHex(theme.bg1, theme.b, 0.32);
+      ctx.fillStyle = theme.tile || mixHex(theme.bg1, theme.b, 0.32);
       ctx.fillRect(tx, ty, tile, tile);
     } else {
       const pg = ctx.createLinearGradient(tx, ty, tx + tile, ty + tile);
