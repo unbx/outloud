@@ -83,3 +83,8 @@ dialog.clip-workspace{width:min(1080px,calc(100vw - 32px));max-width:none;max-he
 .moments-panel .tl-magnification input { width:100px; min-height:36px; margin:0; padding:0; accent-color:#c7c1ca; background:transparent; border:0; }
 .tl-magnification output { min-width:36px; font-variant-numeric:tabular-nums; }
 @media(max-width:700px) { .tl-magnification button { width:44px; height:44px; } .moments-panel .tl-magnification input { width:130px; min-height:44px; } }
+/* A dub or caption in progress keeps the button bright and shows its step, instead of greying it
+   out like a control that did nothing. */
+#momentContinue.is-working:disabled{opacity:1;cursor:progress;animation:work-pulse 1.8s ease-in-out infinite}
+@keyframes work-pulse{50%{filter:brightness(1.1)}}
+@media(prefers-reduced-motion:reduce){#momentContinue.is-working:disabled{animation:none}}
