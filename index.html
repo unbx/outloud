@@ -1920,7 +1920,7 @@
     // reports no duration; the note just stays generic in that case.
     clipSeconds = 0;
     syncCapNote();
-    if (dubFile) probeDuration(dubFile).then((d) => { clipSeconds = d || 0; syncCapNote(); });
+    if (dubFile) { const probedFile = dubFile; probeDuration(probedFile).then((d) => { if (dubFile !== probedFile) return; clipSeconds = d || 0; syncCapNote(); }); }
     if (mode === "dub") drawPoster();
   }
   $("#pickBtn").addEventListener("click", () => dubFileInput.click());
@@ -4387,7 +4387,9 @@
   // ---------- Download audio ----------
   audioBtn.addEventListener("click", () => {
     if (!lastAudioBlob) return;
-    triggerDownload(lastAudioBlob, "outloud-audio.mp3");
+    const type = lastAudioBlob.type || "";
+    const ext = /wav/.test(type) ? "wav" : /ogg/.test(type) ? "ogg" : /webm/.test(type) ? "webm" : /mp4|aac/.test(type) ? "m4a" : "mp3";
+    triggerDownload(lastAudioBlob, "outloud-audio." + ext);
   });
 
   // ---------- Download captions (SRT / VTT) ----------
