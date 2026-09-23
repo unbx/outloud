@@ -40,7 +40,7 @@
 <script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "Organization", "@id": "https://outloud.nana.works/#publisher", "name": "NANA", "url": "https://nana.works/"}, {"@type": "WebSite", "@id": "https://outloud.nana.works/#website", "name": "OutLoud", "url": "https://outloud.nana.works/", "publisher": {"@id": "https://outloud.nana.works/#publisher"}, "inLanguage": "en"}, {"@type": "WebApplication", "@id": "https://outloud.nana.works/#app", "name": "OutLoud", "url": "https://outloud.nana.works/", "description": "Find the moments worth sharing in your recordings. Trim your clip, add captions, design an audiogram, and share it with the world.", "applicationCategory": "MultimediaApplication", "operatingSystem": "Web browser", "browserRequirements": "JavaScript enabled; recording and capture depend on browser support.", "publisher": {"@id": "https://outloud.nana.works/#publisher"}, "featureList": ["Upload audio or video", "Record microphone audio", "Capture tab audio in supported browsers", "Find and trim moments", "Search transcripts", "Create captioned audiograms", "Dub into supported languages while preserving the speaker’s voice", "Download video, audio, SRT and VTT captions"]}]}</script>
 <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
 <link href="https://api.fontshare.com/v2/css?f[]=clash-display@600,500,700&f[]=general-sans@500,600&display=swap" rel="stylesheet" />
-<!-- Geist Mono (SIL OFL) supports the SIGNAL theme; Silkscreen (SIL OFL) the LCD theme. -->
+<!-- Geist Mono (SIL OFL) supports the SIGNAL theme; Silkscreen (SIL OFL) the LCD theme. DSEG14 is self-hosted in fonts/. -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@500;700&family=Silkscreen&display=swap" rel="stylesheet" />
@@ -1133,6 +1133,9 @@
           <button type="button" class="icon-btn" id="hueShuffle" title="Shuffle the palette" aria-label="Shuffle the palette"><span class="ic" data-icon="shuffle"></span></button>
         </div>
 
+        <label for="fontMenu">Font <span class="sub">· each theme suggests one</span></label>
+        <select id="fontMenu" class="font-menu"></select>
+
         <label>Background image</label>
         <div class="bg-tile-row">
           <div class="pfp-tile" id="bgBtn" role="button" tabindex="0" title="Add background image" aria-label="Add background image">
@@ -1542,7 +1545,7 @@ import { rewindForExport } from "./export-start.mjs";
   const THEMES = [
     { name: "OutLoud Studio", a: "#FF5A14", b: "#27695F", bg1: "#F4F1EC", bg2: "#E4E1DC",
       stops: ["#27695F", "#D6A72F", "#FF5A14"], fg: "#242424", ink: "#191919",
-      glow: 0, font: '"Barlow", sans-serif', bodyFont: '"Barlow", sans-serif', watermark: "#27695F", studio: true },
+      glow: 0, fontId: "barlow", bodyFont: '"Barlow", sans-serif', watermark: "#27695F", studio: true },
     // — NANA Holo: the actual nana.works palette. Its .holo-text gradient runs amber → pink →
     //   purple → blue → green over a near-black page, so the waveform carries all five while
     //   purple and blue (the two Sean kept for OutLoud's own chrome) stay the accents. —
@@ -1573,15 +1576,23 @@ import { rewindForExport } from "./export-start.mjs";
       // glow 0 on purpose. The header mesh is painted in bg1, so any accent wash behind it gets
       // erased in a rectangle and the header reads as a black box. A pure black canvas also
       // matches the look this is drawn from: all the light comes from the dots.
-      fg: "#ff0d16", fx: "dot", frame: true, glow: 0, font: '"Geist Mono", ui-monospace, monospace' },
+      fg: "#ff0d16", fx: "dot", frame: true, glow: 0, fontId: "geist" },
     // — LCD: the Clip tab's display, as artwork. Glass black (near RAL 9005), warm-white lit
-    //   segments with an indigo glow, the active word on TE orange (inspired by RAL 2004), orange
-    //   corner brackets like the IN/OUT keys, and the waveform as Sidekick-style LED ladders.
+    //   segments with an indigo glow, the active word on TE orange (inspired by RAL 2004), orange,
+    //   and the waveform as Sidekick-style LED ladders.
     //   Screen approximations inspired by RAL, not official conversions. —
     { name: "LCD", a: "#FF5A14", b: "#F4F1EA", bg1: "#0A0B0B", bg2: "#131617",
       stops: ["#F4F1EA", "#F4F1EA", "#FF5A14"], ink: "#0A0B0B", fg: "#F4F1EA",
       // Silkscreen: a pixel face like the small LCD labels on the K.O. II screen.
-      fx: "lcd", frame: true, glow: 0, font: '"Silkscreen", "Geist Mono", ui-monospace, monospace', weight: 400 },
+      fx: "lcd", glow: 0, fontId: "silkscreen",
+      ladder: { segs: 16, on: "#F25A2A", off: "#3A0D05", glow: "#FF4A1A" } },
+    // — Retro LCD: a reflective watch or sampler display. Grey-green glass, dark segments with
+    //   the faint unlit ghosts behind them, the soft shadow real segments cast on the reflector,
+    //   and red for the active word and the top of the ladders. Screen approximations. —
+    { name: "Retro LCD", a: "#C8262B", b: "#3E4A34", bg1: "#C3CCA8", bg2: "#AFB894",
+      stops: ["#1D2418", "#1D2418", "#C8262B"], fg: "#1D2418", ink: "#C3CCA8", glow: 0,
+      fontId: "dseg14", segShadow: true,
+      ladder: { segs: 14, on: "#1D2418", off: "#1D24181A", hot: "#C8262B", hotOff: "#C8262B26" } },
     { name: "Contrast", a: "#ffffff", b: "#d4d4d4", bg1: "#0a0a0a", bg2: "#000000", ink: "#000000" },
     // The one light theme. `fg` flips the canvas text from white to ink; cream is NANA
     // LIFESTYLE's --cream (#e1e0cc), the colour its own body copy and logo use.
@@ -1589,6 +1600,20 @@ import { rewindForExport } from "./export-start.mjs";
     { name: "Cream",    a: "#141414", b: "#4a4a42", bg1: "#e1e0cc", bg2: "#d6d5be", fg: "#141414", ink: "#e1e0cc", glow: 0 },
   ];
   let theme = THEMES[0];
+
+  // Fonts for the artwork. Each theme suggests one (`fontId`); the Font menu can override it
+  // until another theme is picked. `weight` pins a face that only works at one cut, `upper`
+  // sets captions in capitals, `ghost` draws the unlit segments behind each character.
+  const FONTS = [
+    { id: "clash", label: "Clash Display", family: '"Clash Display", "General Sans"' },
+    { id: "general", label: "General Sans", family: '"General Sans"' },
+    { id: "barlow", label: "Barlow", family: '"Barlow"' },
+    { id: "geist", label: "Geist Mono", family: '"Geist Mono", ui-monospace, monospace' },
+    { id: "silkscreen", label: "Silkscreen · pixel LCD", family: '"Silkscreen", "Geist Mono", monospace', weight: 400 },
+    { id: "dseg14", label: "DSEG14 · segment LCD", family: '"DSEG14 Classic", "Geist Mono", monospace', weight: 700, upper: true, ghost: true },
+  ];
+  let fontChoice = null; // a FONTS id picked in the menu, or null for the theme's own
+  const curFont = () => FONTS.find(f => f.id === (fontChoice || theme.fontId || "clash")) || FONTS[0];
 
   // Small colour helpers, shared by the renderer, the swatches and the custom theme.
   function hexToRgb(h) { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
@@ -3035,6 +3060,7 @@ import { rewindForExport } from "./export-start.mjs";
     sw.title = t.name + (t.studio ? ' · default' : '');
     if (t.studio) { sw.classList.add('studio-theme-swatch'); sw.textContent = 'OUTLOUD'; }
     if (t.fx === 'lcd') { sw.classList.add('lcd-theme-swatch'); sw.innerHTML = '<span aria-hidden="true">88</span>'; }
+    if (t.fontId === 'dseg14') { sw.classList.add('retro-lcd-swatch'); sw.innerHTML = '<span aria-hidden="true">88</span>'; }
     sw.setAttribute('role', 'button'); sw.tabIndex = 0;
     sw.setAttribute('aria-label', sw.title);
     sw.addEventListener('keydown', event => {
@@ -3042,6 +3068,7 @@ import { rewindForExport } from "./export-start.mjs";
     });
     sw.addEventListener("click", () => {
       theme = t;
+      fontChoice = null; syncFontMenu();
       clearThemeSel(); sw.classList.add("sel");
       customTheme.hidden = true; // hide hue controls when a preset is chosen
       drawPoster();
@@ -3106,7 +3133,9 @@ import { rewindForExport } from "./export-start.mjs";
   customSwatch.addEventListener("click", () => {
     clearThemeSel(); customSwatch.classList.add("sel");
     customTheme.hidden = false;
+    fontChoice = null;
     applyCustom(true);
+    syncFontMenu();
   });
   themeRow.appendChild(customSwatch);
 
@@ -3133,6 +3162,18 @@ import { rewindForExport } from "./export-start.mjs";
     theme = makeTheme(cPrimary.value, cAccent.value, cBg.value);
     customSwatch.style.background = `linear-gradient(135deg, ${cPrimary.value}, ${cAccent.value})`;
   }
+
+  // ---------- Font ----------
+  const fontMenu = $("#fontMenu");
+  FONTS.forEach(f => fontMenu.add(new Option(f.label, f.id)));
+  // Shows the font in use; picking a theme resets it to that theme's suggestion.
+  function syncFontMenu() { fontMenu.value = curFont().id; }
+  fontMenu.addEventListener("change", () => {
+    fontChoice = fontMenu.value === (theme.fontId || "clash") ? null : fontMenu.value;
+    const f = curFont();
+    document.fonts.load(`${f.weight || 800} 54px ${f.family}`).catch(() => {}).then(drawPoster);
+  });
+  syncFontMenu();
 
   // ---------- Aspect ratio / format ----------
   const RATIOS = { "1:1": { w: 1080, h: 1080 }, "4:5": { w: 1080, h: 1350 }, "16:9": { w: 1920, h: 1080 } };
@@ -3744,10 +3785,25 @@ import { rewindForExport } from "./export-start.mjs";
   const FB = `-apple-system, "Segoe UI", Roboto, sans-serif`;
   // A theme can name its own display face. Only the canvas type follows it — the app's own UI
   // stays on Clash Display, so a theme changes the artwork, never the interface around it.
-  const face = () => theme.font || `"Clash Display", "General Sans", ${FB}`;
-  // A theme can also pin the weight: a pixel face like Silkscreen only reads as a display at its
+  const face = () => `${curFont().family}, ${FB}`;
+  // A font can pin the weight: a pixel face like Silkscreen only reads as a display at its
   // regular cut, and the bold one turns M and W into solid blocks.
-  const wt = (w) => theme.weight || w;
+  const wt = (w) => curFont().weight || w;
+  // Unlit segments: every character becomes the all-segments glyph, except the zero-width
+  // points and colons, which sit between characters in DSEG and would push the ghosts out of step.
+  const ghostOf = (t) => t.replace(/[^.:\s]/g, "~");
+  function ghostText(L, text, x, y) {
+    const fill = L.fillStyle, sc = L.shadowColor;
+    L.shadowColor = "transparent"; L.fillStyle = fgc(0.09);
+    L.fillText(ghostOf(text), x, y);
+    L.fillStyle = fill; L.shadowColor = sc;
+  }
+  // LCD segments sit a little above the reflector and cast a soft offset shadow on it.
+  function segShadow(L, px) {
+    if (!theme.segShadow || bgImage) return;
+    L.shadowColor = "rgba(29,36,24,0.24)"; L.shadowBlur = Math.max(1, px * 0.02);
+    L.shadowOffsetX = L.shadowOffsetY = Math.max(1, Math.round(px * 0.045));
+  }
   const capFont   = (g) => `${wt(600)} ${g.cap}px ${face()}`;
   const handleFont= (g) => `${wt(600)} ${Math.round(g.cap * 0.62)}px ${face()}`;
   const brandFont = (g) => `500 ${Math.round(g.cap * 0.4)}px ${theme.bodyFont || '"General Sans"'}, ${FB}`;
@@ -3884,7 +3940,7 @@ import { rewindForExport } from "./export-start.mjs";
     let x = g.pad, line = 0;
     for (let i = 0; i < captionWords.length; i++) {
       const wObj = captionWords[i];
-      const frags = fitToken(g.upper ? wObj.text.toUpperCase() : wObj.text, maxW);
+      const frags = fitToken(g.upper || curFont().upper ? wObj.text.toUpperCase() : wObj.text, maxW);
       for (const fr of frags) {
         const w = ctx.measureText(fr).width;
         if (x > g.pad && x + w > g.pad + maxW) { line++; x = g.pad; }
@@ -3951,7 +4007,7 @@ import { rewindForExport } from "./export-start.mjs";
       const lines = [];
       let row = [], rowW = 0;
       for (const i of chunk) {
-        const raw = g.upper ? captionWords[i].text.toUpperCase() : captionWords[i].text;
+        const raw = g.upper || curFont().upper ? captionWords[i].text.toUpperCase() : captionWords[i].text;
         for (const text of fitToken(raw, maxW)) {
           const w = ctx.measureText(text).width;
           if (row.length && rowW + space + w > maxW) { lines.push({ row, rowW }); row = []; rowW = 0; }
@@ -3984,6 +4040,8 @@ import { rewindForExport } from "./export-start.mjs";
     const L = layerReady();
     L.textBaseline = "top";
     if (bgImage) { L.shadowColor = shadowCol(); L.shadowBlur = fCap * 0.3; L.shadowOffsetY = 1; }
+    segShadow(L, fCap);
+    const ghosts = curFont().ghost;
     L.font = font;
     const padX = fCap * 0.2, rad = fCap * 0.2, pillH = Math.round(fCap * 1.16);
     for (const ln of lines) {
@@ -3997,6 +4055,7 @@ import { rewindForExport } from "./export-start.mjs";
           // words already spoken in this chunk dim slightly; upcoming ones stay bright
           L.fillStyle = (activeIdx >= 0 && w.i < activeIdx) ? fgc(0.5) : fgc(1);
         }
+        if (ghosts && w.i !== activeIdx) ghostText(L, w.text, x, y);
         L.fillText(w.text, x, y);
         x += w.w + space;
       }
@@ -4149,22 +4208,27 @@ import { rewindForExport } from "./export-start.mjs";
   }
   const glowLayer = document.createElement("canvas");
   const gtx = glowLayer.getContext("2d");
-  // LED ladders after the K.O. Sidekick's display: thin segments stacked in narrow columns, one
-  // orange-red throughout, unlit segments left as dark maroon so the whole ladder stays visible.
-  // Lit and unlit are each one path, so the glow is a single shadow pass, not one per segment.
-  const LADDER = { segs: 16, on: "#F25A2A", off: "#3A0D05", glow: "#FF4A1A" };
+  // LED ladders after the K.O. Sidekick's display: thin segments stacked in narrow columns, with
+  // unlit segments left visible so the whole ladder reads. Colours come from `theme.ladder`; an
+  // optional `hot` colour takes the top fifth. Each colour is one path, so a glow is one pass.
   function ledLadders(cols, baseY, maxH) {
-    const pitch = maxH / LADDER.segs, segH = Math.max(2, pitch * 0.5);
-    const on = new Path2D(), off = new Path2D();
+    const L = theme.ladder, segs = L.segs;
+    const pitch = maxH / segs, segH = Math.max(2, pitch * 0.5), hotFrom = L.hot ? Math.floor(segs * 0.8) : segs;
+    const on = new Path2D(), off = new Path2D(), hotOn = new Path2D(), hotOff = new Path2D();
     for (const c of cols) {
-      const lit = Math.max(1, Math.round(c.v * LADDER.segs));
-      for (let k = 0; k < LADDER.segs; k++) (k < lit ? on : off).rect(c.x, baseY - k * pitch - segH, c.w, segH);
+      const lit = Math.max(1, Math.round(c.v * segs));
+      for (let k = 0; k < segs; k++) {
+        const hot = k >= hotFrom;
+        (k < lit ? (hot ? hotOn : on) : (hot ? hotOff : off)).rect(c.x, baseY - k * pitch - segH, c.w, segH);
+      }
     }
     ctx.save();
     ctx.shadowColor = "transparent"; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
-    ctx.fillStyle = LADDER.off; ctx.fill(off);
-    ctx.shadowColor = LADDER.glow; ctx.shadowBlur = Math.max(4, pitch * 0.9);
-    ctx.fillStyle = LADDER.on; ctx.fill(on);
+    ctx.fillStyle = L.off; ctx.fill(off);
+    if (L.hot) { ctx.fillStyle = L.hotOff; ctx.fill(hotOff); }
+    if (L.glow) { ctx.shadowColor = L.glow; ctx.shadowBlur = Math.max(4, pitch * 0.9); }
+    ctx.fillStyle = L.on; ctx.fill(on);
+    if (L.hot) { ctx.fillStyle = L.hot; ctx.fill(hotOn); }
     ctx.restore();
   }
 
@@ -4217,6 +4281,8 @@ import { rewindForExport } from "./export-start.mjs";
     // 1) draw the words onto the offscreen layer
     const L = layerReady();
     if (bgImage) { L.shadowColor = shadowCol(); L.shadowBlur = g.cap * 0.32; L.shadowOffsetY = 1; }
+    segShadow(L, g.cap);
+    const ghosts = curFont().ghost;
     L.textBaseline = "top";
     const pillH = Math.round(g.cap * 1.2), padX = g.cap * 0.24, rad = g.cap * 0.22;
     for (const p of placed) {
@@ -4232,6 +4298,7 @@ import { rewindForExport } from "./export-start.mjs";
       } else {
         L.fillStyle = fgc(1);
       }
+      if (ghosts && p.i !== activeIdx) ghostText(L, p.text, p.x, wy);
       L.fillText(p.text, p.x, wy);
     }
 
@@ -4399,7 +4466,7 @@ import { rewindForExport } from "./export-start.mjs";
     const baseY = g.waveBase, n = 48;
     if (visualizerStyle === 'analog') { paintAnalog(values, g.pad, g.cw - g.pad, baseY, g.waveMax); return; }
     const w = g.cw - g.pad * 2, bw = w / n;
-    if (theme.fx === "lcd") {
+    if (theme.ladder) {
       // 24 wider ladders rather than 48 thin ones, so each segment still reads as a block
       const m = 32, mw = w / m, cols = [];
       for (let i = 0; i < m; i++) {
@@ -4459,7 +4526,7 @@ import { rewindForExport } from "./export-start.mjs";
   function paintBarsIn(values, x0, x1, baseY, maxH) {
     if (visualizerStyle === 'analog') { paintAnalog(values, x0, x1, baseY, maxH); return; }
     const n = 36, w = x1 - x0, bw = w / n;
-    if (theme.fx === "lcd") {
+    if (theme.ladder) {
       const m = 24, mw = w / m, cols = [];
       for (let i = 0; i < m; i++) {
         const v = values ? barLevel(values, i, m) : 0.2 + 0.68 * Math.abs(Math.sin(i * 0.9) * Math.sin(i * 0.37));
@@ -4497,6 +4564,10 @@ import { rewindForExport } from "./export-start.mjs";
       // dotting — painting dots here as well left two anti-aliased grids fighting each other, and
       // at this pitch they cancelled on alternating rows.
       ctx.fillStyle = mixHex(theme.bg1, theme.a, 0.45);
+      ctx.fillRect(tx, ty, tile, tile);
+    } else if (theme.segShadow) {
+      // on an LCD the placeholder is a flat panel of darker glass, not a colour gradient
+      ctx.fillStyle = mixHex(theme.bg1, theme.b, 0.32);
       ctx.fillRect(tx, ty, tile, tile);
     } else {
       const pg = ctx.createLinearGradient(tx, ty, tx + tile, ty + tile);
@@ -5366,6 +5437,7 @@ import { rewindForExport } from "./export-start.mjs";
       document.fonts.load('500 24px Barlow').catch(() => {}),
       document.fonts.load('700 54px "Geist Mono"').catch(() => {}),
       document.fonts.load('400 54px "Silkscreen"').catch(() => {}),
+      document.fonts.load('700 54px "DSEG14 Classic"').catch(() => {}),
       document.fonts.load('500 24px "General Sans"').catch(() => {}),
     ]).then(() => document.fonts.ready).then(() => drawPoster());
   }
