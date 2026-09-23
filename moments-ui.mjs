@@ -409,20 +409,22 @@ export function initMoments(app) {
     preview(t,b,sample ? null : item.article, searchPreview); previewStart = a; syncPlayback();
   }
   $('momentPlayToggle').addEventListener('click', togglePlayback);
-  root.querySelectorAll('[data-transport]').forEach(control => control.addEventListener('click', () => {
+  // Moves the playhead to the selection's start or end, or back or forward by `step` seconds (the
+  // keys use 15; the arrow keys 1). Playback that was running carries on from the new point.
+  function transport(action, step = 15) {
     const item = choices.find(m => m.id === selectedId);
     if (!item || generating) return;
     const resume = playing;
     const current = player.currentTime;
     stop(); samplePreview = false;
     const [a,b] = playbackBounds();
-    const action = control.dataset.transport;
-    const target = action === 'start' ? item.start : action === 'end' ? item.end : current + (action === 'back' ? -15 : 15);
+    const target = action === 'start' ? item.start : action === 'end' ? item.end : current + (action === 'back' ? -step : step);
     const t = Math.max(a, Math.min(b, target));
     player.currentTime = t; timeline.playhead(t);
     if (resume && action !== 'end' && t < b) { preview(t,b,item.article); previewStart = a; }
     syncPlayback();
-  }));
+  }
+  root.querySelectorAll('[data-transport]').forEach(control => control.addEventListener('click', () => transport(control.dataset.transport)));
   // Mark in / mark out: set a selection edge to the playhead, as the IN and OUT keys on a recorder
   // do. Marking the start mid-playback keeps playing, so a passage can be marked in one listen;
   // marking the end is where that listen stops. An edge that would cross the other keeps the
@@ -440,11 +442,44 @@ export function initMoments(app) {
     syncPlayback();
   }
   root.querySelectorAll('[data-mark]').forEach(control => control.addEventListener('click', () => mark(control.dataset.mark)));
+  function stepMoment(dir) {
+    if (!choices.length || generating) return;
+    const i = choices.findIndex(m => m.id === selectedId);
+    const next = choices[Math.max(0, Math.min(choices.length - 1, i < 0 ? 0 : i + dir))];
+    if (next && next.id !== selectedId) { selectMoment(next.id); next.tab?.scrollIntoView?.({ block: 'nearest' }); }
+  }
+  const help = $('shortcutHelp');
+  function toggleHelp(show = help.hidden) {
+    help.hidden = !show;
+    if (show) $('shortcutClose').focus({ preventScroll: true }); else if (help.contains(document.activeElement)) $('shortcutOpen').focus({ preventScroll: true });
+  }
+  $('shortcutOpen').addEventListener('click', () => toggleHelp(true));
+  $('shortcutClose').addEventListener('click', () => toggleHelp(false));
+
+  // Keyboard shortcuts while the clip screen is open. They stand down while you type in a field,
+  // choose from a list, or use another dialog. Space plays and pauses even when a button still has
+  // focus from a click, so it never re-presses that button (Enter still does). No key spends
+  // credits: captioning and dubbing stay behind their button.
+  const typing = el => !!el && (/^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName) || el.isContentEditable);
+  const otherDialogOpen = () => !!document.querySelector('.modal.open, .splash.open, dialog[open]');
+  let spaceTaken = false;
   document.addEventListener('keydown', e => {
-    if (root.hidden || e.metaKey || e.ctrlKey || e.altKey || e.repeat || /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName) || e.target.isContentEditable) return;
-    const edge = e.key === 'i' || e.key === 'I' ? 'in' : e.key === 'o' || e.key === 'O' ? 'out' : null;
-    if (edge) { e.preventDefault(); mark(edge); }
+    if (root.hidden || e.metaKey || e.ctrlKey || e.altKey || typing(e.target) || otherDialogOpen()) return;
+    const k = e.key, once = !e.repeat;
+    if (k === ' ' || e.code === 'Space') { spaceTaken = true; if (once) togglePlayback(); }
+    else if (k === 'i' || k === 'I' || k === '[') { if (once) mark('in'); }
+    else if (k === 'o' || k === 'O' || k === ']') { if (once) mark('out'); }
+    else if (k === 'Home') transport('start');
+    else if (k === 'End') transport('end');
+    else if (k === 'ArrowLeft' || k === 'ArrowRight') transport(k === 'ArrowLeft' ? 'back' : 'forward', e.shiftKey ? 15 : 1);
+    else if (k === 'ArrowUp' || k === 'ArrowDown') stepMoment(k === 'ArrowUp' ? -1 : 1);
+    else if (k === '?' || (k === '/' && e.shiftKey)) { if (once) toggleHelp(); }
+    else if (k === 'Escape' && !help.hidden) { toggleHelp(false); e.stopPropagation(); }
+    else return;
+    e.preventDefault();
   });
+  // A focused button activates on Space's keyup; when Space was play/pause, that press is ours.
+  document.addEventListener('keyup', e => { if (spaceTaken && (e.key === ' ' || e.code === 'Space')) { spaceTaken = false; e.preventDefault(); } });
   $('momentContext').addEventListener('change', () => {
     stop(); samplePreview = false; const [a,b] = playbackBounds(); player.currentTime = a;
     timeline.window(a,b); syncPlayback();

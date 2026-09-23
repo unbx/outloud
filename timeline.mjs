@@ -122,15 +122,28 @@ export function createTimeline(root, events) {
           </div>
         </div>
         <div class="transport-console"><div class="transport-keys" role="group" aria-label="Playback controls">
-          <button type="button" class="transport-key transport-mark" data-mark="in" aria-label="Mark in: set the start to the playhead" title="Mark in (I)" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4H6v16h5"/></svg><span>IN</span></button>
-          <button type="button" class="transport-key" data-transport="start" aria-label="Go to beginning of clip" title="Beginning of clip" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5v14M19 5L8 12l11 7z"/></svg></button>
-          <button type="button" class="transport-key" data-transport="back" aria-label="Back 15 seconds" title="Back 15 seconds" disabled>−15<span>s</span></button>
-          <button type="button" id="momentPlayToggle" class="moment-button" disabled>Play</button>
-          <button type="button" class="transport-key" data-transport="forward" aria-label="Forward 15 seconds" title="Forward 15 seconds" disabled>+15<span>s</span></button>
-          <button type="button" class="transport-key" data-transport="end" aria-label="Go to end of clip" title="End of clip" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 5v14M5 5l11 7-11 7z"/></svg></button>
-          <button type="button" class="transport-key transport-mark" data-mark="out" aria-label="Mark out: set the end to the playhead" title="Mark out (O)" disabled><span>OUT</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 4h5v16h-5"/></svg></button>
+          <button type="button" class="transport-key transport-mark" data-mark="in" aria-label="Mark in: set the start to the playhead" title="Mark in (I or [)" aria-keyshortcuts="I [" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4H6v16h5"/></svg><span>IN</span></button>
+          <button type="button" class="transport-key" data-transport="start" aria-label="Go to beginning of clip" title="Beginning of clip (Home)" aria-keyshortcuts="Home" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5v14M19 5L8 12l11 7z"/></svg></button>
+          <button type="button" class="transport-key" data-transport="back" aria-label="Back 15 seconds" title="Back 15 seconds (Shift ←)" aria-keyshortcuts="Shift+ArrowLeft" disabled>−15<span>s</span></button>
+          <button type="button" id="momentPlayToggle" class="moment-button" title="Play or pause (Space)" aria-keyshortcuts="Space" disabled>Play</button>
+          <button type="button" class="transport-key" data-transport="forward" aria-label="Forward 15 seconds" title="Forward 15 seconds (Shift →)" aria-keyshortcuts="Shift+ArrowRight" disabled>+15<span>s</span></button>
+          <button type="button" class="transport-key" data-transport="end" aria-label="Go to end of clip" title="End of clip (End)" aria-keyshortcuts="End" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 5v14M5 5l11 7-11 7z"/></svg></button>
+          <button type="button" class="transport-key transport-mark" data-mark="out" aria-label="Mark out: set the end to the playhead" title="Mark out (O or ])" aria-keyshortcuts="O ]" disabled><span>OUT</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 4h5v16h-5"/></svg></button>
           </div></div>
-        <details class="transport-options"><summary>Playback options</summary><label><input type="checkbox" id="momentContext" /> Include surrounding audio</label><span id="momentPlaybackNote">Preview selected clip</span></details>
+        <details class="transport-options"><summary>Playback options</summary><label><input type="checkbox" id="momentContext" /> Include surrounding audio</label><span id="momentPlaybackNote">Preview selected clip</span><button type="button" class="shortcut-link" id="shortcutOpen">Keyboard shortcuts <kbd>?</kbd></button></details>
+        <div class="shortcut-help" id="shortcutHelp" role="dialog" aria-labelledby="shortcutTitle" hidden>
+          <div class="shortcut-head"><span class="display-caption" id="shortcutTitle">KEYBOARD SHORTCUTS</span><button type="button" class="shortcut-close" id="shortcutClose" aria-label="Close keyboard shortcuts">×</button></div>
+          <dl>
+            <div><dt><kbd>Space</kbd></dt><dd>Play / pause</dd></div>
+            <div><dt><kbd>I</kbd> <kbd>[</kbd></dt><dd>Mark in at the playhead</dd></div>
+            <div><dt><kbd>O</kbd> <kbd>]</kbd></dt><dd>Mark out at the playhead</dd></div>
+            <div><dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>Back / forward 1 second</dd></div>
+            <div><dt><kbd>Shift</kbd> <kbd>←</kbd> <kbd>→</kbd></dt><dd>Back / forward 15 seconds</dd></div>
+            <div><dt><kbd>Home</kbd> <kbd>End</kbd></dt><dd>Start / end of the selection</dd></div>
+            <div><dt><kbd>↑</kbd> <kbd>↓</kbd></dt><dd>Previous / next moment</dd></div>
+            <div><dt><kbd>?</kbd></dt><dd>Show or hide this card</dd></div>
+          </dl>
+        </div>
 `;
   const $ = selector => root.querySelector(selector);
   const overview = $('#tlOverview'), detail = $('#tlDetail');
