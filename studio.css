@@ -853,3 +853,14 @@ body :is(.workspace-timeline .tl-magnification button){--tactile-top:#3B4043;--t
 :is(#scrub,.moments-panel .moment-card-seek,#tlZoom):disabled::-webkit-slider-thumb{box-shadow:none}
 :is(#scrub,.moments-panel .moment-card-seek,#tlZoom):focus-visible{outline:2px solid var(--playhead);outline-offset:4px}
 @media(pointer:coarse){:is(#scrub,.moments-panel .moment-card-seek,#tlZoom)::-webkit-slider-thumb{width:16px;height:16px}:is(#scrub,.moments-panel .moment-card-seek,#tlZoom)::-moz-range-thumb{width:16px;height:16px}}
+
+/* The Design and Share preview player's play key matches the Clip transport's: the same 60px key
+   (54px on phones), the same corner, finish and solid glyphs. Its column widens to hold it. */
+#playbar{grid-template-columns:60px auto minmax(40px,1fr) auto}
+body #playbar #playBtn{width:60px;height:60px;min-width:60px;min-height:60px;padding:0;border-radius:11px;display:inline-flex;align-items:center;justify-content:center}
+body #playbar #playBtn .ic{width:29px;height:29px;background:none;box-shadow:none;color:inherit}
+body #playbar #playBtn .ic svg{width:29px;height:29px;fill:currentColor;stroke:none;filter:drop-shadow(0 1px 0 #FFF1B14D)}
+@media(max-width:600px){
+  #playbar{grid-template-columns:54px auto minmax(30px,1fr) auto}
+  body #playbar #playBtn{width:54px;height:54px;min-width:54px;min-height:54px}
+}
