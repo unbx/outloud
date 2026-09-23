@@ -1574,10 +1574,18 @@ import { rewindForExport } from "./export-start.mjs";
       // erased in a rectangle and the header reads as a black box. A pure black canvas also
       // matches the look this is drawn from: all the light comes from the dots.
       fg: "#ff0d16", fx: "dot", frame: true, glow: 0, font: '"Geist Mono", ui-monospace, monospace' },
+    // — LCD: the Clip tab's display, as artwork. Glass black (near RAL 9005), warm-white lit
+    //   segments, the active word on TE orange (inspired by RAL 2004), orange corner brackets
+    //   like the IN/OUT keys, and the waveform drawn as LED ladders with unlit ghost segments.
+    //   Screen approximations inspired by RAL, not official conversions. —
+    { name: "LCD", a: "#FF5A14", b: "#F4F1EA", bg1: "#0A0B0B", bg2: "#131617",
+      stops: ["#F4F1EA", "#F4F1EA", "#FF5A14"], ink: "#0A0B0B", fg: "#F4F1EA",
+      fx: "lcd", frame: true, glow: 0, font: '"Geist Mono", ui-monospace, monospace' },
     { name: "Contrast", a: "#ffffff", b: "#d4d4d4", bg1: "#0a0a0a", bg2: "#000000", ink: "#000000" },
     // The one light theme. `fg` flips the canvas text from white to ink; cream is NANA
     // LIFESTYLE's --cream (#e1e0cc), the colour its own body copy and logo use.
-    { name: "Cream",    a: "#141414", b: "#4a4a42", bg1: "#e1e0cc", bg2: "#d6d5be", fg: "#141414", ink: "#e1e0cc" },
+    // glow 0: the accent here is ink, so the usual accent glow painted a dark haze top right.
+    { name: "Cream",    a: "#141414", b: "#4a4a42", bg1: "#e1e0cc", bg2: "#d6d5be", fg: "#141414", ink: "#e1e0cc", glow: 0 },
   ];
   let theme = THEMES[0];
 
@@ -3025,6 +3033,7 @@ import { rewindForExport } from "./export-start.mjs";
       : `linear-gradient(135deg, ${t.a}, ${t.b})`;
     sw.title = t.name + (t.studio ? ' · default' : '');
     if (t.studio) { sw.classList.add('studio-theme-swatch'); sw.textContent = 'OUTLOUD'; }
+    if (t.fx === 'lcd') { sw.classList.add('lcd-theme-swatch'); sw.innerHTML = '<span aria-hidden="true">88</span>'; }
     sw.setAttribute('role', 'button'); sw.tabIndex = 0;
     sw.setAttribute('aria-label', sw.title);
     sw.addEventListener('keydown', event => {
@@ -3992,6 +4001,7 @@ import { rewindForExport } from "./export-start.mjs";
     applyFx(L);
     ctx.save();
     ctx.shadowColor = "transparent"; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+    if (theme.fx === "lcd" && canFilter) lcdBloom(fCap);
     if (theme.fx === "dot" && canFilter) {
       // Additive bloom, in two passes. A normal composite could only ever sit *behind* the dots,
       // so the black between them stayed black and the whole block averaged near-black at feed
@@ -4108,6 +4118,33 @@ import { rewindForExport } from "./export-start.mjs";
     L.fillStyle = dotMaskPattern(L, pitch);
     L.fillRect(0, 0, textLayer.width, textLayer.height);
     L.restore();
+  }
+
+  // LCD glow: the same additive idea as the LED bloom, gentler, since lit segments on a real
+  // display glow softly into the glass rather than flaring. Reads the finished text layer.
+  function lcdBloom(px) {
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.globalAlpha = 0.32;
+    ctx.filter = "blur(" + Math.max(2, Math.round(px * 0.06)) + "px)";
+    ctx.drawImage(textLayer, 0, 0);
+    ctx.globalAlpha = 0.14;
+    ctx.filter = "blur(" + Math.max(6, Math.round(px * 0.2)) + "px)";
+    ctx.drawImage(textLayer, 0, 0);
+    ctx.restore();
+  }
+  // One LED ladder: a column of segments, lit from the bottom, unlit ones left as faint ghosts
+  // like the meter in the Clip tab. The top quarter is the orange zone, lit or not.
+  const LADDER_SEGS = 12;
+  function ledLadder(x, w, baseY, level, maxH) {
+    const pitch = maxH / LADDER_SEGS, segH = Math.max(2, pitch * 0.64), r = Math.min(segH, w) * 0.18;
+    const lit = Math.max(1, Math.round(level * LADDER_SEGS));
+    const hot = Math.floor(LADDER_SEGS * 0.75);
+    for (let k = 0; k < LADDER_SEGS; k++) {
+      const on = k < lit, orange = k >= hot;
+      ctx.fillStyle = orange ? (on ? theme.a : theme.a + "24") : (on ? fgc(1) : fgc(0.08));
+      roundRect(ctx, x, baseY - k * pitch - segH, w, segH, r); ctx.fill();
+    }
   }
 
   // Camera-style corner brackets with a registration mark at top centre. Purely decorative, so
@@ -4227,6 +4264,7 @@ import { rewindForExport } from "./export-start.mjs";
       btx.restore();
       ctx.drawImage(blurLayer, 0, 0);
     }
+    if (theme.fx === "lcd" && canFilter) lcdBloom(g.cap);
     if (theme.fx === "dot" && canFilter) {
       // Additive bloom, in two passes. A normal composite could only ever sit *behind* the dots,
       // so the black between them stayed black and the whole block averaged near-black at feed
@@ -4340,6 +4378,15 @@ import { rewindForExport } from "./export-start.mjs";
     const baseY = g.waveBase, n = 48;
     if (visualizerStyle === 'analog') { paintAnalog(values, g.pad, g.cw - g.pad, baseY, g.waveMax); return; }
     const w = g.cw - g.pad * 2, bw = w / n;
+    if (theme.fx === "lcd") {
+      // 24 wider ladders rather than 48 thin ones, so each segment still reads as a block
+      const m = 24, mw = w / m;
+      for (let i = 0; i < m; i++) {
+        const v = values ? barLevel(values, i, m) : 0.12 + 0.10 * Math.abs(Math.sin(i * 0.5));
+        ledLadder(g.pad + i * mw + mw * 0.14, mw * 0.72, baseY, v, g.waveMax);
+      }
+      return;
+    }
     ctx.fillStyle = lineGradient(g.pad, g.pad + w);
     const rr = Math.max(3, bw * 0.18);
     for (let i = 0; i < n; i++) {
@@ -4390,6 +4437,14 @@ import { rewindForExport } from "./export-start.mjs";
   function paintBarsIn(values, x0, x1, baseY, maxH) {
     if (visualizerStyle === 'analog') { paintAnalog(values, x0, x1, baseY, maxH); return; }
     const n = 36, w = x1 - x0, bw = w / n;
+    if (theme.fx === "lcd") {
+      const m = 18, mw = w / m;
+      for (let i = 0; i < m; i++) {
+        const v = values ? barLevel(values, i, m) : 0.2 + 0.68 * Math.abs(Math.sin(i * 0.9) * Math.sin(i * 0.37));
+        ledLadder(x0 + i * mw + mw * 0.14, mw * 0.72, baseY, v, maxH);
+      }
+      return;
+    }
     ctx.fillStyle = lineGradient(x0, x1);
     const rr = Math.max(3, bw * 0.18);
     for (let i = 0; i < n; i++) {
