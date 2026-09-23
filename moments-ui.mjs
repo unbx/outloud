@@ -1,5 +1,5 @@
-import { createTimeline, MOMENT_COLORS, timeLabel, rangeForDuration } from './timeline.mjs';
-import { LIMITS, normalizeWords, segmentsFromWords, clipWords, validRange, transcriptPassages, labeledSpeakersForRange } from './moments-core.mjs';
+import { createTimeline, MOMENT_COLORS, timeLabel, rangeForDuration, renderDurationFace } from './timeline.mjs';
+import { LIMITS, normalizeWords, segmentsFromWords, clipWords, validRange, transcriptPassages, labeledSpeakersForRange, parseTimecode, parseDuration } from './moments-core.mjs';
 
 export function initMoments(app) {
   const $ = id => document.getElementById(id);
@@ -25,6 +25,10 @@ export function initMoments(app) {
   let workLabel = '', workStarted = 0, workTimer = 0;
   const setHandoffStatus = (text, tone = '') => { const n = $('handoffStatus'); n.textContent = text; n.dataset.tone = tone; };
   const elapsed = () => { const t = Math.floor((Date.now() - workStarted) / 1000); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; };
+  // Boundary fields show tenths of a second, so an end at the very end of a 7.48 s recording reads
+  // "7.5". Reading a field back allows for that rounding (at most 0.05 s) rather than calling the
+  // recording's own end out of range. A value genuinely outside the recording is still refused.
+  const withinRecording = (a, b) => [a < 0 && a > -0.051 ? 0 : a, b > duration && b - duration < 0.051 ? duration : b];
   function handoff() {
     const item = choices.find(m => m.id === selectedId);
     const full = usesFullRecording(item);
@@ -42,7 +46,7 @@ export function initMoments(app) {
     const item = choices.find(m => m.id === selectedId);
     const full = usesFullRecording(item);
     if (!file || (!full && !item) || busy || app.busy()) return;
-    const a = full ? 0 : Number(item.startInput.value), b = full ? duration : Number(item.endInput.value), run = epoch;
+    const [a, b] = full ? [0, duration] : withinRecording(parseTimecode(item.startInput.value), parseTimecode(item.endInput.value)), run = epoch;
     const title = full ? file.name : item.title;
     if (!validRange(a, b, duration) || (!full && b - a > 90)) { const why = 'Choose a valid selection of up to 90 seconds.'; say(why, true); setHandoffStatus(why, 'error'); return; }
     const cached = !full && complete && sourceLanguage === app.sourceLanguage();
@@ -76,7 +80,7 @@ export function initMoments(app) {
     change: (start, end) => {
       const item = choices.find(m => m.id === selectedId);
       if (!item) return;
-      item.startInput.value = start.toFixed(1); item.endInput.value = end.toFixed(1); item.refresh(true);
+      item.startInput.value = timeLabel(start); item.endInput.value = timeLabel(end); item.refresh(true);
     },
     seek: time => { stop(); samplePreview = false; const [a,b] = playbackBounds(); player.currentTime = Math.max(a, Math.min(b,time)); timeline.playhead(player.currentTime); syncPlayback(); }
   });
@@ -88,6 +92,15 @@ export function initMoments(app) {
     const item = choices.find(m => m.id === id); if (item) { timeline.select(item, fit); if ($('momentContext').checked) timeline.window(...playbackBounds()); samplePreview = false; player.currentTime = playbackBounds()[0]; } syncPlayback(); handoff();
   }
   function clearChoices() { choices = []; selectedId = null; list.replaceChildren(); detail.replaceChildren(); timeline.moments([]); timeline.select(null); }
+  // The decoded length can be a little shorter than the first estimate (a voice note's
+  // recorder-measured time includes its start-up), so boundaries past it come back to the end.
+  function fitChoicesToRecording() {
+    choices.forEach(item => {
+      if (!(item.end > duration + 0.001)) return;
+      if (parseTimecode(item.startInput.value) >= duration) item.startInput.value = timeLabel(0);
+      item.endInput.value = timeLabel(duration); item.refresh();
+    });
+  }
   function seedSelection() {
     if (choices.length || !duration) return;
     const trim = app.getTrim();
@@ -174,7 +187,7 @@ export function initMoments(app) {
     finally { await ctx.close(); }
     check(run);
     if (buffer.duration > LIMITS.seconds) throw new Error('This recording is longer than 2 hours. Upload a shorter excerpt.');
-    decoded = buffer; duration = buffer.duration; timeline.source(decoded, duration); seedSelection(); return buffer;
+    decoded = buffer; duration = buffer.duration; timeline.source(decoded, duration); seedSelection(); fitChoicesToRecording(); return buffer;
   }
   async function slice(start, end, opus = false, rate = 24000) {
     if (!decoded || !validRange(start, end, decoded.duration)) throw new Error('Choose a valid start and end within the recording.');
@@ -365,7 +378,7 @@ export function initMoments(app) {
     root.querySelectorAll('.moment-card-clock').forEach(n => { n.querySelector('.clock-current').textContent = timeLabel(t-a); n.querySelector('.clock-total').textContent = timeLabel(b-a); });
     root.querySelectorAll('.moment-card-seek').forEach(n => { n.value = b > a ? (t-a)/(b-a)*1000 : 0; n.disabled = !item || generating; n.setAttribute('aria-valuetext', `${timeLabel(t-a)} of ${timeLabel(b-a)}`); });
     root.querySelectorAll('.moment-card-preview-note').forEach(n => n.textContent = samplePreview ? (searchPreview ? 'Search preview · not added to moments' : 'Speaker sample') : $('momentContext').checked ? 'Preview includes surrounding audio' : 'Listen to this moment');
-    root.querySelectorAll('[data-transport]').forEach(control => { control.disabled = !item || generating; });
+    root.querySelectorAll('[data-transport],[data-mark]').forEach(control => { control.disabled = !item || generating; });
     $('momentPlaybackTime').querySelector('.clock-current').textContent = timeLabel(t-a);
     $('momentPlaybackTime').querySelector('.clock-total').textContent = timeLabel(b-a);
     $('transportState').textContent = playing ? 'PLAYING' : t >= b && b > a ? 'END' : 'READY';
@@ -396,20 +409,78 @@ export function initMoments(app) {
     preview(t,b,sample ? null : item.article, searchPreview); previewStart = a; syncPlayback();
   }
   $('momentPlayToggle').addEventListener('click', togglePlayback);
-  root.querySelectorAll('[data-transport]').forEach(control => control.addEventListener('click', () => {
+  // Moves the playhead to the selection's start or end, or back or forward by `step` seconds (the
+  // keys use 15; the arrow keys 1). Playback that was running carries on from the new point.
+  function transport(action, step = 15) {
     const item = choices.find(m => m.id === selectedId);
     if (!item || generating) return;
     const resume = playing;
     const current = player.currentTime;
     stop(); samplePreview = false;
     const [a,b] = playbackBounds();
-    const action = control.dataset.transport;
-    const target = action === 'start' ? item.start : action === 'end' ? item.end : current + (action === 'back' ? -15 : 15);
+    const target = action === 'start' ? item.start : action === 'end' ? item.end : current + (action === 'back' ? -step : step);
     const t = Math.max(a, Math.min(b, target));
     player.currentTime = t; timeline.playhead(t);
     if (resume && action !== 'end' && t < b) { preview(t,b,item.article); previewStart = a; }
     syncPlayback();
-  }));
+  }
+  root.querySelectorAll('[data-transport]').forEach(control => control.addEventListener('click', () => transport(control.dataset.transport)));
+  // Mark in / mark out: set a selection edge to the playhead, as the IN and OUT keys on a recorder
+  // do. Marking the start mid-playback keeps playing, so a passage can be marked in one listen;
+  // marking the end is where that listen stops. An edge that would cross the other keeps the
+  // selection's length rather than collapsing it.
+  function mark(edge) {
+    const item = choices.find(m => m.id === selectedId);
+    if (!item || generating || busy) return;
+    const resume = playing && edge === 'in', t = player.currentTime;
+    const keep = Math.max(0.3, item.end - item.start);
+    let a = item.start, b = item.end;
+    if (edge === 'in') { a = t; if (b - a < 0.3) b = Math.min(duration, a + keep); }
+    else { b = t; if (b - a < 0.3) a = Math.max(0, b - keep); }
+    item.startInput.value = timeLabel(a); item.endInput.value = timeLabel(b); item.refresh();
+    if (resume) { const [lo, hi] = playbackBounds(); if (t < hi) { preview(t, hi, item.article); previewStart = lo; } }
+    syncPlayback();
+  }
+  root.querySelectorAll('[data-mark]').forEach(control => control.addEventListener('click', () => mark(control.dataset.mark)));
+  function stepMoment(dir) {
+    if (!choices.length || generating) return;
+    const i = choices.findIndex(m => m.id === selectedId);
+    const next = choices[Math.max(0, Math.min(choices.length - 1, i < 0 ? 0 : i + dir))];
+    if (next && next.id !== selectedId) { selectMoment(next.id); next.tab?.scrollIntoView?.({ block: 'nearest' }); }
+  }
+  const help = $('shortcutHelp');
+  function toggleHelp(show = help.hidden) {
+    help.hidden = !show;
+    if (show) $('shortcutClose').focus({ preventScroll: true }); else if (help.contains(document.activeElement)) $('shortcutOpen').focus({ preventScroll: true });
+  }
+  $('shortcutOpen').addEventListener('click', () => toggleHelp(true));
+  $('shortcutClose').addEventListener('click', () => toggleHelp(false));
+
+  // Keyboard shortcuts while the clip screen is open. They stand down while you type in a field,
+  // choose from a list, or use another dialog. Space plays and pauses even when a button still has
+  // focus from a click, so it never re-presses that button (Enter still does). No key spends
+  // credits: captioning and dubbing stay behind their button.
+  const typing = el => !!el && (/^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName) || el.isContentEditable);
+  const otherDialogOpen = () => !!document.querySelector('.modal.open, .splash.open, dialog[open]');
+  let spaceTaken = false;
+  document.addEventListener('keydown', e => {
+    if (root.hidden || e.metaKey || e.ctrlKey || e.altKey || typing(e.target) || otherDialogOpen()) return;
+    const k = e.key, once = !e.repeat;
+    if (k === ' ' || e.code === 'Space') { spaceTaken = true; if (once) togglePlayback(); }
+    else if (k === 'i' || k === 'I' || k === '[') { if (once) mark('in'); }
+    else if (k === 'o' || k === 'O' || k === ']') { if (once) mark('out'); }
+    else if (k === 'Home') transport('start');
+    else if (k === 'End') transport('end');
+    else if (k === 'ArrowLeft' || k === 'ArrowRight') transport(k === 'ArrowLeft' ? 'back' : 'forward', e.shiftKey ? 15 : 1);
+    else if (k === 'ArrowUp' || k === 'ArrowDown') stepMoment(k === 'ArrowUp' ? -1 : 1);
+    else if (k === '=' || k === '+' || k === '-' || k === '_') { const z = $(k === '=' || k === '+' ? 'tlZoomIn' : 'tlZoomOut'); if (z && !z.disabled) z.click(); }
+    else if (k === '?' || (k === '/' && e.shiftKey)) { if (once) toggleHelp(); }
+    else if (k === 'Escape' && !help.hidden) { toggleHelp(false); e.stopPropagation(); }
+    else return;
+    e.preventDefault();
+  });
+  // A focused button activates on Space's keyup; when Space was play/pause, that press is ours.
+  document.addEventListener('keyup', e => { if (spaceTaken && (e.key === ' ' || e.code === 'Space')) { spaceTaken = false; e.preventDefault(); } });
   $('momentContext').addEventListener('change', () => {
     stop(); samplePreview = false; const [a,b] = playbackBounds(); player.currentTime = a;
     timeline.window(a,b); syncPlayback();
@@ -502,20 +573,27 @@ export function initMoments(app) {
     const range = el('div', null, 'moment-range moment-card-readouts');
     range.setAttribute('role','group'); range.setAttribute('aria-label','Adjust this moment');
     const start = el('input'), end = el('input');
-    for (const [node, value, name] of [[start, moment.start, 'Start (seconds)'], [end, moment.end, 'End (seconds)']]) {
-      node.type = 'number'; node.step = '0.1'; node.min = '0'; node.max = String(duration); node.value = value.toFixed(1);
-      node.setAttribute('aria-label', name); node.dataset.edit = 'true';
-      const label = el('label'); label.append(el('span', name.startsWith('Start') ? 'Start · s' : 'End · s', 'trim-field-title'), node); range.append(label);
+    // Start and end read as timecode, like the strip above; duration as 25.3 s or 1 m 25 s.
+    const asTimeField = (node, label) => { node.type = 'text'; node.inputMode = 'decimal'; node.autocomplete = 'off'; node.spellcheck = false; node.dataset.edit = 'true'; node.setAttribute('aria-label', label); };
+    for (const [node, value, name] of [[start, moment.start, 'Start'], [end, moment.end, 'End']]) {
+      asTimeField(node, `${name} time`); node.value = timeLabel(value); node.title = 'Type a time like 1:23.4, or seconds.';
+      node.addEventListener('input', () => node.setCustomValidity(''));
+      const label = el('label'); label.append(el('span', name, 'trim-field-title'), node); range.append(label);
     }
-    const length = el('input'); length.type = 'number'; length.min = String(Math.min(.3,duration)); length.max = String(duration); length.step = '0.1'; length.dataset.edit = 'true';
-    length.setAttribute('aria-label','Moment duration in seconds');
-    const lengthLabel = el('label', null, 'moment-card-duration'); lengthLabel.append(el('span','Duration · s','trim-field-title'),length); range.append(lengthLabel);
+    const length = el('input'); asTimeField(length, 'Moment duration in seconds'); length.title = 'Type seconds, 1:25 or 1m 25s.';
+    const lengthFace = el('span', null, 'readout-face'); lengthFace.setAttribute('aria-hidden', 'true');
+    const lengthField = el('span', null, 'readout-field'); lengthField.append(length, lengthFace);
+    const lengthLabel = el('label', null, 'moment-card-duration'); lengthLabel.append(el('span','Duration','trim-field-title'), lengthField); range.append(lengthLabel);
     cardPlayer.append(range);
     const refresh = (fromTimeline = false) => {
-      stop(); const a = Number(start.value), b = Number(end.value);
-      if (!start.value || !end.value || !validRange(a, b, duration)) { say('Start must be before end, within the recording.', true); return; }
+      stop(); const [a, b] = withinRecording(parseTimecode(start.value), parseTimecode(end.value));
+      if (!start.value || !end.value || !validRange(a, b, duration)) {
+        say('Start must be before end, within the recording. Type a time like 1:23.4, or seconds.', true);
+        start.value = timeLabel(item.start ?? 0); end.value = timeLabel(item.end ?? duration); return;
+      }
+      start.value = timeLabel(a); end.value = timeLabel(b);
       if (selectedId === item.id && (a !== item.start || b !== item.end)) scope.value = 'selection';
-      item.start = a; item.end = b; length.value = (b-a).toFixed(1);
+      item.start = a; item.end = b; length.value = (b-a).toFixed(1); renderDurationFace(lengthFace, b - a);
       meta.textContent = `${timeLabel(a)} – ${timeLabel(b)} · ${(b - a).toFixed(1)} seconds`;
       tabMeta.textContent = `${timeLabel(a)} — ${timeLabel(b)}`;
       textFor(a, b, quote);
@@ -526,10 +604,9 @@ export function initMoments(app) {
     start.addEventListener('change', () => refresh()); end.addEventListener('change', () => refresh());
     length.addEventListener('change', () => {
       if (busy) return;
-      if (!length.value || !length.checkValidity()) { length.reportValidity(); return; }
-      const next = rangeForDuration(item.start, length.valueAsNumber, duration);
-      if (!next) return;
-      start.value = next[0].toFixed(1); end.value = next[1].toFixed(1); refresh();
+      const next = rangeForDuration(item.start, parseDuration(length.value), duration);
+      if (!next) { say('Type a length like 25.5, 1:25 or 1m 25s.', true); length.value = (item.end - item.start).toFixed(1); return; }
+      start.value = timeLabel(next[0]); end.value = timeLabel(next[1]); refresh();
     });
     for (const field of [start,end,length]) field.addEventListener('keydown', e => { if(e.key === 'Enter') { e.preventDefault(); field.blur(); } });
     item.startInput = start; item.endInput = end; item.refresh = refresh; item.article = article; item.tab = tab;

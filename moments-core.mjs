@@ -117,3 +117,36 @@ export function labeledSpeakersForRange(words, labels, start, end) {
   }
   return names.join(' & ');
 }
+
+// Reads a time typed into a start or end field: timecode (1:23.4 or 1:02:03.4), or plain seconds
+// (83.4), so a phone's number keypad, which has no colon, can still set one. A comma works as the
+// decimal mark. Returns NaN for anything else, including a minutes or seconds part past 59.
+export function parseTimecode(text) {
+  const s = String(text ?? '').trim().replace(',', '.');
+  if (!s) return NaN;
+  const parts = s.split(':');
+  if (parts.length > 3 || !parts.every((p, i) => (i === parts.length - 1 ? /^\d+(\.\d+)?$|^\.\d+$/ : /^\d+$/).test(p))) return NaN;
+  const nums = parts.map(Number), last = nums.length - 1;
+  if (last > 0 && nums[last] >= 60) return NaN;
+  if (last > 1 && nums[1] >= 60) return NaN;
+  return nums.reduce((total, n) => total * 60 + n, 0);
+}
+
+// A duration as [value, unit] pairs for a readout: tenths under a minute (25.3 s), whole seconds
+// once it reads in minutes (1 m 25 s), and hours past an hour (1 h 40 m 12 s).
+export function durationParts(seconds) {
+  if (!Number.isFinite(seconds) || seconds < 0) return [];
+  if (seconds < 59.95) return [[(Math.round(seconds * 10) / 10).toFixed(1), 's']];
+  const total = Math.round(seconds), h = Math.floor(total / 3600), m = Math.floor(total % 3600 / 60), s = total % 60;
+  const pad = n => String(n).padStart(2, '0');
+  return h ? [[String(h), 'h'], [pad(m), 'm'], [pad(s), 's']] : [[String(m), 'm'], [pad(s), 's']];
+}
+
+// Reads a typed duration: seconds (85.3), timecode (1:25), or with units (1m 25s, 90s, 1h 2m).
+export function parseDuration(text) {
+  const s = String(text ?? '').trim().toLowerCase().replace(',', '.');
+  if (!/[hms]/.test(s)) return parseTimecode(s);
+  const m = /^(?:(\d+(?:\.\d+)?)\s*h)?\s*(?:(\d+(?:\.\d+)?)\s*m(?:in)?)?\s*(?:(\d+(?:\.\d+)?)\s*(?:s(?:ec)?)?)?$/.exec(s);
+  if (!m || (!m[1] && !m[2] && !m[3])) return NaN;
+  return (Number(m[1] || 0) * 3600) + (Number(m[2] || 0) * 60) + Number(m[3] || 0);
+}
