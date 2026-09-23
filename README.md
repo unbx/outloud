@@ -10,6 +10,7 @@ OutLoud turns any audio or video clip into a live-captioned audiogram that keeps
 
 ## Features
 
+- **Find moments.** Analyze an uploaded recording, preview recommended passages with surrounding context, filter by speaker, or select your own passage from a searchable transcript. Send a selection directly to the audiogram editor with cached captions. See [MOMENTS.md](MOMENTS.md) for analysis connections, limits and testing.
 - **Caption a clip.** Speech-to-text with true word-level timestamps drives karaoke-style captions, synced to the original audio.
 - **Dub a clip.** Translate and re-voice a clip through the ElevenLabs Dubbing API. The output speaks another language in the original speaker's voice, with translated captions.
 - **Write a script.** Eleven v3 narration with inline expression tags like `[whispers]` and `[laughs]`, inserted from a tag palette at the cursor.

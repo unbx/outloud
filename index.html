@@ -37,6 +37,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="moments.css" />
 <style>
   :root {
     --bg: #08080a;
@@ -893,6 +894,38 @@
         <button type="button" class="dz-trim" id="trimBtn" title="Caption only part of this clip">Trim</button>
         <button type="button" id="dubFileClear" title="Remove clip" aria-label="Remove clip">&times;</button>
       </div>
+      <section class="moments-panel" id="momentsPanel" aria-label="Find moments" hidden>
+        <div class="moment-heading"><h2>Find moments</h2><span class="moment-beta">Beta</span></div>
+        <p class="moment-source" id="momentSource"></p>
+        <p class="hint">Find the passages worth sharing. Listen, adjust the cut, then make an audiogram.</p>
+        <label for="momentBrief">What should we look for? <span class="sub">· optional</span></label>
+        <textarea id="momentBrief" maxlength="600" data-edit placeholder="Practical advice for creatives. Prioritize originality, career insights, and complete takeaways."></textarea>
+        <div class="moment-filters">
+          <div><label for="momentLength">Clip length</label><select id="momentLength" data-edit><option value="15-30">15–30 seconds</option><option value="30-60" selected>30–60 seconds</option><option value="60-90">60–90 seconds</option></select></div>
+          <div><label for="momentSpeaker">Featured speaker</label><select id="momentSpeaker" data-edit><option value="">Any speaker</option></select></div>
+        </div>
+        <p class="moment-usage" id="momentUsage"></p>
+        <div class="moment-actions"><button type="button" class="moment-button moment-primary" id="findMoments">Find moments</button><button type="button" class="moment-button" id="cancelMoments" hidden>Cancel</button></div>
+        <p class="moment-status" id="momentStatus" role="status" aria-live="polite"></p>
+        <details class="moment-settings"><summary>Analysis connection</summary>
+          <p>Your tester code uses the app’s analysis connection. With your own ElevenLabs key, add an OpenAI key here. It stays in this page’s memory and passes through OutLoud’s server to OpenAI; it is not saved.</p>
+          <label for="momentKey">OpenAI API key</label><input id="momentKey" type="password" autocomplete="off" spellcheck="false" data-edit placeholder="Optional with a configured tester code" />
+          <button type="button" class="moment-button" id="momentKeyClear" data-edit>Clear analysis key</button>
+        </details>
+        <details class="moment-settings" id="momentSpeakerWrap" hidden><summary>Name the speakers</summary>
+          <p>Listen to samples to identify the guest. Speaker numbers may change between sections. Give matching voices the same name, then choose that name above and find more moments.</p>
+          <div id="momentSpeakers"></div>
+        </details>
+        <div class="moment-results" id="momentResults"></div>
+        <details class="moment-settings" id="momentTranscriptWrap" hidden><summary>Explore transcript &amp; select your own passage</summary>
+          <label for="momentSearch">Search transcript</label><input id="momentSearch" type="search" placeholder="Search for a topic or phrase" />
+          <div id="momentTranscript" class="moment-transcript"></div>
+          <div class="moment-range"><label>Start (seconds)<input id="manualMomentStart" type="number" min="0" step="0.1" /></label><label>End (seconds)<input id="manualMomentEnd" type="number" min="0" step="0.1" /></label></div>
+          <button type="button" id="manualMomentAdd" class="moment-button" data-edit>Preview this passage</button>
+        </details>
+        <p class="moment-selection" id="momentSelection" hidden></p>
+        <audio id="momentPlayer" preload="metadata" hidden></audio>
+      </section>
       <div>
         <label for="dubTarget">Language <span class="sub">· captions, or a dub</span></label>
         <select id="dubTarget"><option value="same" selected>Original · captions only</option></select>
@@ -1139,7 +1172,7 @@
 </section>
 
 <footer>
-  Caption it. Dub it. Keep the voice. Your key stays in your browser and is never sent to us; audio is processed by ElevenLabs.
+  Caption it. Dub it. Keep the voice. Audio is processed by ElevenLabs; Find moments uses OpenAI to analyze your transcript. See how your data is handled below.
   <div class="foot-links">
     <button type="button" class="foot-link" id="aboutLink">About &amp; roadmap</button>
     <button type="button" class="foot-link" id="feedbackBtn">Send feedback</button>
@@ -1247,10 +1280,11 @@
     <ul class="data-list">
       <li><strong>Your API key</strong> is stored only in your browser and sent straight to ElevenLabs with each request. It never reaches NANA's servers. Disconnecting clears it.</li>
       <li><strong>Clips and scripts</strong> you upload or write are sent to ElevenLabs to transcribe, narrate, or dub. Translations use Google Translate. NANA doesn't store any of it.</li>
+      <li><strong>Find moments</strong> sends recording sections to ElevenLabs for transcription, then the transcript and your brief through OutLoud to OpenAI for recommendations. OutLoud keeps the transcript in this tab only, until the recording is replaced or the page reloads. An optional OpenAI key stays in page memory and passes through the server without being saved.</li>
       <li><strong>Your audiogram</strong> (captions, audio, and video) is rendered in your browser and downloaded by you. Nothing is uploaded to NANA.</li>
       <li><strong>Tester mode</strong> routes requests through a NANA proxy that adds the owner's key server-side. Your clip passes through on its way to ElevenLabs and isn't retained.</li>
     </ul>
-    <p class="fine">ElevenLabs and Google process data under their own policies. See <a href="https://elevenlabs.io/privacy" target="_blank" rel="noopener">ElevenLabs</a> and <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google</a>.</p>
+    <p class="fine">ElevenLabs, OpenAI and Google process data under their own policies. See <a href="https://openai.com/policies/privacy-policy/" target="_blank" rel="noopener">OpenAI</a>, <a href="https://elevenlabs.io/privacy" target="_blank" rel="noopener">ElevenLabs</a> and <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google</a>.</p>
     <button class="btn secondary" id="privacyClose" style="margin-top:16px;">Close</button>
   </div>
 </div>
@@ -1347,7 +1381,8 @@
   </div>
 </div>
 
-<script>
+<script type="module">
+import { initMoments } from "./moments-ui.mjs";
 (() => {
   "use strict";
   const $ = (s) => document.querySelector(s);
@@ -1720,6 +1755,7 @@
   // at a time, in step with the audio).
   let capStyle = localStorage.getItem(LS_CAPSTYLE) || "sentence";
   let dubFile = null;
+  let momentsController = null;
   const modeSeg = $("#modeSeg");
   const dubControls = $("#dubControls"), writeControls = $("#writeControls");
   const dropzone = $("#dropzone"), dubFileInput = $("#dubFile");
@@ -1908,6 +1944,7 @@
   // File selection — click, keyboard, and drag & drop.
   function setDubFile(file) {
     dubFile = file || null;
+    momentsController?.reset(dubFile);
     resetTrim(); // a new (or removed) clip invalidates any trim selection
     if (dubFile) {
       dubFileName.textContent = dubFile.name + " · " + (dubFile.size / 1e6).toFixed(1) + " MB";
@@ -2685,6 +2722,8 @@
           if (source && source !== "auto") sf.append("language_code", source);
           return fetch(elevenURL("speech-to-text"), { method: "POST", headers: elevenHeaders(), body: sf });
         };
+        let j = momentsController?.cachedTranscript(dubFile, trimActive() ? trimStart : 0, trimActive() ? trimEnd : clipSeconds, source);
+        if (!j) {
         let r = await sttCall(STT_MODEL);
         if (!r.ok && (r.status === 400 || r.status === 404 || r.status === 422) && STT_MODEL !== STT_MODEL_FALLBACK) {
           r = await sttCall(STT_MODEL_FALLBACK);
@@ -2697,7 +2736,8 @@
           if (r.status === 403 || r.status === 404) msg += " Your ElevenLabs key may lack Speech-to-Text access.";
           throw new Error(msg);
         }
-        const j = await r.json();
+        j = await r.json();
+        }
         dubWords = (j.words || [])
           .filter(w => w.type === "word" && w.text && w.text.trim())
           .map(w => ({ text: w.text.trim(), start: w.start, end: w.end, nl: 0 }));
@@ -4832,6 +4872,35 @@
     } catch (e) { canMp4 = false; }
     if (!canMp4) note.hidden = false;
   })();
+
+  momentsController = initMoments({
+    connected: isConnected, connect: openKeyModal, testerPass: () => testerPass,
+    sourceLanguage: () => dubSourceSel.value, sttModel: STT_MODEL,
+    elevenURL, elevenHeaders, canOpus, encodeOpus: encodeOpusOgg, wav: wavBlob, probe: probeDuration,
+    busy: () => genBtn.disabled || recording,
+    pause: () => player.pause(),
+    unlockAudio: () => {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+    },
+    async useMoment(result) {
+      if (dubFile !== result.file) throw new Error("The recording changed. Select a moment from the current file.");
+      trimStart = result.start; trimEnd = result.end;
+      refreshTrimBtn();
+      dubTargetSel.value = "same"; updateGenLabel(); syncCapNote();
+      dubDesc.value = result.title; dubDescTr = null; lastOutLang = null;
+      dubWords = result.words; dubDone = true; syncDubWords();
+      translatedLang = null; dubFromLang = langName(result.language); dubToLang = null;
+      player.pause();
+      if (player.src.startsWith("blob:")) URL.revokeObjectURL(player.src);
+      lastAudioBlob = result.blob; player.src = URL.createObjectURL(result.blob);
+      await setupAudioGraph();
+      playBtn.disabled = false; audioBtn.disabled = false; videoBtn.disabled = false;
+      $("#exportGroup").classList.add("ready");
+      drawPoster(); setStatus("Your moment is ready. Preview it, customize the design, or choose a language to dub.", "ok");
+      $("#previewPanel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  });
 
   // initial state: open on "Caption a clip" (also paints the initial poster)
   setMode("dub");
