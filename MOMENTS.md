@@ -1,4 +1,4 @@
-# Find moments — first release
+# Unified clip workspace — local design prototype
 
 Upload an audio/video recording in Caption a clip. Find moments transcribes it, recommends up to five distinct passages, and hands the chosen cut to the existing OutLoud editor. No source-link ingestion or automatic publishing is included.
 
@@ -10,7 +10,7 @@ Requires Node 22+ (no packages or build step):
 node tests/dev-server.mjs
 ```
 
-Open http://127.0.0.1:4179. The local server uses the same API handlers as deployment. Set environment variables in your shell or use Node's `--env-file` option with a private file. Never commit keys.
+Open http://127.0.0.1:4180. The local server uses the same API handlers as deployment. Set environment variables in your shell or use Node's `--env-file` option with a private file. Never commit keys.
 
 For a UI-only walkthrough with synthetic recommendations and no provider calls:
 
@@ -24,7 +24,7 @@ In this mode, connect using any dummy tester code and upload the generated 120-s
 ## Connections
 
 - Existing ElevenLabs connection: own API key or the existing tester proxy.
-- Analysis: `OPENAI_API_KEY` on the server, gated by the existing `TESTER_PASSWORD`; optional `MOMENTS_MODEL` defaults to `gpt-4.1-mini`.
+- Analysis: `OPENAI_API_KEY` on the server, gated by the existing `TESTER_PASSWORD`; optional `MOMENTS_MODEL` defaults to `gpt-6-astra`.
 - Own-key users can enter an OpenAI key in **Analysis connection**. That key stays in page memory and is forwarded by the moments endpoint only to OpenAI. It is not saved in localStorage or logged. The server sends `store: false` on Responses requests.
 - The analysis availability check runs before transcription to catch a missing connection before starting transcription charges. It checks configuration/authentication, not the provider account balance or model entitlement.
 - Set an OpenAI project spend cap and an ElevenLabs credit cap. The per-instance rate limiter is burst protection, not a durable spend limit.
@@ -44,14 +44,14 @@ The full source and transcript stay in browser memory. Recording sections go to 
 ## Validation
 
 ```sh
-node --test tests/moments.test.mjs
+node --test tests/*.test.mjs
 ```
 
 Tests cover section offsets and speaker isolation, sentence grouping, model boundary validation, deduplication, speaker filtering, caption rebasing, malformed transcript rejection, authentication and structured-response handling. Browser validation uses synthetic fixtures; paid provider transcription, recommendation quality on real conversations and translated dubbing require a configured live account.
 
 ## Deployment files
 
-Deploy `index.html`, `moments.css`, `moments-core.mjs`, `moments-ui.mjs`, and `api/moments.js` alongside the existing app. Keep the existing ElevenLabs proxy and existing deployment settings. The API runs on the server; credentials must never be added to client files.
+Deploy `index.html`, `moments.css`, `moments-core.mjs`, `moments-ui.mjs`, `timeline.mjs`, and `api/moments.js` alongside the existing app. Keep the existing ElevenLabs proxy and existing deployment settings. The API runs on the server; credentials must never be added to client files.
 
 ## Next steps
 
@@ -60,3 +60,38 @@ Deploy `index.html`, `moments.css`, `moments-core.mjs`, `moments-ui.mjs`, and `a
 - Separate source adapters for YouTube and recorded X Spaces.
 - Re-align dubbed audio to true word timestamps (the current dubbing pipeline uses its existing sentence transcript timings).
 - Saved projects, batch language exports, and audio-aware ranking.
+
+## Unified workspace design
+
+This local version combines Find moments and Edit clip in one dialog. It does not change the deployed app.
+
+- A real decoded waveform shows the full recording, with numbered colored moment ranges below it. Overlapping ranges use separate rows.
+- Selecting a moment focuses a larger waveform with contextual padding and independent start/end handles. Arrow keys adjust by 0.1 second; Shift + arrow adjusts by one second. Numeric fields stay synchronized.
+- Speaker turns use a separate neutral track, with section-scoped identities until named by the user. Color identifies moments, not speakers or an implied virality score.
+- Prompt, length and speaker controls share one analysis area. Transcript completion is shown in the overview.
+- The selected card brings together the reason, transcript, preview, context playback and audiogram handoff.
+- Manual trimming works without transcription or model calls. Analysis and adjustments currently live only in the tab; finding fresh recommendations replaces the previous set.
+
+Validation: 12 unit tests pass. Browser checks cover selection switching, keyboard and numeric trimming, manual trim without analysis, cached-caption handoff and playback of the resulting 36.9-second test selection. Fixture recommendations and text are invented, and fixture audio is a modulated test tone. Live transcription, ranking and dubbing are not evaluated by this prototype walkthrough.
+
+## Live analysis and Design handoff
+
+Port 4180 now runs real endpoints (`node tests/dev-server.mjs`). The synthetic demo uses a separate origin, port 4181 (`node tests/dev-server.mjs --fixtures`), so dummy tester credentials and transcripts cannot cross between the two. Reload older preview pages before using live analysis.
+
+Connect ElevenLabs in the main Connect dialog. Choose My own API keys in Connect to enter both keys, or configure server-side OPENAI_API_KEY, ELEVENLABS_API_KEY and TESTER_PASSWORD. Never put keys in source files. The OpenAI key field is memory-only. Existing ElevenLabs connection behavior is unchanged.
+
+Analysis defaults to GPT-6 Astra with low reasoning effort and an 8,000-token output budget. MOMENTS_MODEL overrides it. This is a quality-first candidate, not a benchmark winner. Model access and paid provider behavior still require a real account test. The independent critic, audio ranking and model benchmark are future work.
+
+The sticky workspace footer selects original captions or a target-language dub. Continue to Design reuses available matching-language transcript timings; otherwise it transcribes the selected clip. Dubbing uses the existing ElevenLabs pipeline. Progress and failures remain visible in the workspace; only success closes it, collapses Create and focuses Design. Edit clip returns to the preserved selections.
+
+## Unified Connect (current)
+
+Connect now offers two explicit modes. Tester code uses TESTER_PASSWORD for both ElevenLabs and OpenAI; selecting it clears personal keys from the active connection. My own API keys collects ElevenLabs and OpenAI together; selecting it clears the tester code. OpenAI remains in tab memory; the pre-existing ElevenLabs browser storage behavior is unchanged. The workspace has only Manage connection, with no separate key field.
+
+For this local preview, fill `.env.local` in this directory: ELEVENLABS_API_KEY, OPENAI_API_KEY, and TESTER_PASSWORD. Use your existing tester code as TESTER_PASSWORD. MOMENTS_MODEL defaults to gpt-6-astra. The server reloads these settings on each API request, so no restart is needed after edits. This file is excluded from Git and blocked by the static server. `.env.example` contains empty placeholders. Production hosting must configure these environment variables separately.
+
+## Playback and discovery controls
+
+Target clip length defaults to Auto (15–90 seconds, natural boundaries). Explicit length ranges remain available. Speaker filtering appears only when transcription identifies multiple distinct speaker identities; single-speaker recordings omit the filter. Actual durations remain on every selection and update with trimming.
+
+A shared Play/Pause/Replay transport replaces the separate card playback buttons. It shows elapsed preview time and duration. Include surrounding audio adds up to ten seconds on each side for preview only; it never changes export boundaries. The transport remains visible as the user scrolls. Selecting another moment pauses playback and seeks to that preview’s start. Speaker samples also use this transport and are labeled as samples.
