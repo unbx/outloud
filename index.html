@@ -1148,6 +1148,14 @@
         </div>
         <input type="file" id="bgFile" accept="image/*" hidden />
         <div id="bgControls" style="display:none;">
+          <label for="bgZoom">Frame <span class="sub">· drag the preview to move the image</span></label>
+          <div class="seg bg-frame-seg" id="bgFrameSeg" role="group" aria-label="Background framing">
+            <button type="button" data-bgframe="fit" title="Show the whole image">Fit</button>
+            <button type="button" data-bgframe="fill" title="Fill the frame edge to edge">Fill</button>
+            <button type="button" data-bgframe="center" title="Center the image">Center</button>
+            <button type="button" data-bgframe="move" aria-pressed="false" title="Drag or pinch the preview to move and zoom the image">Move</button>
+          </div>
+          <input type="range" id="bgZoom" min="0" max="1000" value="0" aria-label="Background zoom" />
           <label for="bgDark">Image darken (for text legibility)</label>
           <input type="range" id="bgDark" min="10" max="96" value="52" />
         </div>
@@ -1718,6 +1726,11 @@ import { rewindForExport } from "./export-start.mjs";
   let bgImage = null;      // uploaded background image
   let pfpImage = null;     // creator profile photo
   let bgDark = 0.52;       // scrim strength for image legibility
+  // Framing: zoom is relative to filling the frame (1 = cover, below 1 shows more of the image,
+  // down to the whole of it). Focus is the image point, as fractions, that sits at the frame's
+  // centre, so a logo placed by hand stays put when the format changes.
+  let bgZoom = 1, bgFocus = { x: 0.5, y: 0.5 };
+  const BG_MAX_ZOOM = 4;
   let scrollPos = 0;       // smooth caption scroll position (in line units)
 
   // ---------- Elements ----------
@@ -3188,7 +3201,7 @@ import { rewindForExport } from "./export-start.mjs";
     previewWrap.classList.toggle("portrait", r === "4:5");
     previewWrap.classList.toggle("wide", r === "16:9");
     document.querySelectorAll(".ratio-btn").forEach(b => b.classList.toggle("sel", b.dataset.ratio === r));
-    drawPoster();
+    drawPoster(); syncBgFrame();
   }
   document.querySelectorAll(".ratio-btn").forEach(b =>
     b.addEventListener("click", () => setRatio(b.dataset.ratio)));
@@ -3208,7 +3221,8 @@ import { rewindForExport } from "./export-start.mjs";
     img.onload = () => {
       bgImage = img; bgThumb.src = url; bgBtn.classList.add("has-photo");
       bgControls.style.display = "";
-      drawPoster();
+      bgZoom = 1; bgFocus = { x: 0.5, y: 0.5 };
+      drawPoster(); syncBgFrame();
     };
     img.src = url;
   });
@@ -3216,8 +3230,101 @@ import { rewindForExport } from "./export-start.mjs";
     e.stopPropagation(); // don't re-open the file picker
     bgImage = null; bgFile.value = ""; bgThumb.removeAttribute("src");
     bgBtn.classList.remove("has-photo"); bgControls.style.display = "none";
+    setBgMove(false);
     drawPoster();
   });
+
+  // ---------- Background framing: Fit / Fill / Center, zoom, and drag to move ----------
+  const bgZoomInput = $("#bgZoom"), bgFrameBtns = document.querySelectorAll("#bgFrameSeg button");
+  let bgMove = false;
+  // The slider is logarithmic from Fit to 4x, so each step feels the same size at any zoom.
+  const zoomAt = (t, min) => min * Math.pow(BG_MAX_ZOOM / min, t);
+  const tOf = (z, min) => Math.log(z / min) / Math.log(BG_MAX_ZOOM / min);
+  function syncBgFrame() {
+    if (!bgImage) return;
+    const b = bgBox(canvas.width, canvas.height);
+    bgZoomInput.value = String(Math.round(tOf(bgZoom, b.minZoom) * 1000));
+    const near = (a, z) => Math.abs(a - z) < 0.005;
+    bgFrameBtns.forEach(btn => {
+      const k = btn.dataset.bgframe;
+      if (k === "fit") btn.classList.toggle("sel", near(bgZoom, b.minZoom));
+      if (k === "fill") btn.classList.toggle("sel", near(bgZoom, 1));
+    });
+  }
+  function setBgMove(on) {
+    bgMove = on;
+    const btn = document.querySelector('[data-bgframe="move"]');
+    btn.classList.toggle("sel", on); btn.setAttribute("aria-pressed", String(on));
+    // while moving, the preview owns touch gestures instead of the page scrolling past it
+    canvas.style.touchAction = on ? "none" : "";
+    canvas.classList.toggle("bg-moving", on);
+  }
+  bgFrameBtns.forEach(btn => btn.addEventListener("click", () => {
+    const k = btn.dataset.bgframe;
+    if (k === "move") { setBgMove(!bgMove); return; }
+    if (!bgImage) return;
+    if (k === "fit") { bgZoom = 0; bgFocus = { x: 0.5, y: 0.5 }; }
+    if (k === "fill") { bgZoom = 1; }
+    if (k === "center") { bgFocus = { x: 0.5, y: 0.5 }; }
+    drawPoster(); syncBgFrame();
+  }));
+  bgZoomInput.addEventListener("input", () => {
+    if (!bgImage) return;
+    const b = bgBox(canvas.width, canvas.height);
+    bgZoom = zoomAt(bgZoomInput.value / 1000, b.minZoom);
+    drawPoster(); syncBgFrame();
+  });
+
+  // Drag on the preview to move the image. A mouse can always drag (a plain click still opens
+  // the editors); touch needs Move on, so a swipe over the preview still scrolls the page.
+  const bgPointers = new Map();
+  let bgDragged = false, bgPinch = 0;
+  const canvasScale = () => { const r = canvas.getBoundingClientRect(); return Math.max(canvas.width / r.width, canvas.height / r.height); };
+  canvas.addEventListener("pointerdown", (e) => {
+    if (!bgImage || (e.pointerType !== "mouse" && !bgMove) || e.button > 0) return;
+    // a mouse has one pointer, so every press starts a clean gesture even if the last one's
+    // release never arrived (and would otherwise swallow this click as the end of a drag)
+    if (e.pointerType === "mouse") bgPointers.clear();
+    bgPointers.set(e.pointerId, { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY });
+    if (bgPointers.size === 1) { bgDragged = false; bgPinch = 0; }
+    try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+  });
+  canvas.addEventListener("pointermove", (e) => {
+    const p = bgPointers.get(e.pointerId);
+    if (!p || !bgImage) return;
+    const k = canvasScale();
+    if (bgPointers.size >= 2) {
+      // pinch: zoom by the change in distance between the two fingers
+      p.x = e.clientX; p.y = e.clientY;
+      const [a, b] = [...bgPointers.values()];
+      const d = Math.hypot(a.x - b.x, a.y - b.y);
+      if (bgPinch) bgZoom *= d / bgPinch;
+      bgPinch = d; bgDragged = true;
+      drawPoster(); syncBgFrame(); return;
+    }
+    if (!bgDragged && Math.hypot(e.clientX - p.x0, e.clientY - p.y0) < 4) return;
+    bgDragged = true;
+    const box = bgBox(canvas.width, canvas.height);
+    bgFocus = { x: bgFocus.x - (e.clientX - p.x) * k / box.dw, y: bgFocus.y - (e.clientY - p.y) * k / box.dh };
+    p.x = e.clientX; p.y = e.clientY;
+    drawPoster();
+  });
+  const endBgPointer = (e) => { bgPointers.delete(e.pointerId); if (bgPointers.size < 2) bgPinch = 0; };
+  canvas.addEventListener("pointerup", endBgPointer);
+  canvas.addEventListener("pointercancel", endBgPointer);
+  canvas.addEventListener("lostpointercapture", endBgPointer);
+  // After a drag, or anywhere while Move is on, a click is part of framing, not a request to
+  // edit. Caught on the way down, before the preview's own click handler sees it.
+  previewWrap.addEventListener("click", (e) => {
+    if (e.target !== canvas) return;
+    if (bgDragged || (bgMove && bgImage)) { e.stopPropagation(); bgDragged = false; }
+  }, true);
+  canvas.addEventListener("wheel", (e) => {
+    if (!bgMove || !bgImage) return;
+    e.preventDefault();
+    bgZoom *= Math.exp(-e.deltaY * 0.0015);
+    drawPoster(); syncBgFrame();
+  }, { passive: false });
   bgDarkInput.addEventListener("input", () => { bgDark = bgDarkInput.value / 100; drawPoster(); });
 
   // Watermark toggle — show/hide the NANA wordmark on the canvas.
@@ -3866,12 +3973,30 @@ import { rewindForExport } from "./export-start.mjs";
     ctx.restore();
   }
 
+  // Where the background image lands. Larger than the frame, it can never be moved far enough
+  // to show an edge; smaller, it stays inside the frame. The clamped spot is written back to
+  // the focus so the next drag starts from where the image really is.
+  function bgBox(cw, ch) {
+    const iw = bgImage.width, ih = bgImage.height;
+    const cover = Math.max(cw / iw, ch / ih), minZoom = Math.min(cw / iw, ch / ih) / cover;
+    bgZoom = Math.max(minZoom, Math.min(BG_MAX_ZOOM, bgZoom));
+    const dw = iw * cover * bgZoom, dh = ih * cover * bgZoom;
+    const fit = (d, size, span) => span >= size ? Math.min(0, Math.max(size - span, d)) : Math.max(0, Math.min(size - span, d));
+    const dx = fit(cw / 2 - bgFocus.x * dw, cw, dw), dy = fit(ch / 2 - bgFocus.y * dh, ch, dh);
+    bgFocus = { x: (cw / 2 - dx) / dw, y: (ch / 2 - dy) / dh };
+    return { dx, dy, dw, dh, minZoom };
+  }
   function paintBackground() {
     const cw = canvas.width, ch = canvas.height;
     if (bgImage) {
-      const ir = bgImage.width / bgImage.height, cr = cw / ch;
-      let dw, dh; if (ir > cr) { dh = ch; dw = ch * ir; } else { dw = cw; dh = cw / ir; }
-      ctx.drawImage(bgImage, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
+      const b = bgBox(cw, ch);
+      if (b.dw < cw - 0.5 || b.dh < ch - 0.5) {
+        // zoomed out past the frame: the theme's own background fills around the image
+        const tg = ctx.createLinearGradient(0, 0, cw, ch);
+        tg.addColorStop(0, theme.bg1); tg.addColorStop(1, theme.bg2);
+        ctx.fillStyle = tg; ctx.fillRect(0, 0, cw, ch);
+      }
+      ctx.drawImage(bgImage, b.dx, b.dy, b.dw, b.dh);
       const sc = ctx.createLinearGradient(0, 0, 0, ch);
       // ceilings raised so a bright photo can actually be pushed back far enough to read over
       sc.addColorStop(0, `rgba(0,0,0,${Math.min(0.98, bgDark + 0.12)})`);
