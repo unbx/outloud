@@ -40,10 +40,10 @@
 <script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "Organization", "@id": "https://outloud.nana.works/#publisher", "name": "NANA", "url": "https://nana.works/"}, {"@type": "WebSite", "@id": "https://outloud.nana.works/#website", "name": "OutLoud", "url": "https://outloud.nana.works/", "publisher": {"@id": "https://outloud.nana.works/#publisher"}, "inLanguage": "en"}, {"@type": "WebApplication", "@id": "https://outloud.nana.works/#app", "name": "OutLoud", "url": "https://outloud.nana.works/", "description": "Find the moments worth sharing in your recordings. Trim your clip, add captions, design an audiogram, and share it with the world.", "applicationCategory": "MultimediaApplication", "operatingSystem": "Web browser", "browserRequirements": "JavaScript enabled; recording and capture depend on browser support.", "publisher": {"@id": "https://outloud.nana.works/#publisher"}, "featureList": ["Upload audio or video", "Record microphone audio", "Capture tab audio in supported browsers", "Find and trim moments", "Search transcripts", "Create captioned audiograms", "Dub into supported languages while preserving the speaker’s voice", "Download video, audio, SRT and VTT captions"]}]}</script>
 <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
 <link href="https://api.fontshare.com/v2/css?f[]=clash-display@600,500,700&f[]=general-sans@500,600&display=swap" rel="stylesheet" />
-<!-- Geist Mono (SIL OFL) supports the SIGNAL theme. -->
+<!-- Geist Mono (SIL OFL) supports the SIGNAL theme; Silkscreen (SIL OFL) the LCD theme. -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@500;700&family=Silkscreen&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="moments.css" />
 <style>
   :root {
@@ -1575,12 +1575,13 @@ import { rewindForExport } from "./export-start.mjs";
       // matches the look this is drawn from: all the light comes from the dots.
       fg: "#ff0d16", fx: "dot", frame: true, glow: 0, font: '"Geist Mono", ui-monospace, monospace' },
     // — LCD: the Clip tab's display, as artwork. Glass black (near RAL 9005), warm-white lit
-    //   segments, the active word on TE orange (inspired by RAL 2004), orange corner brackets
-    //   like the IN/OUT keys, and the waveform drawn as LED ladders with unlit ghost segments.
+    //   segments with an indigo glow, the active word on TE orange (inspired by RAL 2004), orange
+    //   corner brackets like the IN/OUT keys, and the waveform as Sidekick-style LED ladders.
     //   Screen approximations inspired by RAL, not official conversions. —
     { name: "LCD", a: "#FF5A14", b: "#F4F1EA", bg1: "#0A0B0B", bg2: "#131617",
       stops: ["#F4F1EA", "#F4F1EA", "#FF5A14"], ink: "#0A0B0B", fg: "#F4F1EA",
-      fx: "lcd", frame: true, glow: 0, font: '"Geist Mono", ui-monospace, monospace' },
+      // Silkscreen: a pixel face like the small LCD labels on the K.O. II screen.
+      fx: "lcd", frame: true, glow: 0, font: '"Silkscreen", "Geist Mono", ui-monospace, monospace', weight: 400 },
     { name: "Contrast", a: "#ffffff", b: "#d4d4d4", bg1: "#0a0a0a", bg2: "#000000", ink: "#000000" },
     // The one light theme. `fg` flips the canvas text from white to ink; cream is NANA
     // LIFESTYLE's --cream (#e1e0cc), the colour its own body copy and logo use.
@@ -3744,8 +3745,11 @@ import { rewindForExport } from "./export-start.mjs";
   // A theme can name its own display face. Only the canvas type follows it — the app's own UI
   // stays on Clash Display, so a theme changes the artwork, never the interface around it.
   const face = () => theme.font || `"Clash Display", "General Sans", ${FB}`;
-  const capFont   = (g) => `600 ${g.cap}px ${face()}`;
-  const handleFont= (g) => `600 ${Math.round(g.cap * 0.62)}px ${face()}`;
+  // A theme can also pin the weight: a pixel face like Silkscreen only reads as a display at its
+  // regular cut, and the bold one turns M and W into solid blocks.
+  const wt = (w) => theme.weight || w;
+  const capFont   = (g) => `${wt(600)} ${g.cap}px ${face()}`;
+  const handleFont= (g) => `${wt(600)} ${Math.round(g.cap * 0.62)}px ${face()}`;
   const brandFont = (g) => `500 ${Math.round(g.cap * 0.4)}px ${theme.bodyFont || '"General Sans"'}, ${FB}`;
 
   // build the waveform / accent gradient (supports holo multi-stop)
@@ -3942,7 +3946,7 @@ import { rewindForExport } from "./export-start.mjs";
     // first: Chinese, Japanese and Korean arrive as runs with no spaces to break on, so a single
     // "word" can be wider than the whole canvas and word-wrapping alone never touches it.
     const wrapAt = (px) => {
-      ctx.font = `800 ${px}px ${face()}`;
+      ctx.font = `${wt(800)} ${px}px ${face()}`;
       const space = ctx.measureText(" ").width;
       const lines = [];
       let row = [], rowW = 0;
@@ -3970,7 +3974,7 @@ import { rewindForExport } from "./export-start.mjs";
       fLh = Math.round(fCap * 1.22);
       lines = wrapAt(fCap);
     }
-    const font = `800 ${fCap}px ${face()}`;
+    const font = `${wt(800)} ${fCap}px ${face()}`;
     ctx.font = font;
     const space = ctx.measureText(" ").width;
 
@@ -4123,28 +4127,45 @@ import { rewindForExport } from "./export-start.mjs";
   // LCD glow: the same additive idea as the LED bloom, gentler, since lit segments on a real
   // display glow softly into the glass rather than flaring. Reads the finished text layer.
   function lcdBloom(px) {
+    // A tight warm-white halo so the type reads as lit, then a wider indigo one tinted from the
+    // same layer: the slight blue cast LCD glass throws around bright segments.
+    const glowCol = theme.glowTint || "#5B4DFF";
+    if (glowLayer.width !== textLayer.width || glowLayer.height !== textLayer.height) {
+      glowLayer.width = textLayer.width; glowLayer.height = textLayer.height;
+    }
+    gtx.globalCompositeOperation = "copy"; gtx.drawImage(textLayer, 0, 0);
+    gtx.globalCompositeOperation = "source-in"; gtx.fillStyle = glowCol;
+    gtx.fillRect(0, 0, glowLayer.width, glowLayer.height);
+    gtx.globalCompositeOperation = "source-over";
     ctx.save();
     ctx.globalCompositeOperation = "lighter";
-    ctx.globalAlpha = 0.32;
-    ctx.filter = "blur(" + Math.max(2, Math.round(px * 0.06)) + "px)";
+    ctx.globalAlpha = 0.22;
+    ctx.filter = "blur(" + Math.max(2, Math.round(px * 0.05)) + "px)";
     ctx.drawImage(textLayer, 0, 0);
-    ctx.globalAlpha = 0.14;
-    ctx.filter = "blur(" + Math.max(6, Math.round(px * 0.2)) + "px)";
-    ctx.drawImage(textLayer, 0, 0);
+    ctx.globalAlpha = 0.5;
+    ctx.filter = "blur(" + Math.max(6, Math.round(px * 0.22)) + "px)";
+    ctx.drawImage(glowLayer, 0, 0);
     ctx.restore();
   }
-  // One LED ladder: a column of segments, lit from the bottom, unlit ones left as faint ghosts
-  // like the meter in the Clip tab. The top quarter is the orange zone, lit or not.
-  const LADDER_SEGS = 12;
-  function ledLadder(x, w, baseY, level, maxH) {
-    const pitch = maxH / LADDER_SEGS, segH = Math.max(2, pitch * 0.64), r = Math.min(segH, w) * 0.18;
-    const lit = Math.max(1, Math.round(level * LADDER_SEGS));
-    const hot = Math.floor(LADDER_SEGS * 0.75);
-    for (let k = 0; k < LADDER_SEGS; k++) {
-      const on = k < lit, orange = k >= hot;
-      ctx.fillStyle = orange ? (on ? theme.a : theme.a + "24") : (on ? fgc(1) : fgc(0.08));
-      roundRect(ctx, x, baseY - k * pitch - segH, w, segH, r); ctx.fill();
+  const glowLayer = document.createElement("canvas");
+  const gtx = glowLayer.getContext("2d");
+  // LED ladders after the K.O. Sidekick's display: thin segments stacked in narrow columns, one
+  // orange-red throughout, unlit segments left as dark maroon so the whole ladder stays visible.
+  // Lit and unlit are each one path, so the glow is a single shadow pass, not one per segment.
+  const LADDER = { segs: 16, on: "#F25A2A", off: "#3A0D05", glow: "#FF4A1A" };
+  function ledLadders(cols, baseY, maxH) {
+    const pitch = maxH / LADDER.segs, segH = Math.max(2, pitch * 0.5);
+    const on = new Path2D(), off = new Path2D();
+    for (const c of cols) {
+      const lit = Math.max(1, Math.round(c.v * LADDER.segs));
+      for (let k = 0; k < LADDER.segs; k++) (k < lit ? on : off).rect(c.x, baseY - k * pitch - segH, c.w, segH);
     }
+    ctx.save();
+    ctx.shadowColor = "transparent"; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+    ctx.fillStyle = LADDER.off; ctx.fill(off);
+    ctx.shadowColor = LADDER.glow; ctx.shadowBlur = Math.max(4, pitch * 0.9);
+    ctx.fillStyle = LADDER.on; ctx.fill(on);
+    ctx.restore();
   }
 
   // Camera-style corner brackets with a registration mark at top centre. Purely decorative, so
@@ -4336,7 +4357,7 @@ import { rewindForExport } from "./export-start.mjs";
     ctx.fillStyle = theme.b;
     // same right edge as the description below, so a long name never reaches the watermark
     const nMaxW = (g.cw - g.pad - g.cap * 1.3) - tx;
-    const nFont = (px) => `600 ${px}px ${face()}`;
+    const nFont = (px) => `${wt(600)} ${px}px ${face()}`;
     const nFit = fitLine(handle.value || "NAME", nMaxW, Math.round(tile * 0.40), Math.round(tile * 0.26), nFont);
     ctx.font = nFont(nFit.px);
     // with no description the name is the whole footer, so centre it on the tile
@@ -4380,11 +4401,12 @@ import { rewindForExport } from "./export-start.mjs";
     const w = g.cw - g.pad * 2, bw = w / n;
     if (theme.fx === "lcd") {
       // 24 wider ladders rather than 48 thin ones, so each segment still reads as a block
-      const m = 24, mw = w / m;
+      const m = 32, mw = w / m, cols = [];
       for (let i = 0; i < m; i++) {
         const v = values ? barLevel(values, i, m) : 0.12 + 0.10 * Math.abs(Math.sin(i * 0.5));
-        ledLadder(g.pad + i * mw + mw * 0.14, mw * 0.72, baseY, v, g.waveMax);
+        cols.push({ x: g.pad + i * mw + mw * 0.22, w: mw * 0.56, v });
       }
+      ledLadders(cols, baseY, g.waveMax);
       return;
     }
     ctx.fillStyle = lineGradient(g.pad, g.pad + w);
@@ -4438,11 +4460,12 @@ import { rewindForExport } from "./export-start.mjs";
     if (visualizerStyle === 'analog') { paintAnalog(values, x0, x1, baseY, maxH); return; }
     const n = 36, w = x1 - x0, bw = w / n;
     if (theme.fx === "lcd") {
-      const m = 18, mw = w / m;
+      const m = 24, mw = w / m, cols = [];
       for (let i = 0; i < m; i++) {
         const v = values ? barLevel(values, i, m) : 0.2 + 0.68 * Math.abs(Math.sin(i * 0.9) * Math.sin(i * 0.37));
-        ledLadder(x0 + i * mw + mw * 0.14, mw * 0.72, baseY, v, maxH);
+        cols.push({ x: x0 + i * mw + mw * 0.22, w: mw * 0.56, v });
       }
+      ledLadders(cols, baseY, maxH);
       return;
     }
     ctx.fillStyle = lineGradient(x0, x1);
@@ -4489,7 +4512,7 @@ import { rewindForExport } from "./export-start.mjs";
     const hx = tx + tile + Math.round(g.pad * 0.6);
     const hw = g.cw - g.pad - hx;
     const name = (handle.value || "NAME").toUpperCase();
-    const hFont = (px) => `700 ${px}px ${face()}`;
+    const hFont = (px) => `${wt(700)} ${px}px ${face()}`;
     // shrink to fit the header, down to a still-legible floor; ellipsize only past that
     const nf = fitLine(name, hw, Math.round(tile * 0.3), Math.round(tile * 0.17), hFont);
     const hs = nf.px;
@@ -5342,6 +5365,7 @@ import { rewindForExport } from "./export-start.mjs";
       document.fonts.load('600 54px Barlow').catch(() => {}),
       document.fonts.load('500 24px Barlow').catch(() => {}),
       document.fonts.load('700 54px "Geist Mono"').catch(() => {}),
+      document.fonts.load('400 54px "Silkscreen"').catch(() => {}),
       document.fonts.load('500 24px "General Sans"').catch(() => {}),
     ]).then(() => document.fonts.ready).then(() => drawPoster());
   }
