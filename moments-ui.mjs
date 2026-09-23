@@ -14,13 +14,16 @@ export function initMoments(app) {
   let choices = [], selectedId = null, nextId = 1, decoding = null;
   let generating = false, handoffError = null, analysisFailed = false, analyzed = false;
   const output = $('momentTarget'), continueButton = $('momentContinue');
-  app.targets().forEach(t => output.add(new Option(t.label, t.value)));
+  // Under the "Language" heading the original just reads "Original": every choice is captioned,
+  // so the qualifier added nothing, and the short label fits a phone.
+  app.targets().forEach(t => output.add(new Option(t.value === 'same' ? 'Original' : t.label, t.value)));
   const scope = $('momentScope');
   scope.addEventListener('change', () => { handoffError = null; handoff(); });
   const usesFullRecording = item => scope.value === 'full' || (item && item.start <= .05 && item.end >= duration - .05);
   // While captions or a dub are being made, the button itself shows the step and the time spent,
   // so a long dub never looks like a button that did nothing.
   let workLabel = '', workStarted = 0, workTimer = 0;
+  const setHandoffStatus = (text, tone = '') => { const n = $('handoffStatus'); n.textContent = text; n.dataset.tone = tone; };
   const elapsed = () => { const t = Math.floor((Date.now() - workStarted) / 1000); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; };
   function handoff() {
     const item = choices.find(m => m.id === selectedId);
@@ -30,8 +33,8 @@ export function initMoments(app) {
       : output.value === 'same' ? (full ? 'Caption full clip →' : 'Caption selection →') : (full ? 'Dub full clip →' : 'Dub selection →');
     continueButton.classList.toggle('is-working', generating);
     continueButton.setAttribute('aria-busy', String(generating));
-    if (!busy && !handoffError) $('handoffStatus').textContent = file && !full && !item ? 'Choose a moment first: drag the waveform edges, or press ANALYZE.'
-      : output.value === 'same' ? 'Original voice, with captions. Style your audiogram next.' : 'Translate this selection, keeping the speaker’s voice. Uses dubbing credits.';
+    if (!busy && !handoffError) setHandoffStatus(file && !full && !item ? 'Choose a moment first: drag the waveform edges, or press ANALYZE.'
+      : output.value === 'same' ? 'Original voice, with captions. Style it next.' : 'Keeps the speaker’s voice. Uses dubbing credits.');
     continueButton.disabled = busy || !file || (!full && !item);
   }
   output.addEventListener('change', () => { handoffError = null; handoff(); });
@@ -41,7 +44,7 @@ export function initMoments(app) {
     if (!file || (!full && !item) || busy || app.busy()) return;
     const a = full ? 0 : Number(item.startInput.value), b = full ? duration : Number(item.endInput.value), run = epoch;
     const title = full ? file.name : item.title;
-    if (!validRange(a, b, duration) || (!full && b - a > 90)) { const why = 'Choose a valid selection of up to 90 seconds.'; say(why, true); $('handoffStatus').textContent = why; return; }
+    if (!validRange(a, b, duration) || (!full && b - a > 90)) { const why = 'Choose a valid selection of up to 90 seconds.'; say(why, true); setHandoffStatus(why, 'error'); return; }
     const cached = !full && complete && sourceLanguage === app.sourceLanguage();
     if ((!cached || output.value !== 'same') && !app.connected()) { closeWorkspace(); app.connect(); return; }
     handoffError = null; controller = new AbortController(); generating = true;
@@ -49,7 +52,7 @@ export function initMoments(app) {
     clearInterval(workTimer); workTimer = setInterval(handoff, 1000);
     setBusy(true); stop();
     const progress = (message, error = false) => {
-      say(message, error); $('handoffStatus').textContent = message;
+      say(message, error); setHandoffStatus(message, error ? 'error' : 'progress');
       // The step name goes on the button; its own running seconds are dropped for the shared timer.
       if (!error) { workLabel = message.replace(/\s*\d+s(\s*\/\s*~\d+s)?\s*$/, '').slice(0, 44); handoff(); }
     };
