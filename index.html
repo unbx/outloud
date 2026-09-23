@@ -1600,7 +1600,8 @@ import { rewindForExport } from "./export-start.mjs";
     //   the active word inverted (a dark block with glass-coloured letters, as an LCD highlights),
     //   and red for the name and the top of the ladders. Screen approximations. —
     { name: "Retro LCD", a: "#1D2418", b: "#3E4A34", bg1: "#C3CCA8", bg2: "#AFB894",
-      stops: ["#1D2418", "#1D2418", "#C8262B"], fg: "#1D2418", ink: "#C3CCA8", glow: 0,
+      // one solid segment colour for Modern and Analog; red stays on the LED ladders only
+      stops: ["#1D2418", "#1D2418"], fg: "#1D2418", ink: "#C3CCA8", glow: 0,
       nameCol: "#C8262B", ghost: 0.055,
       fontId: "dseg14", segShadow: true, visualizer: "led",
       ladder: { segs: 14, on: "#1D2418", off: "#1D24181A", hot: "#C8262B", hotOff: "#C8262B26" } },
