@@ -1,15 +1,19 @@
 import {test,beforeEach} from 'node:test';
 import assert from 'node:assert/strict';
-import {createTrialClient,FREE_CLIP_LIMITS} from '../trial-client.mjs';
-let duration,decodes,requests,broken;
-beforeEach(()=>{
- duration=60;decodes=0;requests=0;broken=false;
- global.window={AudioContext:class{async decodeAudioData(){decodes++;if(broken)throw Error();return {duration};}async close(){}}};
- global.OfflineAudioContext=class{constructor(_,length,rate){this.length=length;this.rate=rate;}createBufferSource(){return {connect(){},start(){}};}async startRendering(){return {length:this.length};}};
- global.fetch=async()=>{requests++;return new Response(JSON.stringify({words:[]}));};
+import {createTrialClient,checkFreeClip,FREE_CLIP_LIMITS} from '../trial-client.mjs';
+let requests;
+beforeEach(()=>{requests=[];global.fetch=async(url,options={})=>{requests.push({url,options});return new Response(JSON.stringify({words:[]}));};});
+const file=size=>({size});
+test('limits are one recording up to 2 hours and 300 MB',()=>{assert.equal(FREE_CLIP_LIMITS.seconds,7200);assert.equal(FREE_CLIP_LIMITS.bytes,300_000_000);});
+test('rejects empty and over-300 MB files before anything is read or sent',()=>{assert.throws(()=>checkFreeClip(file(0)),/empty/);assert.throws(()=>checkFreeClip(file(FREE_CLIP_LIMITS.bytes+1)),/300 MB/);assert.equal(requests.length,0);});
+test('rejects recordings over 2 hours, accepts exactly 2 hours',()=>{assert.throws(()=>checkFreeClip(file(100),7200.01),/longer than 2 hours/);checkFreeClip(file(FREE_CLIP_LIMITS.bytes),7200);checkFreeClip(file(100));});
+test('each section is sent with its place in the recording, and a language only when chosen',async()=>{
+ const c=createTrialClient();const blob=new Blob(['x'],{type:'audio/ogg'});
+ await c.transcribeSection({section:2,count:12,total:7200,size:5000000,language:''},blob);
+ await c.transcribeSection({section:0,count:1,total:10,size:100,language:'es'},blob);
+ const [a,b]=requests.map(r=>new URL(r.url,'https://outloud.test'));
+ assert.equal(a.pathname,'/api/trial');assert.deepEqual(Object.fromEntries(a.searchParams),{op:'transcribe',section:'2',count:'12',total:'7200',size:'5000000'});
+ assert.equal(b.searchParams.get('lang'),'es');
+ assert.equal(requests[0].options.method,'POST');assert.equal(requests[0].options.headers['Content-Type'],'audio/ogg');assert.equal(requests[0].options.body,blob);
 });
-const file=size=>({size,arrayBuffer:async()=>new ArrayBuffer(1)});
-test('rejects over 300 MB before decoding or spending a transcription',async()=>{const c=createTrialClient(x=>x);await assert.rejects(c.prepare(file(FREE_CLIP_LIMITS.bytes+1)),/300 MB/);assert.equal(decodes,0);assert.equal(requests,0);});
-test('rejects over 60 seconds before transcription',async()=>{duration=60.01;const c=createTrialClient(x=>x);await assert.rejects(c.prepare(file(100)),/longer than 60/);assert.equal(requests,0);});
-test('accepts exact limits; analysis reuses preflight audio and request',async()=>{const c=createTrialClient(x=>new Blob(['wav']));const f=file(FREE_CLIP_LIMITS.bytes);await c.prepare(f);assert.equal(requests,0);await c.transcribe(f);await c.transcribe(f);assert.equal(decodes,1);assert.equal(requests,1);});
-test('unreadable audio is rejected with recovery guidance and can retry',async()=>{const c=createTrialClient(x=>x),f=file(100);broken=true;await assert.rejects(c.prepare(f),/MP3, WAV or M4A/);broken=false;await c.prepare(f);assert.equal(decodes,2);assert.equal(requests,0);});
+test('server errors surface as readable messages',async()=>{global.fetch=async()=>new Response(JSON.stringify({error:'Your free session covers one recording.'}),{status:403});await assert.rejects(createTrialClient().transcribeSection({section:0,count:1,total:10,size:1},new Blob(['x'])),/one recording/);});

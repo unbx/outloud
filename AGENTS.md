@@ -38,7 +38,7 @@ Unreleased branches at the time of writing:
 | Branch | What it does | Status |
 |---|---|---|
 | `feature/people` | Link repeated voices across sections ("Same person as…") | Ready to review |
-| `feature/intake-limits` | Free-session file limit 300 MB → 80 MB | Ready to review |
+| `feature/intake-limits` | Free sessions take one recording up to 2 hours / 300 MB (was 60 seconds), sent in server-measured sections | Ready to review |
 | `feature/url-import` | Import audio from YouTube / recorded X Space links via a worker | **Do not merge or deploy without Sean's explicit go-ahead.** The worker uses yt-dlp, which raises platform terms questions, and it is not hosted yet. |
 
 ## Test and preview
@@ -83,6 +83,10 @@ standing rule for this repo.
 - **Never merge speakers automatically.** Speaker IDs are only stable within one transcription
   section; only the user links voices.
 - Claims stay honest: no virality predictions, no claims about vocal delivery from text.
+- **Free sessions are billed by measured audio, never by what the browser declares.** `lib/trial-audio.mjs`
+  measures every section from its bytes (WAV from PCM length, Opus from each packet's TOC byte), and
+  `api/trial.js` recomputes each section's bounds itself. Keep both; they are what stops a tampered
+  client from transcribing hours on the shared key.
 
 ## Known facts and open issues
 
@@ -94,3 +98,6 @@ standing rule for this repo.
   **unmeasured**. Measure it before changing the dub cap.
 - The live analysis model defaults to `gpt-6-astra` (`MOMENTS_MODEL` is not set on Vercel).
 - The shared ElevenLabs key ("OutLoud beta") has a limit of 60,000 credits per refresh period.
+- With 2-hour free sessions, each one can use about 2,400 credits, and the daily budget allows 25
+  (`reserve('captions')` in `api/trial.js`). That is the whole 60,000-credit period in one day if
+  every visitor uploads 2 hours. Lower the daily count or the key's cap if that becomes a problem.
