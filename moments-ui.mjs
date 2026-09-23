@@ -378,7 +378,7 @@ export function initMoments(app) {
     root.querySelectorAll('.moment-card-clock').forEach(n => { n.querySelector('.clock-current').textContent = timeLabel(t-a); n.querySelector('.clock-total').textContent = timeLabel(b-a); });
     root.querySelectorAll('.moment-card-seek').forEach(n => { n.value = b > a ? (t-a)/(b-a)*1000 : 0; n.disabled = !item || generating; n.setAttribute('aria-valuetext', `${timeLabel(t-a)} of ${timeLabel(b-a)}`); });
     root.querySelectorAll('.moment-card-preview-note').forEach(n => n.textContent = samplePreview ? (searchPreview ? 'Search preview · not added to moments' : 'Speaker sample') : $('momentContext').checked ? 'Preview includes surrounding audio' : 'Listen to this moment');
-    root.querySelectorAll('[data-transport]').forEach(control => { control.disabled = !item || generating; });
+    root.querySelectorAll('[data-transport],[data-mark]').forEach(control => { control.disabled = !item || generating; });
     $('momentPlaybackTime').querySelector('.clock-current').textContent = timeLabel(t-a);
     $('momentPlaybackTime').querySelector('.clock-total').textContent = timeLabel(b-a);
     $('transportState').textContent = playing ? 'PLAYING' : t >= b && b > a ? 'END' : 'READY';
@@ -423,6 +423,28 @@ export function initMoments(app) {
     if (resume && action !== 'end' && t < b) { preview(t,b,item.article); previewStart = a; }
     syncPlayback();
   }));
+  // Mark in / mark out: set a selection edge to the playhead, as the IN and OUT keys on a recorder
+  // do. Marking the start mid-playback keeps playing, so a passage can be marked in one listen;
+  // marking the end is where that listen stops. An edge that would cross the other keeps the
+  // selection's length rather than collapsing it.
+  function mark(edge) {
+    const item = choices.find(m => m.id === selectedId);
+    if (!item || generating || busy) return;
+    const resume = playing && edge === 'in', t = player.currentTime;
+    const keep = Math.max(0.3, item.end - item.start);
+    let a = item.start, b = item.end;
+    if (edge === 'in') { a = t; if (b - a < 0.3) b = Math.min(duration, a + keep); }
+    else { b = t; if (b - a < 0.3) a = Math.max(0, b - keep); }
+    item.startInput.value = a.toFixed(1); item.endInput.value = b.toFixed(1); item.refresh();
+    if (resume) { const [lo, hi] = playbackBounds(); if (t < hi) { preview(t, hi, item.article); previewStart = lo; } }
+    syncPlayback();
+  }
+  root.querySelectorAll('[data-mark]').forEach(control => control.addEventListener('click', () => mark(control.dataset.mark)));
+  document.addEventListener('keydown', e => {
+    if (root.hidden || e.metaKey || e.ctrlKey || e.altKey || e.repeat || /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName) || e.target.isContentEditable) return;
+    const edge = e.key === 'i' || e.key === 'I' ? 'in' : e.key === 'o' || e.key === 'O' ? 'out' : null;
+    if (edge) { e.preventDefault(); mark(edge); }
+  });
   $('momentContext').addEventListener('change', () => {
     stop(); samplePreview = false; const [a,b] = playbackBounds(); player.currentTime = a;
     timeline.window(a,b); syncPlayback();

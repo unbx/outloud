@@ -577,3 +577,32 @@ body .modal-close{position:absolute;top:16px;right:16px;display:grid;place-items
 }
 @media(max-width:400px){.workspace-handoff #momentScope,.workspace-handoff #momentTarget{font-size:12.5px;padding:6px 22px 6px 8px}}
 @media(max-width:370px){.workspace-timeline .waveform-trim-fields #tlSelectedLength .trim-field-title{letter-spacing:0}}
+
+/* Two display windows: where you are (playback) and what you selected (start, end, duration),
+   split by a small gap rather than sharing one bezel. */
+.workspace-timeline .moment-transport{column-gap:6px;background:transparent;border:0;box-shadow:none;overflow:visible}
+.workspace-timeline .transport-display,.workspace-timeline .waveform-trim-fields{background:#0C0E0F;border:1px solid #3A4347;border-radius:6px;box-shadow:inset 0 1px 3px #000C,inset 0 0 0 1px #0008,0 1px 0 #FFFFFF14;overflow:hidden}
+.workspace-timeline .transport-display{border-right:1px solid #3A4347}
+/* The ready light sits on the playback display, beside its caption. */
+.workspace-timeline .clock-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+.workspace-timeline .clock-head .transport-state{font:500 8px/1 var(--font);letter-spacing:.12em;color:#8DA2A9;white-space:nowrap}
+.workspace-timeline .clock-head .transport-state::before{width:5px;height:5px;margin-right:5px;vertical-align:1px}
+/* Centered transport, bracketed by IN and OUT: the row reads like a selection around the keys. */
+.workspace-timeline .transport-console{justify-content:center}
+.workspace-timeline .transport-keys{justify-content:center}
+.workspace-timeline .transport-mark{width:44px;gap:2px;font:600 10px var(--font);letter-spacing:.06em;color:#343838}
+.workspace-timeline .transport-mark span{margin:0;font-size:10px}
+.workspace-timeline .transport-mark svg{width:14px;height:20px;fill:none;stroke:#C9971C;stroke-width:2.4;stroke-linecap:square}
+@media(max-width:560px){
+  .workspace-timeline .moment-transport{column-gap:5px}
+  .workspace-timeline .clock-head .transport-state{font-size:0;letter-spacing:0}
+  .workspace-timeline .clock-head .transport-state::before{margin:0}
+  /* Seven keys across a phone: the brackets are slim, and every key eases down on narrow screens. */
+  .workspace-timeline .transport-keys{gap:5px;width:100%}
+  .workspace-timeline .transport-key{width:auto;flex:0 1 44px;min-width:34px;height:46px}
+  .workspace-timeline .transport-mark{flex:0 1 38px;min-width:30px;flex-direction:column;gap:0}
+  .workspace-timeline .transport-mark span{font-size:8px;line-height:1}
+  .workspace-timeline .transport-mark svg{height:16px}
+  .workspace-timeline .transport-mark[data-mark=out]{flex-direction:column-reverse}
+  body #momentPlayToggle{width:auto;flex:0 1 52px;min-width:44px;height:52px}
+}

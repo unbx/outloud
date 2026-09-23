@@ -114,7 +114,7 @@ export function createTimeline(root, events) {
     <div class="tl-speakers" aria-label="Speaker turns"></div>
     <p id="tlHint" class="tl-wave-error" role="status" hidden></p>
         <div class="moment-transport" id="momentTransport">
-          <div class="transport-display"><div class="playback-clock"><span class="display-caption">PLAYBACK</span><span id="momentPlaybackTime" aria-label="Playback elapsed and total time"><span class="clock-current">0:00.0</span><span class="clock-divider">/</span><span class="clock-total">0:00.0</span></span></div><div class="source-meter" title="Source level at the playback position"><span class="display-caption" id="meterCaption">SOURCE LEVEL</span><div class="meter-channel"><span id="meterLeftLabel">L</span><meter id="meterLeft" min="-60" max="0" value="-60" aria-label="Left source level in decibels"></meter></div><div class="meter-channel" id="meterRightRow"><span>R</span><meter id="meterRight" min="-60" max="0" value="-60" aria-label="Right source level in decibels"></meter></div></div></div>
+          <div class="transport-display"><div class="playback-clock"><div class="clock-head"><span class="display-caption">PLAYBACK</span><span class="transport-state" id="transportState">READY</span></div><span id="momentPlaybackTime" aria-label="Playback elapsed and total time"><span class="clock-current">0:00.0</span><span class="clock-divider">/</span><span class="clock-total">0:00.0</span></span></div><div class="source-meter" title="Source level at the playback position"><span class="display-caption" id="meterCaption">SOURCE LEVEL</span><div class="meter-channel"><span id="meterLeftLabel">L</span><meter id="meterLeft" min="-60" max="0" value="-60" aria-label="Left source level in decibels"></meter></div><div class="meter-channel" id="meterRightRow"><span>R</span><meter id="meterRight" min="-60" max="0" value="-60" aria-label="Right source level in decibels"></meter></div></div></div>
           <div class="waveform-trim-fields" role="group" aria-label="Adjust selected clip">
             <label for="waveformStart"><span class="trim-field-title">Start<span class="trim-unit"> · s</span></span><input id="waveformStart" type="number" min="0" step="0.1" data-edit aria-label="Waveform start in seconds" /></label>
             <label for="waveformEnd"><span class="trim-field-title">End<span class="trim-unit"> · s</span></span><input id="waveformEnd" type="number" min="0" step="0.1" data-edit aria-label="Waveform end in seconds" /></label>
@@ -122,12 +122,14 @@ export function createTimeline(root, events) {
           </div>
         </div>
         <div class="transport-console"><div class="transport-keys" role="group" aria-label="Playback controls">
+          <button type="button" class="transport-key transport-mark" data-mark="in" aria-label="Mark in: set the start to the playhead" title="Mark in (I)" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4H6v16h5"/></svg><span>IN</span></button>
           <button type="button" class="transport-key" data-transport="start" aria-label="Go to beginning of clip" title="Beginning of clip" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5v14M19 5L8 12l11 7z"/></svg></button>
           <button type="button" class="transport-key" data-transport="back" aria-label="Back 15 seconds" title="Back 15 seconds" disabled>−15<span>s</span></button>
           <button type="button" id="momentPlayToggle" class="moment-button" disabled>Play</button>
           <button type="button" class="transport-key" data-transport="forward" aria-label="Forward 15 seconds" title="Forward 15 seconds" disabled>+15<span>s</span></button>
           <button type="button" class="transport-key" data-transport="end" aria-label="Go to end of clip" title="End of clip" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 5v14M5 5l11 7-11 7z"/></svg></button>
-          </div><span class="transport-state" id="transportState">READY</span></div>
+          <button type="button" class="transport-key transport-mark" data-mark="out" aria-label="Mark out: set the end to the playhead" title="Mark out (O)" disabled><span>OUT</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 4h5v16h-5"/></svg></button>
+          </div></div>
         <details class="transport-options"><summary>Playback options</summary><label><input type="checkbox" id="momentContext" /> Include surrounding audio</label><span id="momentPlaybackNote">Preview selected clip</span></details>
 `;
   const $ = selector => root.querySelector(selector);
