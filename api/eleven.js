@@ -15,6 +15,8 @@
 // (TTS) both pass through untouched — we stream the raw request body and forward the caller's
 // Content-Type (boundary included) verbatim.
 
+import { logEvent, countryOf } from "../lib/usage-log.mjs";
+
 export const config = { api: { bodyParser: false } };
 
 export default async function handler(req, res) {
@@ -102,13 +104,14 @@ export default async function handler(req, res) {
   if (feature) {
     await logEvent({
       feature,
+      plan: "pro",
       target_lang: cleanTag(req.headers["x-ol-lang"], 12),
       // which design controls were touched before this generation ("none" if untouched) —
       // tells us whether the design panel is being found and used, not just shipped
       design: cleanTag(req.headers["x-ol-design"], 80),
       ok: upstream.ok,
       status: upstream.status,
-      country: cleanTag(req.headers["x-vercel-ip-country"], 2),
+      country: countryOf(req),
       ms: Date.now() - start,
       bytes: buf.length,
     });
@@ -132,25 +135,6 @@ export default async function handler(req, res) {
 function cleanTag(v, max) {
   const s = String(v || "").trim();
   return s ? s.slice(0, max) : null;
-}
-
-// Fire an event row into Supabase (REST). Best-effort: never throws, never blocks past the timeout.
-async function logEvent(row) {
-  const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_SERVICE_KEY;
-  if (!url || !key) return;
-  try {
-    await fetch(url.replace(/\/+$/, "") + "/rest/v1/events", {
-      method: "POST",
-      headers: {
-        apikey: key,
-        Authorization: "Bearer " + key,
-        "Content-Type": "application/json",
-        Prefer: "return=minimal",
-      },
-      body: JSON.stringify(row),
-      signal: AbortSignal.timeout(2500),
-    });
-  } catch (_) { /* analytics is best-effort */ }
 }
 
 // Stream the raw request body into a Buffer (bodyParser is disabled above).

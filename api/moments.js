@@ -1,3 +1,4 @@
+import { logEvent, countryOf } from '../lib/usage-log.mjs';
 import { timingSafeEqual } from 'node:crypto';
 import { validateSegments, validateCandidates, candidateSchema } from '../moments-core.mjs';
 
@@ -49,6 +50,9 @@ export default async function handler(req, res) {
     if (speaker && !segments.some(s => s.speaker === speaker)) throw new Error('Unknown speaker.');
   } catch (e) { return res.status(400).json({ error: e.message || 'Invalid request.' }); }
   try {
+    const started = Date.now(), plan = own ? 'own-keys' : 'pro';
+    const span = segments.length ? Math.round(segments[segments.length - 1].end - segments[0].start) : 0;
+    const usage = (ok, status) => logEvent({ feature: 'analyze', plan, ok, status, country: countryOf(req), ms: Date.now() - started, seconds: span });
     const upstream = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       signal: AbortSignal.timeout(110000), body: JSON.stringify({
@@ -72,6 +76,7 @@ Return fewer clips or an empty array if no complete passages fit.`,
     if (!upstream.ok) {
       const status = upstream.status;
       const body = await upstream.json().catch(() => ({}));
+      await usage(false, status);
       return res.status(status === 401 ? 401 : status === 429 ? 429 : 502).json(analysisError(status, body?.error || {}));
     }
     const result = await upstream.json();
@@ -80,6 +85,7 @@ Return fewer clips or an empty array if no complete passages fit.`,
       .filter(c => c.type === 'output_text').map(c => c.text).join('');
     const parsed = JSON.parse(text);
     const moments = validateCandidates(parsed.moments, segments, min, max, speaker);
+    await usage(true, 200);
     return res.status(200).json({ moments });
   } catch (_) {
     return res.status(502).json({ error: 'Analysis could not finish. Your transcript is kept in this tab; try again.' });

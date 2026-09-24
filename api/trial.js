@@ -1,6 +1,7 @@
 import {timingSafeEqual} from 'node:crypto';
 import {begin,readSession,get,put,del,reserve,fail,ensureBucket,dayNow,ipKey} from '../lib/trial-store.mjs';
 import {SECTION,measureSection} from '../lib/trial-audio.mjs';
+import {logEvent,countryOf} from '../lib/usage-log.mjs';
 export const config={maxDuration:120,api:{bodyParser:false}};
 // Free plan: captions for one selected clip at a time, up to two minutes, measured here from the
 // audio itself. Three clips a visitor a day, six a network (so clearing cookies can't reset it,
@@ -38,7 +39,8 @@ export default async function handler(req,res){
    if(measured.seconds>FREE.clipSeconds+0.5)throw fail('Free captions cover up to two minutes. Trim your selection and try again.',413);
    if(!process.env.ELEVENLABS_API_KEY)throw fail('Captions are temporarily unavailable.',503);
    const lang=typeof req.query?.lang==='string'&&/^[a-z]{2,3}$/.test(req.query.lang)?req.query.lang:'';
-   const s=await begin(req,res),day=dayNow();
+   const s=await begin(req,res),day=dayNow(),started=Date.now();
+   const usage=(ok,status)=>logEvent({feature:'free-caption',plan:'free',target_lang:lang||null,ok,status,country:countryOf(req),ms:Date.now()-started,bytes:audio.length,seconds:Math.round(measured.seconds*10)/10});
    // Visitor, then network, then the global budget. Anything taken is handed back if a later
    // limit or the provider fails, so a refused or failed clip never counts against anyone.
    const taken=[];
@@ -53,10 +55,11 @@ export default async function handler(req,res){
     const form=new FormData();form.append('file',new Blob([audio],{type:measured.kind==='opus'?'audio/ogg':'audio/wav'}),measured.kind==='opus'?'clip.ogg':'clip.wav');
     form.append('model_id','scribe_v2');form.append('tag_audio_events','false');if(lang)form.append('language_code',lang);
     const upstream=await fetch('https://api.elevenlabs.io/v1/speech-to-text',{method:'POST',headers:{'xi-api-key':process.env.ELEVENLABS_API_KEY},body:form,signal:AbortSignal.timeout(100000)});
-    if(!upstream.ok)throw fail('Captioning paused. Your free clip was not used; please try again.',502);
+    if(!upstream.ok){await usage(false,upstream.status);throw fail('Captioning paused. Your free clip was not used; please try again.',502);}
     const result=await upstream.json();
     const words=(Array.isArray(result.words)?result.words:[]).filter(w=>w&&w.type==='word'&&typeof w.text==='string'&&Number.isFinite(w.start)&&Number.isFinite(w.end))
      .map(w=>({type:'word',text:w.text,start:w.start,end:w.end}));
+    await usage(true,200);
     return res.status(200).json({words,language_code:typeof result.language_code==='string'?result.language_code:null,clipsLeft:await clipsLeft(s)});
    }catch(e){if(taken.length)await del(taken).catch(()=>{});throw e;}
   }
