@@ -913,3 +913,14 @@ body #playbar #playBtn .ic svg{width:29px;height:29px;fill:currentColor;stroke:n
 .case-seg button{width:40px;padding:0;font:600 14px var(--font);letter-spacing:.02em;text-transform:none!important}
 .case-seg button.sel{background:#D8E6E1!important;color:#1E4F47!important}
 .case-seg button:disabled{opacity:.4;cursor:not-allowed}
+
+/* Free vs Pro (2026-09-24): PRO tags on Pro-only controls while on Free, the locked watermark,
+   and the line on the Pro sheet naming the feature that opened it */
+body[data-plan="free"] #findMoments::after{content:"PRO";margin-left:8px;padding:1px 5px 0;border:1px solid currentColor;border-radius:3px;font:600 9px/1.4 var(--mono);letter-spacing:.08em;opacity:.8;vertical-align:1px}
+.watermark-toggle.pro-locked{opacity:.75}
+.watermark-toggle.pro-locked::after{content:"PRO";margin-left:6px;padding:1px 4px 0;border:1px solid #605D59;border-radius:3px;font:600 8px/1.4 var(--mono);letter-spacing:.08em;color:#605D59}
+.splash-pro-note{margin:0 0 16px;padding:10px 12px;border:1px solid #27695F55;border-left:3px solid #27695F;border-radius:5px;background:#27695F10;font-size:13.5px;line-height:1.5;color:#1E4F47}
+.splash-pro-note[hidden]{display:none}
+#trialRequest{font-weight:600}
+#splash .splash-og[hidden],#splash .splash-tag[hidden],#splash .splash-beta[hidden]{display:none}
+#splash #trialStart.secondary{margin-top:12px}

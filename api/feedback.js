@@ -1,4 +1,3 @@
-import {completed} from '../lib/trial-store.mjs';
 import { normalizeX } from "../beta-access.mjs";
 // Feedback → email via Resend. Configure RESEND_API_KEY on the Vercel project
 // (optional: FEEDBACK_TO / FEEDBACK_FROM). Without the key this returns 501 and the
@@ -26,15 +25,15 @@ export default async function handler(req, res) {
   const topic = String(body.topic || "Feedback").slice(0, 60);
   const from = String(body.from || "").trim().slice(0, 120);
   let message = String(body.message || "").trim().slice(0, 5000);
-  if (topic === 'Beta access') {
+  // "Pro access" is the request form on the welcome screen. Pages loaded before the rename still
+  // send "Beta access", which is the same request.
+  if (topic === 'Pro access' || topic === 'Beta access') {
     const account = normalizeX(body.xAccount);
     if (body.website || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(from) || !account) {
       res.status(400).json({ error: 'Enter a valid email and X account.' });
       return;
     }
-    try { if(!await completed(req)){res.status(403).json({error:'Make your free clip before requesting beta access.'});return;} }
-    catch(e){res.status(e.status||503).json({error:e.message});return;}
-    message = `New OutLoud beta access request\n\nEmail: ${from}\nX: ${account}\nProfile: https://x.com/${account.slice(1)}\n\nReply to this email to send the tester password after review.`;
+    message = `New OutLoud Pro access request\n\nEmail: ${from}\nX: ${account}\nProfile: https://x.com/${account.slice(1)}\n\nReply to this email to send the Pro password after review.`;
   }
   if (!message) {
     res.status(400).json({ error: "Empty message." });

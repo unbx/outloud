@@ -832,7 +832,7 @@
     <button class="keybtn" id="keyBtn" title="Manage your ElevenLabs connection"><span class="dot" id="keyDot"></span><span class="keybtn-label" id="keyLabel">Connect</span></button>
   </div>
 </header>
-<div id="trialBanner" hidden><span id="trialBannerText">Free session · one recording up to 2 hours · captions & analysis</span><button type="button" class="foot-link" id="trialRequest" hidden>Request beta access →</button></div>
+<div id="trialBanner" hidden><span id="trialBannerText">Free · captions up to 2 minutes · 3 clips a day</span><button type="button" class="foot-link" id="trialRequest">Go Pro →</button></div>
 
 
 <!-- Shared holo stroke for the dashed intake frames. A CSS border can't carry a gradient, and
@@ -1225,7 +1225,7 @@
     <button type="button" class="foot-link" id="whyLink">Why OutLoud</button>
     <button type="button" class="foot-link" id="aboutLink">Roadmap</button>
     <button type="button" class="foot-link" id="feedbackBtn">Send feedback</button>
-    <button type="button" class="foot-link" id="footerBetaAccess">Request full beta access</button>
+    <button type="button" class="foot-link" id="footerBetaAccess">Get Pro access</button>
     <button type="button" class="foot-link" id="privacyBtn">How your data is handled</button>
   </div>
   <a class="nana-credit" id="nanaCredit" href="https://nana.works" target="_blank" rel="noopener" title="nana.works" aria-label="Made by NANA — nana.works"></a>
@@ -1261,11 +1261,12 @@
     </h2>
     <img class="splash-og" src="outloud-og-v9.png" width="1200" height="630" loading="lazy" decoding="async"
       alt="OutLoud: clip moments that deserve to be heard. A captioned audiogram beside the Input, Clip, Design and Share steps." />
-    <div class="info-eyebrow">EARLY ACCESS / OUTLOUD BETA</div>
+    <div class="info-eyebrow">FREE AUDIOGRAM MAKER</div>
     <h3 class="beta-headline">Good moments deserve to be heard.</h3>
     <p class="splash-tag">Find the moment. Shape your clip. Share it with your community.</p>
-    <p class="splash-beta">Your first clip is on us. Try one recording up to 2 hours and 300 MB: find a moment, add captions, design it and download your audiogram. Original audio only; dubbing is reserved for testers. After making your first clip, request beta access.</p>
-    <button type="button" class="btn" id="trialStart">TRY A FREE CLIP →</button><p id="trialStatus" role="status" aria-live="polite"></p>
+    <p class="splash-beta">Upload a recording up to 2 hours, trim your moment, add captions up to 2 minutes, design it and download. Free, 3 clips a day, no signup.</p>
+    <p class="splash-pro-note" id="proFeatureNote" hidden></p>
+    <button type="button" class="btn" id="trialStart">MAKE AN AUDIOGRAM, FREE →</button><p id="trialStatus" role="status" aria-live="polite"></p>
     <form id="betaAccessForm" hidden>
       <div class="beta-fields">
         <label for="betaEmail">EMAIL<input id="betaEmail" name="email" type="email" autocomplete="email" maxlength="120" required placeholder="you@example.com" /></label>
@@ -1273,15 +1274,15 @@
       </div>
       <p class="fine" id="betaXHelp">Enter your @handle or X profile link.</p>
       <div class="beta-honey" aria-hidden="true"><label>Website<input name="website" tabindex="-1" autocomplete="off" /></label></div>
-      <p class="fine">Your email and X account go to NANA to review and respond to your access request.</p>
-      <button type="submit" class="btn" id="betaSubmit">REQUEST BETA ACCESS →</button>
+      <p class="fine">Your email and X account go to NANA to review your Pro request. You'll get your Pro password by email.</p>
+      <button type="submit" class="btn" id="betaSubmit">REQUEST PRO ACCESS →</button>
       <p id="betaRequestStatus" role="status" aria-live="polite" tabindex="-1"></p>
       <a id="betaEmailFallback" href="mailto:sean@nana.works?subject=OutLoud%20beta%20access" hidden>Email your request instead</a>
     </form>
-    <p class="fine" id="trialTerms">One recording per session. Free capacity is limited each day. No password or signup needed to try.</p>
+    <p class="fine" id="trialTerms">Pro adds ANALYZE to find the best moments in long recordings, dubbing into other languages, longer captions, and no watermark.</p>
     <div class="splash-actions">
-      <button type="button" class="btn secondary" id="splashConnect">I have a password</button>
-      <button type="button" class="foot-link" id="splashStart">Explore the workspace</button>
+      <button type="button" class="btn secondary" id="splashConnect">I have a Pro password</button>
+      <button type="button" class="foot-link" id="splashPro">Get Pro access</button>
       <button type="button" class="foot-link" id="splashAbout">Roadmap</button>
     </div>
     </div>
@@ -1303,7 +1304,7 @@
 <details><summary>Do I have to analyze a recording?</summary><p>No. You can trim a passage or use the full recording and create captions directly. Analyze when you want suggested moments or transcript search.</p></details>
 <details><summary>Can I paste a podcast, YouTube, or Space URL?</summary><p>Direct URL import is not available in this version. Upload a recording, use your microphone, or capture tab audio where supported.</p></details>
 <details><summary>Which languages and downloads are supported?</summary><p>Use original-language captions or choose a supported dubbing language in the app. Download audio and SRT / VTT captions. Video format depends on the browser; check the Share tab for the available format.</p></details>
-<details><summary>What do I need to use OutLoud?</summary><p>Try one recording up to 2 hours without a password: analyze it, add original-audio captions, design an audiogram, and download it. Free sessions have limited daily capacity and do not include dubbing. After making your first clip, request beta access with your email and X account. Existing tester passwords and your own API keys keep their current access. Recording and capture features depend on browser permissions and support.</p></details>
+<details><summary>What do I need to use OutLoud?</summary><p>Nothing, to start. OutLoud is free for clips: upload a recording up to 2 hours, trim your moment, and add captions up to 2 minutes, 3 clips a day, with no signup. Free exports carry a small NANA mark. Pro adds ANALYZE (suggested moments and transcript search across long recordings), dubbing into other languages, captions up to 12 minutes, and the watermark toggle. Request Pro access with your email and X account, or connect your own API keys. Recording and capture features depend on browser permissions and support.</p></details>
 <details><summary>Is all processing local?</summary><p>No. The visual composition renders in your browser. Transcription, dubbing, and optional moment analysis use processing services. Open “How your data is handled” in the app for details before processing a recording.</p></details>
 <p class="end">Built by <a href="https://nana.works/">NANA</a>. Good moments deserve to be heard.</p></div>
 </dialog>
@@ -1355,7 +1356,7 @@
       <option value="Bug report">Bug report</option>
       <option value="Feature idea">Feature idea</option>
       <option value="API / developer access">API / developer access</option>
-      <option value="Tester code request">Tester code request</option>
+      <option value="Pro password request">Pro password request</option>
     </select>
     <label for="fbEmail">Your email <span class="sub">· optional, for replies</span></label>
     <input id="fbEmail" type="email" placeholder="you@example.com" />
@@ -1374,11 +1375,11 @@
     <ul class="data-list">
       <li><strong>Your API key</strong> is stored only in your browser and sent straight to ElevenLabs with each request. It never reaches NANA's servers. Disconnecting clears it.</li>
       <li><strong>Your recordings</strong> are sent to ElevenLabs when you request transcription or dubbing. Translations use Google Translate. NANA does not retain uploaded audio. Free-session transcript storage is described below.</li>
-      <li><strong>Find moments</strong> sends recording sections to ElevenLabs for transcription, then the transcript and your brief through OutLoud to OpenAI for recommendations. For connected testers, OutLoud keeps the transcript in this tab only, until the recording is replaced or the page reloads. Free sessions also use temporary private server storage. An optional OpenAI key stays in page memory and passes through the server without being saved.</li>
+      <li><strong>Find moments</strong> sends recording sections to ElevenLabs for transcription, then the transcript and your brief through OutLoud to OpenAI for recommendations. It is a Pro feature. OutLoud keeps the transcript in this tab only, until the recording is replaced or the page reloads. An optional OpenAI key stays in page memory and passes through the server without being saved.</li>
       <li><strong>Your audiogram</strong> (captions, audio, and video) is rendered in your browser and downloaded by you. Nothing is uploaded to NANA.</li>
-      <li><strong>Beta access requests</strong> send your email and X account to NANA via our email provider so Sean can review and respond to your request.</li>
-      <li><strong>Free sessions</strong> use a temporary cookie and a hashed network identifier to limit usage. Audio is processed for captions; we temporarily store the transcript, analysis and session usage in private storage to support retries and prevent repeat charges. Records older than three days are removed during subsequent session creation. The free session lasts 24 hours.</li>
-      <li><strong>Tester mode</strong> routes requests through a NANA proxy that adds the owner's key server-side. Your clip passes through on its way to ElevenLabs and isn't retained.</li>
+      <li><strong>Pro access requests</strong> send your email and X account to NANA via our email provider so Sean can review and respond to your request.</li>
+      <li><strong>Free clips</strong> use a temporary cookie and a hashed network identifier to count each day's clips. Your clip's audio passes through OutLoud to ElevenLabs for captions and isn't stored. We keep only the daily counts, in private storage, and remove them after three days.</li>
+      <li><strong>Pro</strong> routes requests through a NANA proxy that adds the owner's key server-side. Your clip passes through on its way to ElevenLabs and isn't retained.</li>
     </ul>
     <p class="fine">ElevenLabs, OpenAI and Google process data under their own policies. See <a href="https://openai.com/policies/privacy-policy/" target="_blank" rel="noopener">OpenAI</a>, <a href="https://elevenlabs.io/privacy" target="_blank" rel="noopener">ElevenLabs</a> and <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google</a>.</p>
     <button class="btn secondary" id="privacyClose" style="margin-top:16px;">Close</button>
@@ -1452,14 +1453,14 @@
 <!-- API key modal -->
 <div class="modal studio-info-modal" id="keyModal">
   <div class="card">
-    <h3>Connect OutLoud</h3>
-    <p>One connection for captions, dubbing and finding moments.</p>
+    <h3>Go Pro</h3>
+    <p>Pro unlocks ANALYZE, dubbing, longer captions and the watermark toggle.</p>
     <label for="connectionMode">Connect with</label>
-    <select id="connectionMode"><option value="tester">Tester code</option><option value="own">My own API keys</option></select>
+    <select id="connectionMode"><option value="tester">Pro password</option><option value="own">My own API keys</option></select>
     <div id="testerConnectionFields">
-      <label for="passInput">Tester code</label>
-      <input id="passInput" type="password" autocomplete="off" placeholder="Enter your tester code" />
-      <p class="hint">Use the tester password sent to you. No API keys needed.</p><button type="button" class="foot-link" id="requestBetaAccess">Need a password? Request beta access</button>
+      <label for="passInput">Pro password</label>
+      <input id="passInput" type="password" autocomplete="off" placeholder="Enter your Pro password" />
+      <p class="hint">Use the Pro password sent to you. No API keys needed.</p><button type="button" class="foot-link" id="requestBetaAccess">Need a password? Get Pro access</button>
     </div>
     <div id="ownConnectionFields" hidden>
       <label for="keyInput">ElevenLabs API key</label>
@@ -1475,7 +1476,7 @@
 </div>
 
 <script type="module">
-import { createTrialClient, FREE_CLIP_HINT, checkFreeClip } from "./trial-client.mjs";
+import { createTrialClient, FREE_CLIP_HINT, FREE_CAPTION_SECONDS, FREE_CLIPS_PER_DAY, checkFreeClip } from "./trial-client.mjs";
 import { initBetaAccess } from "./beta-access.mjs";
 import { initMoments } from "./moments-ui.mjs";
 import { rewindForExport } from "./export-start.mjs";
@@ -1704,9 +1705,10 @@ import { rewindForExport } from "./export-start.mjs";
   let openaiKey = "";
   // Connection can be EITHER the user's own key (calls ElevenLabs directly) or a tester password
   // (routes through our /api/eleven proxy, which injects the owner's server-side key).
+  // Plans: everyone starts on Free (clip captions up to two minutes, three a day, through our
+  // /api/trial route). A Pro password or the user's own keys unlock ANALYZE, dubbing and voices.
   const trial = createTrialClient();
-  const isTrial = () => trial.state.active && !apiKey && !testerPass;
-  const isConnected = () => !!apiKey || !!testerPass || trial.state.active;
+  const isFree = () => !apiKey && !testerPass;
   const useProxy = () => !apiKey && !!testerPass;
   const elevenURL = (path) => useProxy() ? ("/api/eleven/" + path) : ("https://api.elevenlabs.io/v1/" + path);
   // ---------- Which design controls actually get used ----------
@@ -1756,7 +1758,7 @@ import { rewindForExport } from "./export-start.mjs";
   // (or `npx vercel dev`); a plain `serve`/`http-server` can't run it.
   const proxyMissing = (resp) => useProxy() && resp.status === 404 &&
     (resp.headers.get("content-type") || "").includes("text/html");
-  const PROXY_MISSING_MSG = "Tester mode needs the deployed site — this local server has no /api proxy. Open the live site, run “npx vercel dev”, or connect your own ElevenLabs API key.";
+  const PROXY_MISSING_MSG = "Pro needs the deployed site — this local server has no /api proxy. Open the live site, run “npx vercel dev”, or connect your own ElevenLabs API key.";
   let audioCtx, analyser, sourceNode, streamDest, freqData, waveData;
   let rafId = null;
   let recording = false;   // true while exporting video — frames are driven by a Worker, not rAF
@@ -2004,7 +2006,7 @@ import { rewindForExport } from "./export-start.mjs";
   const capNote = $("#capNote");
   let clipSeconds = 0; // best-known duration of the loaded clip, 0 until probed
   function syncCapNote() {
-    if (isTrial()) { capNote.hidden = false; capNote.textContent = FREE_CLIP_HINT; return; }
+    if (isFree()) { capNote.hidden = false; capNote.textContent = FREE_CLIP_HINT; return; }
     if (!useProxy() || mode !== "dub") { capNote.hidden = true; return; }
     const isCap = captionOnly();
     const cap = capFor(isCap);
@@ -2051,8 +2053,6 @@ import { rewindForExport } from "./export-start.mjs";
   dubSourceSel.addEventListener("change", syncSrcLine);
 
   function updateGenLabel() {
-    const connected = isConnected();
-    if (!connected) { genLbl.textContent = "Connect to generate"; genIc.innerHTML = ICONS["key-round"] || ""; return; }
     genLbl.textContent = mode === "dub" ? (captionOnly() ? "Caption clip" : "Dub & caption") : "Generate audiogram";
     genIc.innerHTML = ICONS["mic"] || "";
   }
@@ -2136,7 +2136,7 @@ import { rewindForExport } from "./export-start.mjs";
     const version = ++intakeVersion;
     const notice = $("#uploadValidation");
     notice.hidden = true;
-    if (file && isTrial()) {
+    if (file && isFree()) {
       notice.hidden = false; notice.style.color = "#27695F"; notice.textContent = "Checking your recording’s size and length…";
       notice.setAttribute('role','status');
       try {
@@ -2242,10 +2242,11 @@ import { rewindForExport } from "./export-start.mjs";
     const len = selR - selL;
     let txt = "Selection: " + fmtT1(len);
     let over = false;
-    if (useProxy()) {
-      const cap = capFor(captionOnly());
+    if (useProxy() || isFree()) {
+      const cap = isFree() ? FREE_CAPTION_SECONDS : capFor(captionOnly());
+      const plan = isFree() ? "free" : "Pro";
       over = len > cap;
-      txt += over ? " · over the ~" + fmtT(cap) + " tester limit, trim shorter" : " · fits the tester limit ✓";
+      txt += over ? " · over the " + fmtT(cap) + " " + plan + " limit, trim shorter" : " · fits the " + plan + " limit ✓";
     }
     trimFit.textContent = txt;
     trimFit.classList.toggle("over", over);
@@ -2566,7 +2567,7 @@ import { rewindForExport } from "./export-start.mjs";
     let msg = prefix + " (" + resp.status + ").";
     try { const j = await resp.json(); if (j && j.error) msg = j.error; else if (j && j.detail && j.detail.message) msg = j.detail.message; else if (j && typeof j.detail === "string") msg = j.detail; } catch (_) {}
     if (resp.status === 402) return new Error(msg); // beta usage limit — message already actionable
-    if (resp.status === 401) msg = "Tester password or key rejected — re-open the connection dialog.";
+    if (resp.status === 401) msg = "Pro password or key rejected. Re-open the connection dialog.";
     else if (resp.status === 403 || resp.status === 404) msg += " Your ElevenLabs key may lack Dubbing access.";
     return new Error(msg);
   }
@@ -2838,10 +2839,9 @@ import { rewindForExport } from "./export-start.mjs";
   }
 
   async function runDub() {
-    if (!isConnected()) { openKeyModal(); return; }
     if (!dubFile) { setStatus("Upload an audio or video clip first.", "err"); return; }
     const target = dubTargetSel.value, source = dubSourceSel.value;
-    if (isTrial() && target !== "same") { setStatus("Dubbing is available with a tester password. Your free session includes original-audio captions.", "err"); return; }
+    if (isFree() && target !== "same") { openPro("dub"); return; }
 
     // iOS only lets a media element be play()'d later if it was first play()'d inside a user
     // gesture. If we might need the real-time capture fallback (tester + a video clip
@@ -2870,7 +2870,7 @@ import { rewindForExport } from "./export-start.mjs";
     // audio is sent, so what matters is duration, not video size. Gate on both, cheaply.
     if (useProxy()) {
       if (dubFile.size > MAX_BYTES) {
-        setStatus("In tester mode, clips must be under " + fmtMB(MAX_BYTES) + ". Compress the clip, or connect your own API key.", "err");
+        setStatus("On Pro, clips must be under " + fmtMB(MAX_BYTES) + ". Compress the clip, or connect your own API key.", "err");
         return;
       }
       const clipDur = await probeDuration(dubFile);
@@ -2882,17 +2882,21 @@ import { rewindForExport } from "./export-start.mjs";
       const durCap = capFor(isCaption);
       if (effDur && effDur > durCap) {
         setStatus(isCaption
-          ? "In tester mode, caption clips run up to " + fmtT(durCap) + ". Use Trim on your clip, or connect your own API key."
-          : "In tester mode, dubs run up to " + fmtT(durCap) + " because dubbing costs about nine times what captions do. Trim the clip, switch to captions only, or connect your own API key.", "err");
+          ? "On Pro, caption clips run up to " + fmtT(durCap) + ". Use Trim on your clip, or connect your own API key."
+          : "On Pro, dubs run up to " + fmtT(durCap) + " because dubbing costs about nine times what captions do. Trim the clip, switch to captions only, or connect your own API key.", "err");
         return;
       }
     }
-    // Free sessions pay for transcription once, in sections, so captioning adds no cost. The limit
-    // is about the audiogram itself: the same caption length a tester can render at once.
-    if (isTrial() && target === "same") {
+    // Free captions cover the selected clip only, up to two minutes. A longer recording is fine;
+    // the person trims it in the Clip editor first. The server measures the audio again.
+    if (isFree()) {
       const capLen = trimActive() ? trimEnd - trimStart : await probeDuration(dubFile);
-      if (capLen && capLen > capFor(true)) {
-        setStatus("Free sessions caption up to " + fmtT(capFor(true)) + " at a time. Choose a moment, or trim the recording.", "err");
+      if (capLen && capLen > FREE_CAPTION_SECONDS + 0.4) {
+        setStatus("Free captions cover up to " + fmtT(FREE_CAPTION_SECONDS) + ". Open the Clip editor and drag the waveform edges, or use IN and OUT, to pick up to 2 minutes.", "err");
+        return;
+      }
+      if (trial.state.clipsLeft <= 0) {
+        setStatus("You've made your " + FREE_CLIPS_PER_DAY + " free clips for today. Come back tomorrow, or go Pro for more.", "err");
         return;
       }
     }
@@ -2909,13 +2913,13 @@ import { rewindForExport } from "./export-start.mjs";
       // duration metadata the dubbing ingest needs — re-rendering to WAV is what makes them
       // accepted upstream).
       const trimmed = trimActive();
-      if (isTrial() || trimmed || dubFile.isRecorded || (useProxy() && (dubFile.type.startsWith("video") || dubFile.size > 4_000_000))) {
+      if (isFree() || trimmed || dubFile.isRecorded || (useProxy() && (dubFile.type.startsWith("video") || dubFile.size > 4_000_000))) {
         let usedFallback = false;
         setStatus(trimmed ? "Trimming the clip…" : "Compressing clip…");
         try {
           // own-key uploads have no body cap, so trims keep more fidelity there
           const isCap = target === "same";
-          const rate = isCap ? (useProxy() ? 16000 : 24000) : (useProxy() ? 24000 : 44100);
+          const rate = isCap ? (useProxy() || isFree() ? 16000 : 24000) : (useProxy() ? 24000 : 44100);
           const s = trimmed ? trimStart : 0, e = trimmed ? trimEnd : null;
           // Opus for captions in BOTH modes. It is what makes long clips fit under the proxy's
           // body cap, and own-key uploads get the same speed-up — more importantly it means the
@@ -2961,10 +2965,10 @@ import { rewindForExport } from "./export-start.mjs";
           return fetch(elevenURL("speech-to-text"), { method: "POST", headers: elevenHeaders(), body: sf });
         };
         let j = momentsController?.cachedTranscript(dubFile, trimActive() ? trimStart : 0, trimActive() ? trimEnd : clipSeconds, source);
-        if (isTrial()) {
-          const raw = await momentsController.transcript(dubFile);
-          const a = trimActive() ? trimStart : 0, b = trimActive() ? trimEnd : Infinity;
-          j = {...raw, words: (raw.words || []).filter(w => w.start >= a && w.start < b).map(w => ({...w,start:w.start-a,end:Math.min(w.end,b)-a}))};
+        if (isFree()) {
+          // Free: our server captions just this clip and counts it toward today's three.
+          j = await trial.caption(upload, source && source !== "auto" ? source : "");
+          refreshTrialUI();
         }
         if (!j) {
         let r = await sttCall(STT_MODEL);
@@ -3001,7 +3005,6 @@ import { rewindForExport } from "./export-start.mjs";
         $("#exportGroup").classList.add("ready");
         setStatus(hasTiming ? "Captioned — words highlight in sync. Hit Play." : "Captioned, but no word timings came back. Hit Play.", "ok");
         drawPoster();
-        if (isTrial()) await finishTrial();
         return true;
       }
 
@@ -3391,7 +3394,19 @@ import { rewindForExport } from "./export-start.mjs";
   bgDarkInput.addEventListener("input", () => { bgDark = bgDarkInput.value / 100; drawPoster(); });
 
   // Watermark toggle — show/hide the NANA wordmark on the canvas.
-  $("#watermark").addEventListener("change", (e) => { showWatermark = e.target.checked; drawPoster(); });
+  // Free exports carry the NANA mark, so every shared clip shows where it was made; Pro can turn it off.
+  $("#watermark").addEventListener("change", (e) => {
+    if (isFree() && !e.target.checked) { e.target.checked = true; openPro("watermark"); return; }
+    showWatermark = e.target.checked; drawPoster();
+  });
+  function syncWatermarkLock() {
+    const box = document.getElementById("watermark"); if (!box) return;
+    const label = box.closest(".watermark-toggle");
+    if (isFree()) { showWatermark = true; box.checked = true; }
+    label.classList.toggle("pro-locked", isFree());
+    label.title = isFree() ? "Pro can turn off the NANA mark" : "Show the NANA watermark on the canvas";
+    try { drawPoster(); } catch (_) {} // can run during start-up, before the canvas is ready
+  }
 
   // ---------- Profile photo (PFP) ----------
   const pfpBtn = $("#pfpBtn"), pfpClear = $("#pfpClear"), pfpFile = $("#pfpFile"), pfpThumb = $("#pfpThumb");
@@ -3432,13 +3447,15 @@ import { rewindForExport } from "./export-start.mjs";
   connectionMode.addEventListener("change", syncConnectionFields);
   const genLbl = genBtn.querySelector(".lbl"), genIc = genBtn.querySelector(".ic");
   const refreshKeyUI = () => {
-    const connected = isConnected();
-    keyDot.classList.toggle("ok", connected);
-    keyBtn.classList.toggle("connected", connected);
-    keyLabel.textContent = !connected ? "Connect" : (isTrial() ? "Free session" : useProxy() ? "Tester mode" : "Connected");
-    keyBtn.title = !connected
-      ? "Connect both services with a tester code or your own API keys"
-      : (isTrial() ? "Free session — manage access" : useProxy() ? "Connected via tester password — click to manage" : "Connected with your API key — click to manage");
+    const pro = !isFree();
+    keyDot.classList.toggle("ok", pro);
+    keyBtn.classList.toggle("connected", pro);
+    keyLabel.textContent = isFree() ? "Free" : useProxy() ? "Pro" : "Own keys";
+    keyBtn.title = isFree()
+      ? "Free plan. Have a Pro password? Click to unlock ANALYZE and dubbing."
+      : useProxy() ? "Pro, with your Pro password. Click to manage." : "Connected with your own API keys. Click to manage.";
+    document.body.dataset.plan = isFree() ? "free" : "pro";
+    syncWatermarkLock();
     // Generate button guides to connect when there's no connection yet (mode-aware).
     updateGenLabel();
     syncCapNote(); // caps only apply in tester mode, so they follow the connection state
@@ -3577,58 +3594,77 @@ import { rewindForExport } from "./export-start.mjs";
   splash.querySelector('.splash-card').append(keyModal);
   keyModal.classList.remove('modal'); keyModal.hidden=true;
   let accessReturnFocus=null;
-  function showAccess(view='welcome') {
+  // The welcome card has three views: the welcome itself, the Pro password dialog ('connect'),
+  // and the Pro request form ('pro'). A Pro feature tapped on Free opens the 'pro' view with a
+  // line naming what that feature does, so the sheet explains itself.
+  const PRO_FEATURES = {
+    analyze: "ANALYZE reads your whole recording and suggests the best moments to clip. It's part of Pro.",
+    dub: "Dubbing turns your clip into another language in the speaker's voice. It's part of Pro.",
+    voice: "Write a script and hear it in an ElevenLabs voice. It's part of Pro.",
+    watermark: "Pro can turn off the NANA mark on your exports.",
+    length: "Free captions cover clips up to 2 minutes. Pro captions run up to 12 minutes.",
+  };
+  function showAccess(view='welcome', feature) {
     if (!splash.classList.contains('open')) accessReturnFocus=document.activeElement;
-    const connecting=view==='connect';
+    const connecting=view==='connect', pro=view==='pro';
     accessWelcome.hidden=connecting; keyModal.hidden=!connecting;
-    splash.setAttribute('aria-label',connecting?'Connect OutLoud':'Welcome to OutLoud');
+    $("#betaAccessForm").hidden=!pro;
+    $("#proFeatureNote").hidden=!(pro && feature);
+    $("#proFeatureNote").textContent=PRO_FEATURES[feature]||'';
+    // The Pro view drops the welcome art and leads with the request form; keeping on Free
+    // becomes the quieter, second choice below it.
+    const start = $("#trialStart"), startStatus = $("#trialStatus");
+    start.textContent = pro ? 'KEEP MAKING FREE CLIPS' : 'MAKE AN AUDIOGRAM, FREE →';
+    start.classList.toggle('secondary', pro);
+    if (pro) $("#betaAccessForm").after(start, startStatus); else $("#proFeatureNote").after(start, startStatus);
+    for (const el of accessWelcome.querySelectorAll('.splash-og, .splash-tag, .splash-beta')) el.hidden = pro;
+    $("#splashPro").hidden = pro;
+    accessWelcome.querySelector('.info-eyebrow').textContent = pro ? 'OUTLOUD PRO' : 'FREE AUDIOGRAM MAKER';
+    accessWelcome.querySelector('.beta-headline').textContent = pro ? 'Unlock the full studio.' : 'Good moments deserve to be heard.';
+    splash.setAttribute('aria-label',connecting?'Go Pro':pro?'Get Pro access':'Welcome to OutLoud');
     splash.classList.add('open');
     requestAnimationFrame(()=>{
-      const target=connecting ? (connectionMode.value==='own'?keyInput:passInput) : trial.state.complete ? $("#betaEmail") : isConnected() && !isTrial() ? $("#splashConnect") : $("#trialStart");
+      const target=connecting ? (connectionMode.value==='own'?keyInput:passInput) : pro ? $("#betaEmail") : !isFree() ? $("#splashConnect") : $("#trialStart");
       target.focus();
     });
   }
+  function openPro(feature) { showAccess('pro', feature); }
   const dismissSplash = () => { splash.classList.remove("open"); accessReturnFocus?.focus({preventScroll:true}); try { localStorage.setItem(LS_SEEN, "1"); } catch (_) {} };
   let seenWelcome=false;try{seenWelcome=!!localStorage.getItem(LS_SEEN);}catch(_){}
-  if (!isConnected() && !seenWelcome) showAccess();
+  if (isFree() && !seenWelcome) showAccess();
+  // Free vs Pro across the page: the banner with today's clips left, the Language menus (dubs
+  // wear a PRO tag on Free), and the connection labels.
   function refreshTrialUI() {
-    $("#betaAccessForm").hidden = !trial.state.complete;
-    $("#trialStart").hidden = trial.state.complete;
-    $("#trialTerms").hidden = trial.state.complete;
-    $("#splashConnect").textContent = apiKey || testerPass ? "Manage my connection" : "I have a password";
-    $("#requestBetaAccess").textContent = trial.state.complete ? 'Request beta access' : 'Try a free clip';
-    splash.querySelector('.splash-beta').textContent = trial.state.complete ? 'You made your first moment. Want to keep creating? Leave your email and X account. Sean will review your request and reply with a tester password.' : 'Your first clip is on us. Try one recording up to 2 hours and 300 MB: find a moment, add captions, design it and download your audiogram. Original audio only; dubbing is reserved for testers. After making your first clip, request beta access.';
-    $("#trialBanner").hidden = !isTrial();
+    $("#splashConnect").textContent = apiKey || testerPass ? "Manage my connection" : "I have a Pro password";
+    $("#trialBanner").hidden = !isFree();
+    const left = trial.state.clipsLeft;
+    $("#trialBannerText").textContent = `Free · captions up to 2 minutes · ${left} of ${FREE_CLIPS_PER_DAY} clips left today`;
     $("#freeClipLimits").textContent = FREE_CLIP_HINT;
-    $("#freeClipLimits").hidden = !isTrial();
+    $("#freeClipLimits").hidden = !isFree();
     syncCapNote();
-    $("#trialRequest").hidden = !trial.state.complete;
-    $("#trialStart").textContent = trial.state.active ? 'CONTINUE MY FREE CLIP →' : 'TRY A FREE CLIP →';
     for (const select of [dubTargetSel, $("#momentTarget")]) {
       if (!select) continue;
-      for (const option of select.options) option.disabled = isTrial() && option.value !== 'same';
-      if (isTrial()) { select.value='same'; select.dispatchEvent(new Event('change')); }
+      for (const option of select.options) {
+        if (option.value === 'same') continue;
+        option.dataset.label ||= option.textContent;
+        option.textContent = isFree() ? option.dataset.label + ' · PRO' : option.dataset.label;
+      }
+      if (isFree() && select.value !== 'same') { select.value='same'; select.dispatchEvent(new Event('change')); }
     }
-    $("#momentLength").disabled=isTrial();
-    $("#momentLength").title=isTrial()?'Free sessions include one automatic moment analysis':'';
     refreshKeyUI();
   }
-  async function finishTrial() {
-    try { await trial.finish(); refreshTrialUI(); }
-    catch (_) { $("#trialBannerText").textContent='Clip ready. Reopen beta access to check your session.'; }
+  // On Free, choosing a dub language keeps captions and opens the Pro sheet instead.
+  for (const select of [dubTargetSel, $("#momentTarget")]) {
+    select?.addEventListener('change', () => { if (isFree() && select.value !== 'same') { select.value = 'same'; select.dispatchEvent(new Event('change')); openPro('dub'); } });
   }
-  $("#trialStart").addEventListener('click', async () => {
-    const button=$("#trialStart"); button.disabled=true; $("#trialStatus").textContent='Starting your free session…';
-    try { await trial.start(); refreshTrialUI(); dismissSplash(); $("#trialStatus").textContent=''; }
-    catch(e) { $("#trialStatus").textContent=e.message; }
-    finally { button.disabled=false; }
-  });
-  $("#trialRequest").addEventListener("click",()=>showAccess());
-  $("#footerBetaAccess").addEventListener("click",()=>showAccess());
+  $("#trialStart").addEventListener('click', dismissSplash);
+  $("#trialRequest").addEventListener("click",()=>openPro());
+  $("#footerBetaAccess").addEventListener("click",()=>openPro());
+  $("#splashPro").addEventListener("click",()=>openPro());
   setTimeout(()=>{refreshTrialUI();trial.refresh().then(refreshTrialUI).catch(()=>{});},0);
   initBetaAccess($("#betaAccessForm"));
   $("#splashConnect").addEventListener("click", openKeyModal);
-  $("#requestBetaAccess").addEventListener("click", () => showAccess());
+  $("#requestBetaAccess").addEventListener("click", () => openPro());
   splash.addEventListener("keydown", e => {
     if (e.key !== "Tab") return;
     const nodes = [...splash.querySelectorAll('button:not(:disabled),input:not([tabindex="-1"]),a[href]')].filter(n => n.getClientRects().length);
@@ -3636,7 +3672,6 @@ import { rewindForExport } from "./export-start.mjs";
     if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
     else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
   });
-  $("#splashStart").addEventListener("click", dismissSplash);
   $("#splashAbout").addEventListener("click", () => { dismissSplash(); openAbout(); });
   splash.addEventListener("click", (e) => { if (e.target === splash) dismissSplash(); });
   document.addEventListener("keydown", (e) => {
@@ -3674,7 +3709,7 @@ import { rewindForExport } from "./export-start.mjs";
   }
 
   async function loadVoices() {
-    if (!isConnected() || isTrial()) return;
+    if (isFree()) return;
     // Voices only matter in Write-a-script mode; load them in the background otherwise so the
     // status line doesn't announce "N voices loaded" on the Caption-a-clip tab (which has no voice picker).
     const voiceMsg = (msg, kind) => { if (mode === "write") setStatus(msg, kind); };
@@ -3694,7 +3729,7 @@ import { rewindForExport } from "./export-start.mjs";
       // Fall back to premade voices so generation still works.
       populateVoices(FALLBACK_VOICES);
       if (e.message === "badpass") {
-        setStatus("That tester password wasn't accepted. Open “ElevenLabs API key” and re-enter it.", "err"); // connection issue — show everywhere
+        setStatus("That Pro password wasn't accepted. Open the connection dialog and re-enter it.", "err"); // connection issue — show everywhere
       } else if (e.message === "noproxy") {
         setStatus(PROXY_MISSING_MSG, "err"); // connection issue — show everywhere
       } else if (e.message === "401") {
@@ -3729,7 +3764,7 @@ import { rewindForExport } from "./export-start.mjs";
     if (e.key === "Enter") { e.preventDefault(); applyCustomVoice(); }
     else if (e.key === "Escape") { customVoiceRow.hidden = true; voiceSel.selectedIndex = 0; updatePreviewAvail(); }
   });
-  if (isConnected()) loadVoices();
+  if (!isFree()) loadVoices();
 
   // ---------- Voice preview (free hosted sample only — never spends credits) ----------
   const previewPlayer = new Audio();
@@ -3768,8 +3803,7 @@ import { rewindForExport } from "./export-start.mjs";
 
   // ---------- Generate ----------
   async function generate() {
-    if (isTrial()) { setStatus("Voice generation requires a tester password.", "err"); return; }
-    if (!isConnected()) { openKeyModal(); return; }
+    if (isFree()) { openPro("voice"); return; }
     const t = text.value.trim();
     if (!t) { setStatus("Write something first.", "err"); return; }
     const voiceId = voiceSel.value;
@@ -5697,8 +5731,10 @@ import { rewindForExport } from "./export-start.mjs";
     workspaceOpened: () => { setStudioStage('clip'); requestAnimationFrame(() => window.scrollTo({top:0,left:0,behavior:'instant'})); },
     workspaceClosed: () => { if (document.body.dataset.stage === 'clip') setStudioStage('audio'); },
     workspaceBusy: on => { document.body.dataset.workspaceBusy = String(on); setStudioStage(document.body.dataset.stage || 'audio'); },
-    trial: isTrial, trialSection: (meta, blob, signal) => trial.transcribeSection(meta, blob, signal),
-    connected: isConnected, connect: openKeyModal, testerPass: () => useProxy() ? testerPass : "", analysisKey: () => openaiKey,
+    free: isFree, pro: openPro,
+    // longest selection a clip can send: dubs 90 s on any plan, captions 2 minutes on Free
+    maxClip: (target) => target === "same" ? (isFree() ? FREE_CAPTION_SECONDS : capFor(true)) : capFor(false),
+    connected: () => true, connect: openKeyModal, testerPass: () => useProxy() ? testerPass : "", analysisKey: () => openaiKey,
     sourceLanguage: () => dubSourceSel.value, sttModel: STT_MODEL,
     elevenURL, elevenHeaders, canOpus, encodeOpus: encodeOpusOgg, wav: wavBlob, probe: probeDuration,
     busy: () => genBtn.disabled || recording,
@@ -5731,7 +5767,6 @@ import { rewindForExport } from "./export-start.mjs";
       finally { workspaceProgress = null; }
     },
     enterDesign(speakerName) {
-      if (isTrial()) finishTrial();
       if (!designTouched.has('name')) handle.value = speakerName || 'NAME';
       drawPoster();
       settleCreate();

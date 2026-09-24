@@ -48,9 +48,14 @@ export function initMoments(app) {
     if (!file || (!full && !item) || busy || app.busy()) return;
     const [a, b] = full ? [0, duration] : withinRecording(parseTimecode(item.startInput.value), parseTimecode(item.endInput.value)), run = epoch;
     const title = full ? file.name : item.title;
-    if (!validRange(a, b, duration) || (!full && b - a > 90)) { const why = 'Choose a valid selection of up to 90 seconds.'; say(why, true); setHandoffStatus(why, 'error'); return; }
+    if (app.free?.() && output.value !== 'same') { app.pro('dub'); return; }
+    // The longest clip this plan and output can send: two minutes of free captions, 90 seconds of dub.
+    const most = app.maxClip(output.value), mins = most >= 60 ? `${Math.floor(most / 60)} minute${most >= 120 ? 's' : ''}${most % 60 ? ` ${most % 60} seconds` : ''}` : `${most} seconds`;
+    if (!validRange(a, b, duration) || b - a > most + 0.4) {
+      const why = full && validRange(a, b, duration) ? `This recording is longer than ${mins}. Drag the waveform edges, or use IN and OUT, to pick up to ${mins}.` : `Choose a valid selection of up to ${mins}.`;
+      say(why, true); setHandoffStatus(why, 'error'); return;
+    }
     const cached = !full && complete && sourceLanguage === app.sourceLanguage();
-    if ((!cached || output.value !== 'same') && !app.connected()) { closeWorkspace(); app.connect(); return; }
     handoffError = null; controller = new AbortController(); generating = true;
     workLabel = output.value === 'same' ? 'Captioning…' : 'Dubbing…'; workStarted = Date.now();
     clearInterval(workTimer); workTimer = setInterval(handoff, 1000);
@@ -222,11 +227,7 @@ export function initMoments(app) {
       if (blob.size > 4400000) throw new Error('This audio section is too large to process. Try a compressed audio recording.');
       const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(180000)]);
       let data;
-      if (app.trial?.()) {
-        // Free sessions: the server holds the key, measures the section and saves its transcript.
-        data = await app.trialSection({ section, count, total: duration, size: file.size,
-          language: sourceLanguage !== 'auto' ? sourceLanguage : '' }, blob, signal);
-      } else {
+      {
         const form = new FormData(); form.append('file', blob, opus ? 'section.ogg' : 'section.wav');
         form.append('model_id', app.sttModel); form.append('diarize', 'true'); form.append('tag_audio_events', 'false');
         if (sourceLanguage !== 'auto') form.append('language_code', sourceLanguage);
@@ -265,19 +266,19 @@ export function initMoments(app) {
   }
   async function analyze() {
     if (!file || busy) return;
-    if (!complete && !app.connected()) { closeWorkspace(); app.connect(); return; }
+    if (app.free?.()) { app.pro('analyze'); return; } // ANALYZE is Pro
     followSpokenLanguage();
     analysisState('working', 'Analyzing…'); find.textContent = 'ANALYZING';
     const run = epoch; controller = new AbortController(); setBusy(true); stop();
     try {
       say('Checking analysis connection…');
-      await request(app.trial?.() ? '/api/trial?op=analyze' : '/api/moments', { method: 'GET', headers: auth() }); check(run);
+      await request('/api/moments', { method: 'GET', headers: auth() }); check(run);
       if (!complete) await transcribe(run);
       check(run); say('Finding distinct moments with a strong hook and a complete takeaway…');
       const [min, max] = $('momentLength').value.split('-').map(Number);
       const mapped = segments.map(s => ({ id: s.id, start: s.start, end: s.end, text: s.text, speaker: labels[s.speaker]?.trim() || s.speaker }));
-      const data = await request(app.trial?.() ? '/api/trial?op=analyze' : '/api/moments', { method: 'POST', headers: { ...auth(), 'Content-Type': 'application/json' },
-        body: JSON.stringify(app.trial?.() ? {brief:$('momentBrief').value} : { segments: mapped, min, max, brief: $('momentBrief').value, speaker: $('momentSpeaker').value }) });
+      const data = await request('/api/moments', { method: 'POST', headers: { ...auth(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ segments: mapped, min, max, brief: $('momentBrief').value, speaker: $('momentSpeaker').value }) });
       check(run); analysisFailed = false; analyzed = true; analysisState('ready', 'Transcript analyzed'); clearChoices();
       (data.moments || []).forEach((moment, i) => list.append(card(moment, i + 1)));
       if (choices.length) selectMoment(choices[0].id); else seedSelection();
@@ -286,7 +287,7 @@ export function initMoments(app) {
       if (run === epoch) { analysisFailed = true; analyzed = false; analysisState('error', e.name === 'AbortError' ? 'Analysis paused' : 'Analysis incomplete'); }
       if (run === epoch) say(e.name === 'AbortError' ? 'Stopped. Completed sections are kept in this tab. Press ANALYZE to resume.' : e.message, e.name !== 'AbortError');
     } finally {
-      if (run === epoch) { setBusy(false); find.textContent = analyzed ? 'ANALYZED' : 'ANALYZE'; find.disabled = !!app.trial?.() && analyzed; find.title = analyzed ? 'Analyze again with your current settings' : 'Analyze the recording'; }
+      if (run === epoch) { setBusy(false); find.textContent = analyzed ? 'ANALYZED' : 'ANALYZE'; find.title = analyzed ? 'Analyze again with your current settings' : 'Analyze the recording'; }
     }
   }
   function speakerLabel(id) {
