@@ -4092,6 +4092,13 @@ import { rewindForExport } from "./export-start.mjs";
     }
     return { y: g.waveBase - g.waveMax - Math.round(ch * 0.012), dir: -1, depth: ch * 0.016 };
   }
+  // How far captions must stay from the band: past its deepest point, the aqua light line
+  // beneath it, and a breath of space. Null when there is no band on screen.
+  function bandLimit() {
+    if (theme.decor !== "starpod" || bgImage) return null;
+    const cw = canvas.width, ch = canvas.height, u = Math.max(cw, ch) / 1350, B = starpodBand(cw, ch);
+    return B.y + B.dir * (B.depth + 26 * u + ch * 0.022);
+  }
   function starpodDecor(cw, ch) {
     const key = cw + "x" + ch + styleByMode[mode];
     if (decorCache && decorCache.key === key) return decorCache;
@@ -4693,7 +4700,8 @@ import { rewindForExport } from "./export-start.mjs";
       ctx.restore();
     }
 
-    paintCaptionBand(g, activeIdx);
+    const lim = bandLimit(); // on a banded theme, captions end above the band's curve and light line
+    paintCaptionBand(lim ? Object.assign({}, g, { bandBottom: Math.min(g.bandBottom, lim) }) : g, activeIdx);
 
     // Footer row, bottom-left: optional creator image + name, description underneath.
     // Sized from the band actually left between the waveform and the bottom edge rather than
@@ -4959,7 +4967,7 @@ import { rewindForExport } from "./export-start.mjs";
     const g2 = Object.assign({}, g, {
       cap: cap2,
       lh: Math.round(cap2 * 1.3),
-      bandTop: ty + tile + Math.round(g.pad * 0.85),
+      bandTop: Math.max(ty + tile + Math.round(g.pad * 0.85), bandLimit() || 0),
       bandBottom: g.ch - Math.round(g.ch * 0.085),
       upper: true,
     });
