@@ -892,7 +892,7 @@ body #playbar #playBtn .ic svg{width:29px;height:29px;fill:currentColor;stroke:n
 /* OUTLOUD default swatch spans exactly two squares: 34 + 10 gap + 34 (2026-09-23) */
 #themes .studio-theme-swatch{width:78px;min-width:78px;flex:none}
 
-#themes .starpod-theme-swatch{background:radial-gradient(circle at 30% 30%,#fff 0 1px,transparent 1.5px),radial-gradient(circle at 72% 62%,#A093FF 0 1px,transparent 1.5px),radial-gradient(circle at 58% 22%,#fff 0 .7px,transparent 1.2px),radial-gradient(circle at 70% 30%,#F25CFF66,transparent 55%),radial-gradient(circle at 25% 80%,#6D59FFAA,transparent 60%),linear-gradient(135deg,#0F0B2D,#050512)!important}
+#themes .starpod-theme-swatch{background:radial-gradient(circle at 78% 70%,transparent 0 3px,#A9F0F6 3px 4.5px,transparent 5px),radial-gradient(ellipse 60% 120% at 120% 50%,transparent 0 58%,#DEAE48 60% 64%,transparent 66%),repeating-radial-gradient(ellipse at 20% 30%,#ffffff10 0 1px,transparent 1px 5px),radial-gradient(ellipse at 50% 110%,#5FB8CC66,transparent 60%),linear-gradient(135deg,#16222C,#05080F)!important}
 
 /* Copy captions: an icon key beside Edit captions (2026-09-24) */
 .cap-tools{display:flex;align-items:center;gap:8px;margin:12px 0 0}

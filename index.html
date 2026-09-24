@@ -1575,13 +1575,14 @@ import { rewindForExport } from "./export-start.mjs";
     //   purple and blue (the two Sean kept for OutLoud's own chrome) stay the accents. —
     { name: "NANA Holo",   a: "#c0a0e0", b: "#88c8e8", bg1: "#0a0a0a", bg2: "#050506",
       stops: ["#e8c878", "#f0a0c0", "#c0a0e0", "#88c8e8", "#b8ff5c"], glow2: "#88c8e8", ink: "#0a0a0a" },
-    // — Starpod: for Otherside's Starpod Space. Otherside's own palette from otherside.xyz: deep
-    //   space navy, their violet (#6D59FF) and lilac, with the magenta and cyan of the portal art
-    //   in the waveform, over a starfield. Chakra Petch is the open-licence face closest to their
-    //   sci-fi display type (theirs are commercial and can't ship in a public repo). —
-    { name: "Starpod", a: "#6D59FF", b: "#A093FF", bg1: "#0F0B2D", bg2: "#050512",
-      stops: ["#4FD8FF", "#A093FF", "#6D59FF", "#F25CFF"], glow2: "#F25CFF", ink: "#FFFFFF",
-      fontId: "chakra", bodyFont: '"Space Grotesk"', stars: true, swatch: "starpod", swatchText: "" },
+    // — Starpod: after the Starpod reveal from Otherside. Pearl ceramic with topographic contour
+    //   lines, slate panels, paired gold inlay, and aqua light lines, floating in a dark studio over
+    //   a pool of light. Colours sampled from the reveal footage; the pod's detail lives in
+    //   `starpodDecor`. Space Grotesk is otherside.xyz's own open-licence face. —
+    { name: "Starpod", a: "#90E1EC", b: "#C1C8CA", bg1: "#16222C", bg2: "#05080F",
+      stops: ["#3FC9DB", "#90E1EC", "#D2F5F7"], fg: "#EEF2F2", ink: "#0E1A22", glow: 0,
+      fx: "lcd", glowTint: "#3FC9DB", nameCol: "#DEAE48", tile: "#2B3A46",
+      fontId: "grotesk", bodyFont: '"Space Grotesk"', decor: "starpod", swatch: "starpod", swatchText: "" },
     // — RetroGleam: retrogleam.com's own tokens. Warm analog studio — cream type and a rust CTA
     //   over near-black, so the waveform runs cream → amber → rust → deep red. —
     { name: "RetroGleam", a: "#e66430", b: "#e9dac7", bg1: "#180304", bg2: "#121212",
@@ -4050,35 +4051,80 @@ import { rewindForExport } from "./export-start.mjs";
     bgFocus = { x: (cw / 2 - dx) / dw, y: (ch / 2 - dy) / dh };
     return { dx, dy, dw, dh, minZoom };
   }
-  // A fixed starfield, drawn once per canvas size from a seeded random sequence so the stars
-  // never move between frames or exports. Most are faint pinpricks; a few are brighter with a
-  // soft halo, and one in forty carries a thin cross flare.
-  let starCache = null;
-  function starfield(cw, ch) {
-    if (starCache && starCache.width === cw && starCache.height === ch) return starCache;
-    const c = document.createElement("canvas"); c.width = cw; c.height = ch;
-    const s = c.getContext("2d");
-    let seed = 7;
-    const rnd = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
-    const n = Math.round(cw * ch / 5200), unit = Math.max(cw, ch) / 1350;
-    for (let i = 0; i < n; i++) {
-      const x = rnd() * cw, y = rnd() * ch, big = rnd() < 0.08;
-      const r = (big ? 1.2 + rnd() * 1.4 : 0.5 + rnd() * 0.8) * unit;
-      const tint = rnd() < 0.2 ? "160,147,255" : rnd() < 0.1 ? "79,216,255" : "255,255,255";
-      if (big) {
-        const g = s.createRadialGradient(x, y, 0, x, y, r * 5);
-        g.addColorStop(0, `rgba(${tint},0.35)`); g.addColorStop(1, `rgba(${tint},0)`);
-        s.fillStyle = g; s.fillRect(x - r * 5, y - r * 5, r * 10, r * 10);
-      }
-      s.fillStyle = `rgba(${tint},${big ? 0.95 : 0.25 + rnd() * 0.5})`;
-      s.beginPath(); s.arc(x, y, r, 0, Math.PI * 2); s.fill();
-      if (big && rnd() < 0.3) {
-        s.fillStyle = `rgba(${tint},0.5)`;
-        s.fillRect(x - r * 6, y - unit * 0.35, r * 12, unit * 0.7);
-        s.fillRect(x - unit * 0.35, y - r * 6, unit * 0.7, r * 12);
-      }
+  // Starpod's detail, drawn once per canvas size (it never moves, so exports match the preview).
+  // The canvas is one of the pod's slate panels, lit from below, with the pod's topographic grain.
+  // In the lower-right corner the pearl hull sweeps in: its own darker grain, the paired gold
+  // inlay along its edge, the aqua light line just outside, and a slate port with two lit rings.
+  let decorCache = null;
+  function contours(x, cw, ch, u, freq, levels, soft, strong, width) {
+    const step = Math.max(4, Math.round(8 * u)), gx = Math.ceil(cw / step) + 1, gy = Math.ceil(ch / step) + 1;
+    const f = new Float32Array(gx * gy);
+    for (let j = 0; j < gy; j++) for (let i = 0; i < gx; i++) {
+      const X = i * step / cw * freq, Y = j * step / ch * freq * 1.2;
+      f[j * gx + i] = Math.sin(X + 1.7 * Math.sin(Y * 0.8 + 0.4)) + Math.sin(Y * 1.1 + 1.4 * Math.sin(X * 0.7 + 2.1)) + 0.5 * Math.sin((X - Y) * 0.9 + 1.2);
     }
-    return (starCache = c);
+    x.lineWidth = width; x.lineCap = "round";
+    for (let lv = -2.6, k = 0; lv <= 2.6; lv += 5.2 / levels, k++) {
+      x.strokeStyle = k % 5 === 0 ? strong : soft;
+      x.beginPath();
+      for (let j = 0; j < gy - 1; j++) for (let i = 0; i < gx - 1; i++) {
+        const a = f[j * gx + i], b = f[j * gx + i + 1], d = f[(j + 1) * gx + i], e = f[(j + 1) * gx + i + 1];
+        const pts = [], X0 = i * step, Y0 = j * step, X1 = X0 + step, Y1 = Y0 + step;
+        const edge = (v0, v1, x0, y0, x1, y1) => { if ((v0 < lv) !== (v1 < lv)) { const t = (lv - v0) / (v1 - v0); pts.push(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t); } };
+        edge(a, b, X0, Y0, X1, Y0); edge(b, e, X1, Y0, X1, Y1); edge(d, e, X0, Y1, X1, Y1); edge(a, d, X0, Y0, X0, Y1);
+        for (let q = 0; q + 3 < pts.length; q += 4) { x.moveTo(pts[q], pts[q + 1]); x.lineTo(pts[q + 2], pts[q + 3]); }
+      }
+      x.stroke();
+    }
+  }
+  // Where the hull sits per layout: layout 1 keeps its lower-right corner free, layout 2 runs its
+  // waveform across the bottom, so there the hull is flatter and tucks in below it.
+  const HULL = {
+    cover:   { ex: 1.05, ey: 1.04, rx: 0.34, ry: 0.36, port: [0.8, 0.84], arc: [1.08, 1.42] },
+    classic: { ex: 1.02, ey: 1.07, rx: 0.3, ry: 0.19, port: [0.8, 0.905], arc: [1.12, 1.4] },
+  };
+  function starpodDecor(cw, ch) {
+    const H = HULL[styleByMode[mode]] || HULL.cover, key = cw + "x" + ch + styleByMode[mode];
+    if (decorCache && decorCache.key === key) return decorCache;
+    const c = document.createElement("canvas"); c.width = cw; c.height = ch;
+    const x = c.getContext("2d"), u = Math.max(cw, ch) / 1350;
+    // light pool below the pod
+    const pool = x.createRadialGradient(cw * 0.42, ch * 1.02, 0, cw * 0.42, ch * 1.02, Math.max(cw, ch) * 0.6);
+    pool.addColorStop(0, "rgba(160,220,232,0.30)"); pool.addColorStop(0.45, "rgba(60,150,175,0.10)"); pool.addColorStop(1, "rgba(20,60,80,0)");
+    x.fillStyle = pool; x.fillRect(0, 0, cw, ch);
+    // the slate panel's grain
+    contours(x, cw, ch, u, 7, 30, "rgba(214,226,230,0.06)", "rgba(214,226,230,0.13)", Math.max(1, 1.1 * u));
+    // a soft diagonal gloss, like light across the ceramic
+    const gl = x.createLinearGradient(0, 0, cw, ch);
+    gl.addColorStop(0.16, "rgba(255,255,255,0)"); gl.addColorStop(0.3, "rgba(255,255,255,0.05)"); gl.addColorStop(0.44, "rgba(255,255,255,0)");
+    x.fillStyle = gl; x.fillRect(0, 0, cw, ch);
+    // the pearl hull, sweeping into the lower-right corner
+    const ex = cw * H.ex, ey = ch * H.ey, rx = cw * H.rx, ry = ch * H.ry;
+    const hull = (d) => { x.beginPath(); x.ellipse(ex, ey, rx + d * u, ry + d * u, 0, 0, Math.PI * 2); };
+    x.save(); hull(0); x.clip();
+    const pearl = x.createLinearGradient(cw * 0.7, ch * 0.7, cw, ch);
+    pearl.addColorStop(0, "#E9ECEC"); pearl.addColorStop(0.55, "#C9CFD1"); pearl.addColorStop(1, "#A9B1B5");
+    x.fillStyle = pearl; x.fillRect(0, 0, cw, ch);
+    contours(x, cw, ch, u, 16, 40, "rgba(90,105,115,0.16)", "rgba(90,105,115,0.28)", Math.max(1, 1 * u));
+    // slate port with two lit rings, like the pod's side window
+    const px = cw * H.port[0], py = ch * H.port[1], pw = 108 * u, ph = 48 * u;
+    x.fillStyle = "#34454F"; x.beginPath(); x.roundRect(px, py, pw, ph, ph / 2); x.fill();
+    x.shadowColor = "rgba(90,225,240,0.95)"; x.shadowBlur = 12 * u; x.strokeStyle = "#A9F0F6"; x.lineWidth = 2.6 * u;
+    for (const k of [0.3, 0.7]) { x.beginPath(); x.arc(px + pw * k, py + ph / 2, 13 * u, 0, Math.PI * 2); x.stroke(); }
+    x.restore();
+    // paired gold inlay on the hull's edge, metallic along its length
+    const gold = x.createLinearGradient(cw * 0.7, ch, cw, ch * 0.66);
+    gold.addColorStop(0, "#6E5019"); gold.addColorStop(0.3, "#F3CE6A"); gold.addColorStop(0.55, "#DEAE48"); gold.addColorStop(0.8, "#F7D77A"); gold.addColorStop(1, "#7A5A1E");
+    x.strokeStyle = gold;
+    x.lineWidth = 5 * u; hull(0); x.stroke();
+    x.lineWidth = 1.6 * u; hull(-14); x.stroke();
+    // the aqua light line on the slate, just outside the inlay
+    x.save();
+    x.shadowColor = "rgba(90,225,240,0.9)"; x.shadowBlur = 16 * u; x.strokeStyle = "#A9F0F6"; x.lineWidth = 2.2 * u;
+    x.beginPath(); x.ellipse(ex, ey, rx + 22 * u, ry + 22 * u, 0, Math.PI * H.arc[0], Math.PI * H.arc[1]); x.stroke();
+    x.restore();
+    c.key = key;
+    return (decorCache = c);
   }
   function paintBackground() {
     const cw = canvas.width, ch = canvas.height;
@@ -4108,7 +4154,7 @@ import { rewindForExport } from "./export-start.mjs";
       bl.addColorStop(0, theme.backlight); bl.addColorStop(1, theme.backlight + "00");
       ctx.fillStyle = bl; ctx.fillRect(0, 0, cw, ch);
     }
-    if (theme.stars) ctx.drawImage(starfield(cw, ch), 0, 0);
+    if (theme.decor === "starpod") ctx.drawImage(starpodDecor(cw, ch), 0, 0);
     // Accent glows. `glow` lets a theme dial them back — an emissive look wants its light coming
     // from the type, not from a wash behind it.
     const gm = theme.glow == null ? 1 : theme.glow;
