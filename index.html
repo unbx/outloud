@@ -885,6 +885,14 @@
           </button>
           <span class="input-key-hint" id="captureHint">Tab audio</span>
         </div>
+        <!-- Import a recorded X Space from its link: shown now, switched on when the importer ships -->
+        <div class="input-key input-key-soon">
+          <span class="input-key-label" id="xSpaceLabel"><span class="xs-long">Import </span>X Space</span>
+          <button type="button" class="intake-opt" id="xSpaceBtn" disabled aria-labelledby="xSpaceLabel" aria-describedby="xSpaceHint" title="Coming soon: import a recorded X Space from its link">
+            <span class="ic" data-icon="x-logo" aria-hidden="true"></span>
+          </button>
+          <span class="input-key-hint" id="xSpaceHint">Coming soon</span>
+        </div>
       </div>
       <input type="file" id="dubFile" accept="audio/*,video/*" hidden />
       <div class="rec-help" id="recHelpRow" hidden>
@@ -1304,7 +1312,7 @@
 <details><summary>Do I have to analyze a recording?</summary><p>No. You can trim a passage or use the full recording and create captions directly. Analyze when you want suggested moments or transcript search.</p></details>
 <details><summary>Can I paste a podcast, YouTube, or Space URL?</summary><p>Direct URL import is not available in this version. Upload a recording, use your microphone, or capture tab audio where supported.</p></details>
 <details><summary>Which languages and downloads are supported?</summary><p>Use original-language captions or choose a supported dubbing language in the app. Download audio and SRT / VTT captions. Video format depends on the browser; check the Share tab for the available format.</p></details>
-<details><summary>What do I need to use OutLoud?</summary><p>Nothing, to start. OutLoud is free for clips: upload a recording up to 2 hours, trim your moment, and add captions up to 2 minutes, 3 clips a day, with no signup. Free exports carry a small NANA mark. Pro adds ANALYZE (suggested moments and transcript search across long recordings), dubbing into other languages, captions up to 12 minutes, and the watermark toggle. Request Pro access with your email and X account, or connect your own API keys. Recording and capture features depend on browser permissions and support.</p></details>
+<details><summary>What do I need to use OutLoud?</summary><p>Nothing, to start. OutLoud is free for clips: upload a recording up to 2 hours, trim your moment, and add captions up to 2 minutes, 3 clips a day, with no signup. Free exports carry a small NANA mark. Pro adds ANALYZE (suggested moments and transcript search across long recordings), dubbing into other languages, captions up to 12 minutes, and the watermark toggle. Request Pro access with your email and X account. Recording and capture features depend on browser permissions and support.</p></details>
 <details><summary>Is all processing local?</summary><p>No. The visual composition renders in your browser. Transcription, dubbing, and optional moment analysis use processing services. Open “How your data is handled” in the app for details before processing a recording.</p></details>
 <p class="end">Built by <a href="https://nana.works/">NANA</a>. Good moments deserve to be heard.</p></div>
 </dialog>
@@ -1455,8 +1463,12 @@
   <div class="card">
     <h3>Go Pro</h3>
     <p>Pro unlocks ANALYZE, dubbing, longer captions and the watermark toggle.</p>
-    <label for="connectionMode">Connect with</label>
-    <select id="connectionMode"><option value="tester">Pro password</option><option value="own">My own API keys</option></select>
+    <!-- Own API keys are hidden for now; the switch shows only for someone who already saved keys,
+         so they can still manage or disconnect them. -->
+    <div id="connectionModeRow" hidden>
+      <label for="connectionMode">Connect with</label>
+      <select id="connectionMode"><option value="tester">Pro password</option><option value="own">My own API keys</option></select>
+    </div>
     <div id="testerConnectionFields">
       <label for="passInput">Pro password</label>
       <input id="passInput" type="password" autocomplete="off" placeholder="Enter your Pro password" />
@@ -1498,6 +1510,7 @@ import { rewindForExport } from "./export-start.mjs";
     // play key in the app reads the same.
     "tplay": '<svg viewBox="0 0 24 24"><path d="M7 4.8C7 3.6 8.3 2.9 9.3 3.6l11 7c1 .6 1 2.2 0 2.8l-11 7C8.3 21.1 7 20.4 7 19.2z" fill="currentColor"/></svg>',
     "tpause": '<svg viewBox="0 0 24 24"><path d="M7 5h4v14H7zM14 5h4v14h-4z" fill="currentColor"/></svg>',
+    "x-logo": '<svg viewBox="0 0 24 24"><path d="M18.24 2.25h3.31l-7.23 8.26 8.5 11.24h-6.65l-5.21-6.82-5.97 6.82H1.68l7.73-8.84L1.25 2.25h6.83l4.71 6.23zm-1.16 17.52h1.83L7.08 4.13H5.12z" fill="currentColor" stroke="none"/></svg>',
     "copy": '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>',
     "check": '<svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>',
     "download": '<svg viewBox="0 0 24 24"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>',
@@ -1758,7 +1771,7 @@ import { rewindForExport } from "./export-start.mjs";
   // (or `npx vercel dev`); a plain `serve`/`http-server` can't run it.
   const proxyMissing = (resp) => useProxy() && resp.status === 404 &&
     (resp.headers.get("content-type") || "").includes("text/html");
-  const PROXY_MISSING_MSG = "Pro needs the deployed site — this local server has no /api proxy. Open the live site, run “npx vercel dev”, or connect your own ElevenLabs API key.";
+  const PROXY_MISSING_MSG = "Pro needs the deployed site — this local server has no /api proxy. Open the live site, run “npx vercel dev”.";
   let audioCtx, analyser, sourceNode, streamDest, freqData, waveData;
   let rafId = null;
   let recording = false;   // true while exporting video — frames are driven by a Worker, not rAF
@@ -2018,7 +2031,7 @@ import { rewindForExport } from "./export-start.mjs";
     // of the error that follows the click.
     if (dubFile && dubFile.size > MAX_BYTES) {
       capNote.classList.add("over");
-      capNote.innerHTML = "This file is <b>" + fmtMB(dubFile.size) + "</b>, over the <b>" + fmtMB(MAX_BYTES) + "</b> limit. Compress it, or connect your own API key.";
+      capNote.innerHTML = "This file is <b>" + fmtMB(dubFile.size) + "</b>, over the <b>" + fmtMB(MAX_BYTES) + "</b> limit. Compress it, or export audio only.";
       return;
     }
     if (!len) {
@@ -2870,7 +2883,7 @@ import { rewindForExport } from "./export-start.mjs";
     // audio is sent, so what matters is duration, not video size. Gate on both, cheaply.
     if (useProxy()) {
       if (dubFile.size > MAX_BYTES) {
-        setStatus("On Pro, clips must be under " + fmtMB(MAX_BYTES) + ". Compress the clip, or connect your own API key.", "err");
+        setStatus("On Pro, clips must be under " + fmtMB(MAX_BYTES) + ". Compress the clip, or export audio only.", "err");
         return;
       }
       const clipDur = await probeDuration(dubFile);
@@ -2882,8 +2895,8 @@ import { rewindForExport } from "./export-start.mjs";
       const durCap = capFor(isCaption);
       if (effDur && effDur > durCap) {
         setStatus(isCaption
-          ? "On Pro, caption clips run up to " + fmtT(durCap) + ". Use Trim on your clip, or connect your own API key."
-          : "On Pro, dubs run up to " + fmtT(durCap) + " because dubbing costs about nine times what captions do. Trim the clip, switch to captions only, or connect your own API key.", "err");
+          ? "On Pro, caption clips run up to " + fmtT(durCap) + ". Use Trim on your clip."
+          : "On Pro, dubs run up to " + fmtT(durCap) + " because dubbing costs about nine times what captions do. Trim the clip, or switch to captions only.", "err");
         return;
       }
     }
@@ -2945,11 +2958,11 @@ import { rewindForExport } from "./export-start.mjs";
             const a = await extractAudioViaPlayback(dubFile, primedClipEl);
             upload = new File([a.blob], "clip." + a.ext, { type: a.type });
           } catch (e2) {
-            throw new Error("Couldn't read audio from this clip on this device (common with iPhone screen recordings and some videos). Try an audio file like m4a or mp3, or connect your own key to caption video directly.");
+            throw new Error("Couldn't read audio from this clip on this device (common with iPhone screen recordings and some videos). Try an audio file like m4a or mp3.");
           }
         }
         if (!usedFallback && primedClipEl) { try { URL.revokeObjectURL(primedClipEl.src); } catch (_) {} }
-        if (useProxy() && upload.size > 4_400_000) throw new Error("Compressed clip is still too large for tester mode. Trim the clip shorter, or use your own key.");
+        if (useProxy() && upload.size > 4_400_000) throw new Error("Compressed clip is still too large. Trim the clip shorter.");
       }
       // Caption-only: transcribe with Scribe (true word-level timestamps — tighter karaoke than
       // a dub's sentence-level transcript) and play the ORIGINAL clip's audio untouched.
@@ -3464,6 +3477,7 @@ import { rewindForExport } from "./export-start.mjs";
     keyInput.value = apiKey; openaiKeyInput.value = openaiKey;
     passInput.value = testerPass;
     connectionMode.value = apiKey || openaiKey ? "own" : "tester"; syncConnectionFields();
+    $("#connectionModeRow").hidden = !(apiKey || openaiKey);
     showAccess("connect");
     // Focus + select the field so the user can paste (⌘/Ctrl+V) immediately, without an extra click.
     requestAnimationFrame(() => { const field = connectionMode.value === "own" ? keyInput : passInput; field.focus(); field.select(); });
