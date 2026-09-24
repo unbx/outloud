@@ -1577,12 +1577,14 @@ import { rewindForExport } from "./export-start.mjs";
       stops: ["#e8c878", "#f0a0c0", "#c0a0e0", "#88c8e8", "#b8ff5c"], glow2: "#88c8e8", ink: "#0a0a0a" },
     // — Starpod: after the Starpod reveal from Otherside. Pearl ceramic with topographic contour
     //   lines, slate panels, paired gold inlay, and aqua light lines, floating in a dark studio over
-    //   a pool of light. Colours sampled from the reveal footage; the pod's detail lives in
+    //   a pool of light. The header rides on a symmetrical pearl band. Colours sampled from the reveal footage; the pod's detail lives in
     //   `starpodDecor`. Space Grotesk is otherside.xyz's own open-licence face. —
     { name: "Starpod", a: "#90E1EC", b: "#C1C8CA", bg1: "#16222C", bg2: "#05080F",
       stops: ["#3FC9DB", "#90E1EC", "#D2F5F7"], fg: "#EEF2F2", ink: "#0E1A22", glow: 0,
       fx: "lcd", glowTint: "#3FC9DB", nameCol: "#DEAE48", tile: "#2B3A46",
-      fontId: "grotesk", bodyFont: '"Space Grotesk"', decor: "starpod", swatch: "starpod", swatchText: "" },
+      fontId: "grotesk", bodyFont: '"Space Grotesk"', decor: "starpod", swatch: "starpod", swatchText: "",
+      // the header sits on the pearl band, so its type turns slate and its name deep gold
+      head: { fg: "#2B3A46", nameCol: "#9C6F1C", stops: ["#2E8FA0", "#3E5363"] }, watermarkPos: "center" },
     // — RetroGleam: retrogleam.com's own tokens. Warm analog studio — cream type and a rust CTA
     //   over near-black, so the waveform runs cream → amber → rust → deep red. —
     { name: "RetroGleam", a: "#e66430", b: "#e9dac7", bg1: "#180304", bg2: "#121212",
@@ -4028,7 +4030,10 @@ import { rewindForExport } from "./export-start.mjs";
   function drawLogo(g) {
     if (!nanaLogo || !showWatermark) return;
     const Lw = g.cap * 1.05, Lh = Lw * (NANA_VB.h / NANA_VB.w);
-    const x0 = g.cw - g.pad - Lw, y0 = g.ch - Math.round(g.ch * 0.03) - Lh;
+    // A theme can centre the mark. Only in layout 1: layout 2's footer runs along the bottom-left,
+    // and a centred mark would cut its description short.
+    const centred = theme.watermarkPos === "center" && styleByMode[mode] === "cover";
+    const x0 = centred ? (g.cw - Lw) / 2 : g.cw - g.pad - Lw, y0 = g.ch - Math.round(g.ch * 0.03) - Lh;
     ctx.save();
     ctx.globalAlpha = 0.3;
     ctx.translate(x0, y0);
@@ -4051,10 +4056,11 @@ import { rewindForExport } from "./export-start.mjs";
     bgFocus = { x: (cw / 2 - dx) / dw, y: (ch / 2 - dy) / dh };
     return { dx, dy, dw, dh, minZoom };
   }
-  // Starpod's detail, drawn once per canvas size (it never moves, so exports match the preview).
-  // The canvas is one of the pod's slate panels, lit from below, with the pod's topographic grain.
-  // In the lower-right corner the pearl hull sweeps in: its own darker grain, the paired gold
-  // inlay along its edge, the aqua light line just outside, and a slate port with two lit rings.
+  // Starpod's detail, drawn once per canvas size and layout (it never moves, so exports match the
+  // preview). The canvas is one of the pod's slate panels, lit from below, with the pod's
+  // topographic grain. The header rides on a band of pearl hull, symmetrical about the centre,
+  // edged with the pod's paired gold inlay and an aqua light line: across the top in layout 1,
+  // mirrored along the bottom in layout 2, where the header lives.
   let decorCache = null;
   function contours(x, cw, ch, u, freq, levels, soft, strong, width) {
     const step = Math.max(4, Math.round(8 * u)), gx = Math.ceil(cw / step) + 1, gy = Math.ceil(ch / step) + 1;
@@ -4077,19 +4083,23 @@ import { rewindForExport } from "./export-start.mjs";
       x.stroke();
     }
   }
-  // Where the hull sits per layout: layout 1 keeps its lower-right corner free, layout 2 runs its
-  // waveform across the bottom, so there the hull is flatter and tucks in below it.
-  const HULL = {
-    cover:   { ex: 1.05, ey: 1.04, rx: 0.34, ry: 0.36, port: [0.8, 0.84], arc: [1.08, 1.42] },
-    classic: { ex: 1.02, ey: 1.07, rx: 0.3, ry: 0.19, port: [0.8, 0.905], arc: [1.12, 1.4] },
-  };
+  // The pearl band's edge: the y where it meets the slate at the sides, and which way it bows.
+  function starpodBand(cw, ch) {
+    const g = geo();
+    if (styleByMode[mode] === "cover") {
+      const tile = Math.round(Math.min((g.cw - g.pad * 2) * 0.26, g.ch * 0.24));
+      return { y: Math.round(g.ch * 0.055) + tile + Math.round(g.pad * 0.45), dir: 1, depth: ch * 0.022 };
+    }
+    return { y: g.waveBase - g.waveMax - Math.round(ch * 0.012), dir: -1, depth: ch * 0.016 };
+  }
   function starpodDecor(cw, ch) {
-    const H = HULL[styleByMode[mode]] || HULL.cover, key = cw + "x" + ch + styleByMode[mode];
+    const key = cw + "x" + ch + styleByMode[mode];
     if (decorCache && decorCache.key === key) return decorCache;
     const c = document.createElement("canvas"); c.width = cw; c.height = ch;
     const x = c.getContext("2d"), u = Math.max(cw, ch) / 1350;
+    const B = starpodBand(cw, ch);
     // light pool below the pod
-    const pool = x.createRadialGradient(cw * 0.42, ch * 1.02, 0, cw * 0.42, ch * 1.02, Math.max(cw, ch) * 0.6);
+    const pool = x.createRadialGradient(cw / 2, ch * 1.02, 0, cw / 2, ch * 1.02, Math.max(cw, ch) * 0.6);
     pool.addColorStop(0, "rgba(160,220,232,0.30)"); pool.addColorStop(0.45, "rgba(60,150,175,0.10)"); pool.addColorStop(1, "rgba(20,60,80,0)");
     x.fillStyle = pool; x.fillRect(0, 0, cw, ch);
     // the slate panel's grain
@@ -4098,30 +4108,34 @@ import { rewindForExport } from "./export-start.mjs";
     const gl = x.createLinearGradient(0, 0, cw, ch);
     gl.addColorStop(0.16, "rgba(255,255,255,0)"); gl.addColorStop(0.3, "rgba(255,255,255,0.05)"); gl.addColorStop(0.44, "rgba(255,255,255,0)");
     x.fillStyle = gl; x.fillRect(0, 0, cw, ch);
-    // the pearl hull, sweeping into the lower-right corner
-    const ex = cw * H.ex, ey = ch * H.ey, rx = cw * H.rx, ry = ch * H.ry;
-    const hull = (d) => { x.beginPath(); x.ellipse(ex, ey, rx + d * u, ry + d * u, 0, 0, Math.PI * 2); };
-    x.save(); hull(0); x.clip();
-    const pearl = x.createLinearGradient(cw * 0.7, ch * 0.7, cw, ch);
-    pearl.addColorStop(0, "#E9ECEC"); pearl.addColorStop(0.55, "#C9CFD1"); pearl.addColorStop(1, "#A9B1B5");
-    x.fillStyle = pearl; x.fillRect(0, 0, cw, ch);
-    contours(x, cw, ch, u, 16, 40, "rgba(90,105,115,0.16)", "rgba(90,105,115,0.28)", Math.max(1, 1 * u));
-    // slate port with two lit rings, like the pod's side window
-    const px = cw * H.port[0], py = ch * H.port[1], pw = 108 * u, ph = 48 * u;
-    x.fillStyle = "#34454F"; x.beginPath(); x.roundRect(px, py, pw, ph, ph / 2); x.fill();
-    x.shadowColor = "rgba(90,225,240,0.95)"; x.shadowBlur = 12 * u; x.strokeStyle = "#A9F0F6"; x.lineWidth = 2.6 * u;
-    for (const k of [0.3, 0.7]) { x.beginPath(); x.arc(px + pw * k, py + ph / 2, 13 * u, 0, Math.PI * 2); x.stroke(); }
-    x.restore();
-    // paired gold inlay on the hull's edge, metallic along its length
-    const gold = x.createLinearGradient(cw * 0.7, ch, cw, ch * 0.66);
-    gold.addColorStop(0, "#6E5019"); gold.addColorStop(0.3, "#F3CE6A"); gold.addColorStop(0.55, "#DEAE48"); gold.addColorStop(0.8, "#F7D77A"); gold.addColorStop(1, "#7A5A1E");
-    x.strokeStyle = gold;
-    x.lineWidth = 5 * u; hull(0); x.stroke();
-    x.lineWidth = 1.6 * u; hull(-14); x.stroke();
-    // the aqua light line on the slate, just outside the inlay
+    // the curve itself, offset d toward the slate (positive) or into the pearl (negative)
+    // (joined onto the current path when `join` is set, so it can close the band's outline)
+    const edge = (d, join) => {
+      const y = B.y + B.dir * d;
+      if (join) x.lineTo(0, y); else x.moveTo(0, y);
+      x.quadraticCurveTo(cw / 2, y + B.dir * B.depth * 2, cw, y);
+    };
+    // the pearl band, with its own finer grain and a gloss of its own
     x.save();
-    x.shadowColor = "rgba(90,225,240,0.9)"; x.shadowBlur = 16 * u; x.strokeStyle = "#A9F0F6"; x.lineWidth = 2.2 * u;
-    x.beginPath(); x.ellipse(ex, ey, rx + 22 * u, ry + 22 * u, 0, Math.PI * H.arc[0], Math.PI * H.arc[1]); x.stroke();
+    x.beginPath(); x.moveTo(0, B.dir > 0 ? 0 : ch); edge(0, true); x.lineTo(cw, B.dir > 0 ? 0 : ch); x.closePath(); x.clip();
+    const pearl = x.createLinearGradient(0, 0, cw, 0);
+    pearl.addColorStop(0, "#C3CACD"); pearl.addColorStop(0.5, "#EEF0F0"); pearl.addColorStop(1, "#C3CACD");
+    x.fillStyle = pearl; x.fillRect(0, 0, cw, ch);
+    contours(x, cw, ch, u, 16, 40, "rgba(90,105,115,0.13)", "rgba(90,105,115,0.24)", Math.max(1, u));
+    x.restore();
+    // paired gold inlay along the edge, metallic across its length
+    const gold = x.createLinearGradient(0, 0, cw, 0);
+    gold.addColorStop(0, "#6E5019"); gold.addColorStop(0.22, "#F3CE6A"); gold.addColorStop(0.5, "#DEAE48"); gold.addColorStop(0.78, "#F7D77A"); gold.addColorStop(1, "#6E5019");
+    x.strokeStyle = gold;
+    x.lineWidth = 4.5 * u; x.beginPath(); edge(0); x.stroke();
+    x.lineWidth = 1.6 * u; x.beginPath(); edge(-12 * u); x.stroke();
+    // the aqua light line on the slate, fading out toward both sides
+    x.save();
+    const aqua = x.createLinearGradient(0, 0, cw, 0);
+    aqua.addColorStop(0.04, "rgba(169,240,246,0)"); aqua.addColorStop(0.3, "rgba(169,240,246,1)");
+    aqua.addColorStop(0.7, "rgba(169,240,246,1)"); aqua.addColorStop(0.96, "rgba(169,240,246,0)");
+    x.shadowColor = "rgba(90,225,240,0.9)"; x.shadowBlur = 14 * u; x.strokeStyle = aqua; x.lineWidth = 2.2 * u;
+    x.beginPath(); edge(22 * u); x.stroke();
     x.restore();
     c.key = key;
     return (decorCache = c);
@@ -4685,6 +4699,8 @@ import { rewindForExport } from "./export-start.mjs";
     // Sized from the band actually left between the waveform and the bottom edge rather than
     // from a width-derived constant, so the row fills the space it's given in every format —
     // 16:9 leaves the most room below the waveform and used to waste it.
+    const baseTheme = theme, head = headTheme();
+    if (head) theme = head; // the footer block draws on its own panel
     const footTop = g.waveBase + Math.round(g.ch * 0.008);
     const footBot = g.ch - Math.round(g.ch * 0.022);
     const zone = Math.max(1, footBot - footTop);
@@ -4723,6 +4739,7 @@ import { rewindForExport } from "./export-start.mjs";
     ctx.shadowColor = "transparent"; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
 
     drawLogo(g); // NANA holo wordmark, bottom-right
+    theme = baseTheme;
   }
 
   function paintAnalog(values, x0, x1, baseY, maxH) {
@@ -4831,6 +4848,8 @@ import { rewindForExport } from "./export-start.mjs";
   // Themes + background image apply as-is.
   function paintDub(values, activeIdx) {
     const g = geo();
+    const baseTheme = theme, head = headTheme();
+    if (head) theme = head; // the header block, through the waveform, draws on its own panel
 
     // creator tile: photo, or a theme-gradient placeholder
     const tile = Math.round(Math.min((g.cw - g.pad * 2) * 0.26, g.ch * 0.24));
@@ -4929,6 +4948,7 @@ import { rewindForExport } from "./export-start.mjs";
 
     // waveform under the name block, sharing the tile's baseline
     paintBarsIn(values, hx, g.cw - g.pad, ty + tile, Math.round(tile * 0.42));
+    theme = baseTheme;
 
     // On an LED theme the whole header joins the grid: photo, name, description and waveform
     // all get the same dot pitch as the captions, so the card reads as one display.
@@ -4963,11 +4983,21 @@ import { rewindForExport } from "./export-start.mjs";
     drawLogo(g); // NANA holo wordmark, bottom-right
   }
 
+  // A theme can give its header its own colours (`head`), for when the header sits on a
+  // panel of its own, like Starpod's pearl band. Not over a photo: there is no band then.
+  const headTheme = () => theme.head && !bgImage ? Object.assign({}, theme, theme.head, { head: null }) : null;
+  function onHead(fn) {
+    const t = headTheme();
+    if (!t) return fn();
+    const base = theme; theme = t;
+    try { return fn(); } finally { theme = base; }
+  }
+
   // one entry point for all three draw sites — poster, playback loop, and video recording
   function paintScene(values, activeIdx) {
     paintBackground();
     if (styleByMode[mode] === "cover") paintDub(values, activeIdx);
-    else { paintText(activeIdx); paintBars(values); }
+    else { paintText(activeIdx); onHead(() => paintBars(values)); }
     paintFrameMarks(geo()); // geo() carries cap, so the frame shares the caption dot pitch
   }
 
