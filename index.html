@@ -1200,6 +1200,7 @@
         <span class="cap-export-label">Captions</span>
         <button type="button" class="foot-link" id="srtBtn">Download .SRT</button>
         <button type="button" class="foot-link" id="vttBtn">Download .VTT</button>
+        <button type="button" class="foot-link" id="capCopyLink">Copy</button>
       </div>
       <p class="export-hint" id="exportHint">Create your audiogram to unlock playback and export.</p>
       <p class="mp4-note" id="mp4Note" hidden>Heads up: this browser records <strong>WebM</strong>, not MP4. For an MP4 (best for X and Instagram), open OutLoud in <strong>Safari or Chrome</strong>.</p>
@@ -5018,9 +5019,9 @@ import { rewindForExport } from "./export-start.mjs";
   const closeCapEditor = () => capModal.classList.remove("open");
   $("#editCapsBtn").addEventListener("click", openCapEditor);
   // Copy the clip's words for the post that goes with the audiogram (dubbed words after a dub).
-  $("#copyCapsBtn").addEventListener("click", async () => {
+  async function copyCaptions() {
     const text = captionsToText(captionWords).trim();
-    if (!text) return;
+    if (!text) return false;
     let ok = false;
     try { await navigator.clipboard.writeText(text); ok = true; }
     catch (_) {
@@ -5031,12 +5032,23 @@ import { rewindForExport } from "./export-start.mjs";
       try { ok = document.execCommand("copy"); } catch (_) {}
       ta.remove();
     }
+    return ok;
+  }
+  $("#copyCapsBtn").addEventListener("click", async () => {
+    const ok = await copyCaptions();
     const btn = $("#copyCapsBtn"), note = $("#capCopied");
     setBtn(btn, ok ? "check" : "copy", null);
     note.textContent = ok ? "Captions copied!" : "Copy failed. Open Edit captions to copy by hand.";
     note.classList.add("show");
     clearTimeout(btn._t);
     btn._t = setTimeout(() => { setBtn(btn, "copy", null); note.classList.remove("show"); note.textContent = ""; }, 1800);
+  });
+  // the same copy, as a text link in the Captions row beside the downloads
+  $("#capCopyLink").addEventListener("click", async () => {
+    const link = $("#capCopyLink"), ok = await copyCaptions();
+    link.textContent = ok ? "Copied!" : "Copy failed";
+    clearTimeout(link._t);
+    link._t = setTimeout(() => { link.textContent = "Copy"; }, 1800);
   });
   $("#capCancel").addEventListener("click", closeCapEditor);
   capModal.addEventListener("click", (e) => { if (e.target === capModal) closeCapEditor(); });
