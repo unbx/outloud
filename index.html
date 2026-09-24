@@ -1135,7 +1135,13 @@
         </div>
 
         <label for="fontMenu">Font <span class="sub">· each theme suggests one</span></label>
-        <select id="fontMenu" class="font-menu"></select>
+        <div class="font-row">
+          <select id="fontMenu" class="font-menu"></select>
+          <div class="case-seg" id="caseSeg" role="group" aria-label="Caption capitals">
+            <button type="button" data-case="upper" title="All caps" aria-label="All caps" aria-pressed="false">AA</button>
+            <button type="button" data-case="asis" title="As written" aria-label="As written" aria-pressed="false">Aa</button>
+          </div>
+        </div>
 
         <label>Background image</label>
         <div class="bg-tile-row">
@@ -1651,6 +1657,11 @@ import { rewindForExport } from "./export-start.mjs";
     { id: "dseg14", label: "DSEG14 · segment LCD", family: '"DSEG14 Classic", "Geist Mono", monospace', weight: 700, upper: true, ghost: true, matchBody: true },
   ];
   let fontChoice = null; // a FONTS id picked in the menu, or null for the theme's own
+  // Caption capitals: null follows the layout (layout 1 sets captions in capitals, layout 2 as
+  // written); "upper" or "asis" is the person's pick from the AA / Aa keys. A segment face has
+  // no real lowercase, so it is always capitals.
+  let capsChoice = null;
+  const capsOn = (g) => curFont().upper || (capsChoice ? capsChoice === "upper" : !!g.upper);
   const curFont = () => FONTS.find(f => f.id === (fontChoice || theme.fontId || "clash")) || FONTS[0];
 
   // Small colour helpers, shared by the renderer, the swatches and the custom theme.
@@ -3221,6 +3232,28 @@ import { rewindForExport } from "./export-start.mjs";
   });
   syncFontMenu();
 
+  // ---------- Caption capitals: AA / Aa beside the font ----------
+  // Shows what the captions are actually doing, and only touches the DOM when that changes.
+  // Reads everything from the page, since drawPoster can run before this section has.
+  function syncCaseSeg() {
+    const seg = document.getElementById("caseSeg");
+    if (!seg) return;
+    const locked = !!curFont().upper;
+    const on = locked || (capsChoice ? capsChoice === "upper" : styleByMode[mode] === "cover");
+    const key = on + "|" + locked;
+    if (seg.dataset.shown === key) return;
+    seg.dataset.shown = key;
+    seg.querySelectorAll("button").forEach(b => {
+      const sel = (b.dataset.case === "upper") === on;
+      b.classList.toggle("sel", sel); b.setAttribute("aria-pressed", String(sel));
+      if (b.dataset.case === "asis") {
+        b.disabled = locked;
+        b.title = locked ? curFont().label.split(" ·")[0] + " is capitals only" : "As written";
+      }
+    });
+  }
+  document.querySelectorAll("#caseSeg button").forEach(b => b.addEventListener("click", () => { capsChoice = b.dataset.case; drawPoster(); }));
+
   // ---------- Aspect ratio / format ----------
   const RATIOS = { "1:1": { w: 1080, h: 1080 }, "4:5": { w: 1080, h: 1350 }, "16:9": { w: 1920, h: 1080 } };
   const previewWrap = $("#previewWrap");
@@ -4139,7 +4172,7 @@ import { rewindForExport } from "./export-start.mjs";
     let x = g.pad, line = 0;
     for (let i = 0; i < captionWords.length; i++) {
       const wObj = captionWords[i];
-      const frags = fitToken(g.upper || curFont().upper ? wObj.text.toUpperCase() : wObj.text, maxW);
+      const frags = fitToken(capsOn(g) ? wObj.text.toUpperCase() : wObj.text, maxW);
       for (const fr of frags) {
         const w = ctx.measureText(fr).width;
         if (x > g.pad && x + w > g.pad + maxW) { line++; x = g.pad; }
@@ -4206,7 +4239,7 @@ import { rewindForExport } from "./export-start.mjs";
       const lines = [];
       let row = [], rowW = 0;
       for (const i of chunk) {
-        const raw = g.upper || curFont().upper ? captionWords[i].text.toUpperCase() : captionWords[i].text;
+        const raw = capsOn(g) ? captionWords[i].text.toUpperCase() : captionWords[i].text;
         for (const text of fitToken(raw, maxW)) {
           const w = ctx.measureText(text).width;
           if (row.length && rowW + space + w > maxW) { lines.push({ row, rowW }); row = []; rowW = 0; }
@@ -4897,6 +4930,7 @@ import { rewindForExport } from "./export-start.mjs";
   // static poster (no audio playing)
   function drawPoster() {
     paintScene(null, -1);
+    syncCaseSeg();
     refreshCapEdit();   // the edit-captions button tracks whether timed captions exist
     refreshCapExport(); // ditto the SRT/VTT download links
   }

@@ -906,3 +906,10 @@ body #playbar #playBtn .ic svg{width:29px;height:29px;fill:currentColor;stroke:n
 /* the Captions row (label, two downloads, Copy) stays on one line on a phone */
 @media(max-width:600px){#capExport .foot-link{padding-left:6px;padding-right:6px}}
 @media(max-width:380px){#capExport .cap-export-label{flex-basis:100%;text-align:center}}
+
+/* Font menu with the AA / Aa capitals keys beside it (2026-09-24) */
+.font-row{display:flex;gap:8px;align-items:stretch}.font-row .font-menu{flex:1;min-width:0}
+.case-seg{display:flex;gap:4px;padding:3px;border:1px solid #99948E;border-radius:6px;background:#E4E1DC}
+.case-seg button{width:40px;padding:0;font:600 14px var(--font);letter-spacing:.02em;text-transform:none!important}
+.case-seg button.sel{background:#D8E6E1!important;color:#1E4F47!important}
+.case-seg button:disabled{opacity:.4;cursor:not-allowed}
