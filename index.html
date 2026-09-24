@@ -1178,7 +1178,11 @@
       <input type="range" id="scrub" min="0" max="1000" value="0" step="1" disabled aria-label="Seek" />
       <span class="ptime" id="tRem" aria-label="Remaining time">-0:00</span>
     </div>
-    <button type="button" class="chip cap-edit" id="editCapsBtn" hidden><span class="ic chip-plus" data-icon="pencil"></span>Edit captions</button>
+    <div class="cap-tools">
+      <button type="button" class="chip cap-edit" id="editCapsBtn" hidden><span class="ic chip-plus" data-icon="pencil"></span>Edit captions</button>
+      <button type="button" class="chip cap-copy" id="copyCapsBtn" hidden title="Copy captions" aria-label="Copy captions"><span class="ic" data-icon="copy"></span></button>
+      <span class="cap-copied" id="capCopied" role="status" aria-live="polite"></span>
+    </div>
 
 
     <audio id="player" crossorigin="anonymous"></audio>
@@ -1196,12 +1200,6 @@
         <span class="cap-export-label">Captions</span>
         <button type="button" class="foot-link" id="srtBtn">Download .SRT</button>
         <button type="button" class="foot-link" id="vttBtn">Download .VTT</button>
-      </div>
-      <div class="transcript-copy" id="transcriptCopy" hidden>
-        <div class="tc-head"><label for="tcText" class="cap-export-label">Transcript <span class="sub">· for your post</span></label><span class="tc-count" id="tcCount" aria-live="polite"></span></div>
-        <textarea id="tcText" rows="4" spellcheck="true" aria-describedby="tcNote"></textarea>
-        <p class="tc-note" id="tcNote">Trim it here if you like. Edits only change what you copy, not the captions.</p>
-        <button type="button" class="btn secondary" id="tcCopy"><span class="ic" data-icon="copy"></span><span class="lbl">Copy transcript</span></button>
       </div>
       <p class="export-hint" id="exportHint">Create your audiogram to unlock playback and export.</p>
       <p class="mp4-note" id="mp4Note" hidden>Heads up: this browser records <strong>WebM</strong>, not MP4. For an MP4 (best for X and Instagram), open OutLoud in <strong>Safari or Chrome</strong>.</p>
@@ -4999,6 +4997,8 @@ import { rewindForExport } from "./export-start.mjs";
   function refreshCapEdit() {
     const b = document.getElementById("editCapsBtn"); // looked up lazily — drawPoster runs during init
     if (b) b.hidden = !canEditCaps();
+    const c = document.getElementById("copyCapsBtn");
+    if (c) c.hidden = !canEditCaps();
   }
   // words → editable text (newlines reflect the words' line/paragraph breaks)
   function captionsToText(words) {
@@ -5017,6 +5017,27 @@ import { rewindForExport } from "./export-start.mjs";
   }
   const closeCapEditor = () => capModal.classList.remove("open");
   $("#editCapsBtn").addEventListener("click", openCapEditor);
+  // Copy the clip's words for the post that goes with the audiogram (dubbed words after a dub).
+  $("#copyCapsBtn").addEventListener("click", async () => {
+    const text = captionsToText(captionWords).trim();
+    if (!text) return;
+    let ok = false;
+    try { await navigator.clipboard.writeText(text); ok = true; }
+    catch (_) {
+      // older Safari and non-secure pages: copy through a hidden textarea instead
+      const ta = document.createElement("textarea");
+      ta.value = text; ta.setAttribute("readonly", ""); ta.style.cssText = "position:fixed;opacity:0;left:-9999px";
+      document.body.appendChild(ta); ta.select();
+      try { ok = document.execCommand("copy"); } catch (_) {}
+      ta.remove();
+    }
+    const btn = $("#copyCapsBtn"), note = $("#capCopied");
+    setBtn(btn, ok ? "check" : "copy", null);
+    note.textContent = ok ? "Captions copied!" : "Copy failed. Open Edit captions to copy by hand.";
+    note.classList.add("show");
+    clearTimeout(btn._t);
+    btn._t = setTimeout(() => { setBtn(btn, "copy", null); note.classList.remove("show"); note.textContent = ""; }, 1800);
+  });
   $("#capCancel").addEventListener("click", closeCapEditor);
   capModal.addEventListener("click", (e) => { if (e.target === capModal) closeCapEditor(); });
   capText.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.preventDefault(); closeCapEditor(); } });
@@ -5342,46 +5363,8 @@ import { rewindForExport } from "./export-start.mjs";
   function refreshCapExport() {
     const el = document.getElementById("capExport");
     if (el) el.hidden = !(hasTiming && captionWords.length > 0);
-    refreshTranscriptCopy();
   }
 
-  // ---------- Copy transcript (for the post that goes with the audiogram) ----------
-  // Runs on every redraw, so the text is only rebuilt when the captions themselves change,
-  // and never over the top of a trim the person is making.
-  let tcWords = null, tcLen = -1;
-  function refreshTranscriptCopy() {
-    const box = document.getElementById("transcriptCopy");
-    if (!box) return;
-    const on = hasTiming && captionWords.length > 0;
-    box.hidden = !on;
-    if (!on || (captionWords === tcWords && captionWords.length === tcLen)) return;
-    tcWords = captionWords; tcLen = captionWords.length;
-    $("#tcText").value = captionsToText(captionWords);
-    countTranscript();
-  }
-  // X counts a post at 280 characters unless the account has long posts.
-  function countTranscript() {
-    const n = [...$("#tcText").value].length;
-    const c = $("#tcCount");
-    c.textContent = n + " / 280 on X";
-    c.title = n > 280 ? "Longer than a standard X post" : "";
-    c.classList.toggle("over", n > 280);
-  }
-  $("#tcText").addEventListener("input", countTranscript);
-  $("#tcCopy").addEventListener("click", async () => {
-    const text = $("#tcText").value.trim();
-    if (!text) return;
-    let ok = false;
-    try { await navigator.clipboard.writeText(text); ok = true; }
-    catch (_) {
-      // older Safari and non-secure contexts: select the text and fall back to execCommand
-      const ta = $("#tcText"); ta.focus(); ta.select();
-      try { ok = document.execCommand("copy"); } catch (_) {}
-    }
-    setBtn($("#tcCopy"), ok ? "check" : "copy", ok ? "Copied" : "Select and copy manually");
-    clearTimeout(countTranscript.t);
-    countTranscript.t = setTimeout(() => setBtn($("#tcCopy"), "copy", "Copy transcript"), 1800);
-  });
 
   // ---------- Record video ----------
   // Keep the screen awake while recording. Phones dim/auto-lock mid-take otherwise, which

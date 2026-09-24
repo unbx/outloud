@@ -892,15 +892,11 @@ body #playbar #playBtn .ic svg{width:29px;height:29px;fill:currentColor;stroke:n
 /* OUTLOUD default swatch spans exactly two squares: 34 + 10 gap + 34 (2026-09-23) */
 #themes .studio-theme-swatch{width:78px;min-width:78px;flex:none}
 
-/* Share: copy the transcript for the post (2026-09-24) */
-.transcript-copy{margin-top:14px;text-align:left}.transcript-copy[hidden]{display:none}
-.transcript-copy .tc-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:6px}
-.transcript-copy .tc-head label{margin:0}
-.transcript-copy .tc-count{font:500 11px var(--mono);color:#605D59}.transcript-copy .tc-count.over{color:#B4400E}
-.transcript-copy textarea{width:100%;min-height:96px;resize:vertical;background:#EAE7E2;color:#242424;border:1px solid #99948E;border-radius:5px;padding:10px 12px;font:15px/1.5 var(--font);box-shadow:none}
-.transcript-copy textarea:focus{outline:2px solid #27695F;outline-offset:2px}
-.transcript-copy .tc-note{font-size:12px;color:#605D59;margin:6px 0 10px}
-.transcript-copy #tcCopy{width:100%}
 #themes .starpod-theme-swatch{background:radial-gradient(circle at 30% 30%,#fff 0 1px,transparent 1.5px),radial-gradient(circle at 72% 62%,#A093FF 0 1px,transparent 1.5px),radial-gradient(circle at 58% 22%,#fff 0 .7px,transparent 1.2px),radial-gradient(circle at 70% 30%,#F25CFF66,transparent 55%),radial-gradient(circle at 25% 80%,#6D59FFAA,transparent 60%),linear-gradient(135deg,#0F0B2D,#050512)!important}
-#exportGroup .transcript-copy{grid-column:1/-1}
-@media(min-width:601px){.transcript-copy #tcCopy{width:auto;min-width:220px}}
+
+/* Copy captions: an icon key beside Edit captions (2026-09-24) */
+.cap-tools{display:flex;align-items:center;gap:8px;margin:12px 0 0}
+#previewPanel .cap-tools .cap-edit{margin:0}
+.cap-copy{width:36px;height:36px;min-width:36px;padding:0;display:inline-flex;align-items:center;justify-content:center}.cap-copy[hidden]{display:none}
+.cap-copy .ic{width:16px;height:16px;margin:0}
+.cap-copied{font:500 12px var(--font);color:#27695F;opacity:0;transition:opacity .15s}.cap-copied.show{opacity:1}
