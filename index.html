@@ -4027,13 +4027,14 @@ import { rewindForExport } from "./export-start.mjs";
   })();
 
   // draw the NANA wordmark, small + subtle, bottom-right, tinted with the holo gradient
+  // A theme can centre the mark. Only in layout 1: layout 2's footer runs along the bottom-left,
+  // and a centred mark would cut its description short.
+  function logoCentred() { return !!nanaLogo && showWatermark && theme.watermarkPos === "center" && styleByMode[mode] === "cover"; }
+  function logoTop(g) { return g.ch - Math.round(g.ch * 0.03) - g.cap * 1.05 * (NANA_VB.h / NANA_VB.w); }
   function drawLogo(g) {
     if (!nanaLogo || !showWatermark) return;
     const Lw = g.cap * 1.05, Lh = Lw * (NANA_VB.h / NANA_VB.w);
-    // A theme can centre the mark. Only in layout 1: layout 2's footer runs along the bottom-left,
-    // and a centred mark would cut its description short.
-    const centred = theme.watermarkPos === "center" && styleByMode[mode] === "cover";
-    const x0 = centred ? (g.cw - Lw) / 2 : g.cw - g.pad - Lw, y0 = g.ch - Math.round(g.ch * 0.03) - Lh;
+    const x0 = logoCentred() ? (g.cw - Lw) / 2 : g.cw - g.pad - Lw, y0 = logoTop(g);
     ctx.save();
     ctx.globalAlpha = 0.3;
     ctx.translate(x0, y0);
@@ -4968,7 +4969,8 @@ import { rewindForExport } from "./export-start.mjs";
       cap: cap2,
       lh: Math.round(cap2 * 1.3),
       bandTop: Math.max(ty + tile + Math.round(g.pad * 0.85), bandLimit() || 0),
-      bandBottom: g.ch - Math.round(g.ch * 0.085),
+      // a centred mark sits in the caption column, so the captions end above it
+      bandBottom: logoCentred() ? Math.min(g.ch - Math.round(g.ch * 0.085), logoTop(g) - Math.round(g.ch * 0.045)) : g.ch - Math.round(g.ch * 0.085),
       upper: true,
     });
     paintCaptionBand(g2, activeIdx);
