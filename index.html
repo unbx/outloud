@@ -40,10 +40,10 @@
 <script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "Organization", "@id": "https://outloud.nana.works/#publisher", "name": "NANA", "url": "https://nana.works/"}, {"@type": "WebSite", "@id": "https://outloud.nana.works/#website", "name": "OutLoud", "url": "https://outloud.nana.works/", "publisher": {"@id": "https://outloud.nana.works/#publisher"}, "inLanguage": "en"}, {"@type": "WebApplication", "@id": "https://outloud.nana.works/#app", "name": "OutLoud", "url": "https://outloud.nana.works/", "description": "Find the moments worth sharing in your recordings. Trim your clip, add captions, design an audiogram, and share it with the world.", "applicationCategory": "MultimediaApplication", "operatingSystem": "Web browser", "browserRequirements": "JavaScript enabled; recording and capture depend on browser support.", "publisher": {"@id": "https://outloud.nana.works/#publisher"}, "featureList": ["Upload audio or video", "Record microphone audio", "Capture tab audio in supported browsers", "Find and trim moments", "Search transcripts", "Create captioned audiograms", "Dub into supported languages while preserving the speaker’s voice", "Download video, audio, SRT and VTT captions"]}]}</script>
 <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
 <link href="https://api.fontshare.com/v2/css?f[]=clash-display@600,500,700&f[]=general-sans@500,600&display=swap" rel="stylesheet" />
-<!-- Geist Mono (SIL OFL) supports the SIGNAL theme; Silkscreen (SIL OFL) the LCD theme. DSEG14 is self-hosted in fonts/. -->
+<!-- Geist Mono (SIL OFL) supports the SIGNAL theme; Silkscreen (SIL OFL) the LCD theme; Chakra Petch and Space Grotesk (SIL OFL) the Starpod theme. DSEG14 is self-hosted in fonts/. -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@500;700&family=Silkscreen&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@500;700&family=Silkscreen&family=Chakra+Petch:wght@500;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="moments.css" />
 <style>
   :root {
@@ -1197,6 +1197,12 @@
         <button type="button" class="foot-link" id="srtBtn">Download .SRT</button>
         <button type="button" class="foot-link" id="vttBtn">Download .VTT</button>
       </div>
+      <div class="transcript-copy" id="transcriptCopy" hidden>
+        <div class="tc-head"><label for="tcText" class="cap-export-label">Transcript <span class="sub">· for your post</span></label><span class="tc-count" id="tcCount" aria-live="polite"></span></div>
+        <textarea id="tcText" rows="4" spellcheck="true" aria-describedby="tcNote"></textarea>
+        <p class="tc-note" id="tcNote">Trim it here if you like. Edits only change what you copy, not the captions.</p>
+        <button type="button" class="btn secondary" id="tcCopy"><span class="ic" data-icon="copy"></span><span class="lbl">Copy transcript</span></button>
+      </div>
       <p class="export-hint" id="exportHint">Create your audiogram to unlock playback and export.</p>
       <p class="mp4-note" id="mp4Note" hidden>Heads up: this browser records <strong>WebM</strong>, not MP4. For an MP4 (best for X and Instagram), open OutLoud in <strong>Safari or Chrome</strong>.</p>
     </div>
@@ -1486,6 +1492,8 @@ import { rewindForExport } from "./export-start.mjs";
     // play key in the app reads the same.
     "tplay": '<svg viewBox="0 0 24 24"><path d="M7 4.8C7 3.6 8.3 2.9 9.3 3.6l11 7c1 .6 1 2.2 0 2.8l-11 7C8.3 21.1 7 20.4 7 19.2z" fill="currentColor"/></svg>',
     "tpause": '<svg viewBox="0 0 24 24"><path d="M7 5h4v14H7zM14 5h4v14h-4z" fill="currentColor"/></svg>',
+    "copy": '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>',
+    "check": '<svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>',
     "download": '<svg viewBox="0 0 24 24"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>',
     "video": '<svg viewBox="0 0 24 24"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg>',
     "image": '<svg viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>',
@@ -1562,6 +1570,13 @@ import { rewindForExport } from "./export-start.mjs";
     //   purple and blue (the two Sean kept for OutLoud's own chrome) stay the accents. —
     { name: "NANA Holo",   a: "#c0a0e0", b: "#88c8e8", bg1: "#0a0a0a", bg2: "#050506",
       stops: ["#e8c878", "#f0a0c0", "#c0a0e0", "#88c8e8", "#b8ff5c"], glow2: "#88c8e8", ink: "#0a0a0a" },
+    // — Starpod: for Otherside's Starpod Space. Otherside's own palette from otherside.xyz: deep
+    //   space navy, their violet (#6D59FF) and lilac, with the magenta and cyan of the portal art
+    //   in the waveform, over a starfield. Chakra Petch is the open-licence face closest to their
+    //   sci-fi display type (theirs are commercial and can't ship in a public repo). —
+    { name: "Starpod", a: "#6D59FF", b: "#A093FF", bg1: "#0F0B2D", bg2: "#050512",
+      stops: ["#4FD8FF", "#A093FF", "#6D59FF", "#F25CFF"], glow2: "#F25CFF", ink: "#FFFFFF",
+      fontId: "chakra", bodyFont: '"Space Grotesk"', stars: true, swatch: "starpod", swatchText: "" },
     // — RetroGleam: retrogleam.com's own tokens. Warm analog studio — cream type and a rust CTA
     //   over near-black, so the waveform runs cream → amber → rust → deep red. —
     { name: "RetroGleam", a: "#e66430", b: "#e9dac7", bg1: "#180304", bg2: "#121212",
@@ -1631,6 +1646,8 @@ import { rewindForExport } from "./export-start.mjs";
     { id: "general", label: "General Sans", family: '"General Sans"' },
     { id: "barlow", label: "Barlow", family: '"Barlow"' },
     { id: "geist", label: "Geist Mono", family: '"Geist Mono", ui-monospace, monospace' },
+    { id: "chakra", label: "Chakra Petch", family: '"Chakra Petch", "Space Grotesk"', weight: 700 },
+    { id: "grotesk", label: "Space Grotesk", family: '"Space Grotesk"', weight: 700 },
     { id: "silkscreen", label: "Silkscreen · pixel LCD", family: '"Silkscreen", "Geist Mono", monospace', weight: 400, matchBody: true },
     { id: "dseg14", label: "DSEG14 · segment LCD", family: '"DSEG14 Classic", "Geist Mono", monospace', weight: 700, upper: true, ghost: true, matchBody: true },
   ];
@@ -3088,7 +3105,7 @@ import { rewindForExport } from "./export-start.mjs";
     sw.title = t.name + (t.studio ? ' · default' : '');
     if (t.studio) { sw.classList.add('studio-theme-swatch'); sw.textContent = 'OUTLOUD'; }
     // display themes show a lit "88" on their own glass
-    if (t.swatch) { sw.classList.add(t.swatch + '-theme-swatch'); sw.innerHTML = '<span aria-hidden="true">88</span>'; }
+    if (t.swatch) { sw.classList.add(t.swatch + '-theme-swatch'); sw.innerHTML = (t.swatchText ?? '88') ? '<span aria-hidden="true">' + (t.swatchText ?? '88') + '</span>' : ''; }
     sw.setAttribute('role', 'button'); sw.tabIndex = 0;
     sw.setAttribute('aria-label', sw.title);
     sw.addEventListener('keydown', event => {
@@ -4003,6 +4020,36 @@ import { rewindForExport } from "./export-start.mjs";
     bgFocus = { x: (cw / 2 - dx) / dw, y: (ch / 2 - dy) / dh };
     return { dx, dy, dw, dh, minZoom };
   }
+  // A fixed starfield, drawn once per canvas size from a seeded random sequence so the stars
+  // never move between frames or exports. Most are faint pinpricks; a few are brighter with a
+  // soft halo, and one in forty carries a thin cross flare.
+  let starCache = null;
+  function starfield(cw, ch) {
+    if (starCache && starCache.width === cw && starCache.height === ch) return starCache;
+    const c = document.createElement("canvas"); c.width = cw; c.height = ch;
+    const s = c.getContext("2d");
+    let seed = 7;
+    const rnd = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+    const n = Math.round(cw * ch / 5200), unit = Math.max(cw, ch) / 1350;
+    for (let i = 0; i < n; i++) {
+      const x = rnd() * cw, y = rnd() * ch, big = rnd() < 0.08;
+      const r = (big ? 1.2 + rnd() * 1.4 : 0.5 + rnd() * 0.8) * unit;
+      const tint = rnd() < 0.2 ? "160,147,255" : rnd() < 0.1 ? "79,216,255" : "255,255,255";
+      if (big) {
+        const g = s.createRadialGradient(x, y, 0, x, y, r * 5);
+        g.addColorStop(0, `rgba(${tint},0.35)`); g.addColorStop(1, `rgba(${tint},0)`);
+        s.fillStyle = g; s.fillRect(x - r * 5, y - r * 5, r * 10, r * 10);
+      }
+      s.fillStyle = `rgba(${tint},${big ? 0.95 : 0.25 + rnd() * 0.5})`;
+      s.beginPath(); s.arc(x, y, r, 0, Math.PI * 2); s.fill();
+      if (big && rnd() < 0.3) {
+        s.fillStyle = `rgba(${tint},0.5)`;
+        s.fillRect(x - r * 6, y - unit * 0.35, r * 12, unit * 0.7);
+        s.fillRect(x - unit * 0.35, y - r * 6, unit * 0.7, r * 12);
+      }
+    }
+    return (starCache = c);
+  }
   function paintBackground() {
     const cw = canvas.width, ch = canvas.height;
     if (bgImage) {
@@ -4031,6 +4078,7 @@ import { rewindForExport } from "./export-start.mjs";
       bl.addColorStop(0, theme.backlight); bl.addColorStop(1, theme.backlight + "00");
       ctx.fillStyle = bl; ctx.fillRect(0, 0, cw, ch);
     }
+    if (theme.stars) ctx.drawImage(starfield(cw, ch), 0, 0);
     // Accent glows. `glow` lets a theme dial them back — an emissive look wants its light coming
     // from the type, not from a wash behind it.
     const gm = theme.glow == null ? 1 : theme.glow;
@@ -5294,7 +5342,46 @@ import { rewindForExport } from "./export-start.mjs";
   function refreshCapExport() {
     const el = document.getElementById("capExport");
     if (el) el.hidden = !(hasTiming && captionWords.length > 0);
+    refreshTranscriptCopy();
   }
+
+  // ---------- Copy transcript (for the post that goes with the audiogram) ----------
+  // Runs on every redraw, so the text is only rebuilt when the captions themselves change,
+  // and never over the top of a trim the person is making.
+  let tcWords = null, tcLen = -1;
+  function refreshTranscriptCopy() {
+    const box = document.getElementById("transcriptCopy");
+    if (!box) return;
+    const on = hasTiming && captionWords.length > 0;
+    box.hidden = !on;
+    if (!on || (captionWords === tcWords && captionWords.length === tcLen)) return;
+    tcWords = captionWords; tcLen = captionWords.length;
+    $("#tcText").value = captionsToText(captionWords);
+    countTranscript();
+  }
+  // X counts a post at 280 characters unless the account has long posts.
+  function countTranscript() {
+    const n = [...$("#tcText").value].length;
+    const c = $("#tcCount");
+    c.textContent = n + " / 280 on X";
+    c.title = n > 280 ? "Longer than a standard X post" : "";
+    c.classList.toggle("over", n > 280);
+  }
+  $("#tcText").addEventListener("input", countTranscript);
+  $("#tcCopy").addEventListener("click", async () => {
+    const text = $("#tcText").value.trim();
+    if (!text) return;
+    let ok = false;
+    try { await navigator.clipboard.writeText(text); ok = true; }
+    catch (_) {
+      // older Safari and non-secure contexts: select the text and fall back to execCommand
+      const ta = $("#tcText"); ta.focus(); ta.select();
+      try { ok = document.execCommand("copy"); } catch (_) {}
+    }
+    setBtn($("#tcCopy"), ok ? "check" : "copy", ok ? "Copied" : "Select and copy manually");
+    clearTimeout(countTranscript.t);
+    countTranscript.t = setTimeout(() => setBtn($("#tcCopy"), "copy", "Copy transcript"), 1800);
+  });
 
   // ---------- Record video ----------
   // Keep the screen awake while recording. Phones dim/auto-lock mid-take otherwise, which
@@ -5596,6 +5683,8 @@ import { rewindForExport } from "./export-start.mjs";
       document.fonts.load('700 54px "Geist Mono"').catch(() => {}),
       document.fonts.load('400 54px "Silkscreen"').catch(() => {}),
       document.fonts.load('700 54px "DSEG14 Classic"').catch(() => {}),
+      document.fonts.load('700 54px "Chakra Petch"').catch(() => {}),
+      document.fonts.load('500 24px "Space Grotesk"').catch(() => {}),
       document.fonts.load('500 24px "General Sans"').catch(() => {}),
     ]).then(() => document.fonts.ready).then(() => drawPoster());
   }
