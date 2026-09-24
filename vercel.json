@@ -2,9 +2,42 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/api/eleven/:path*", "destination": "/api/eleven?path=:path*" }
+    {
+      "source": "/api/eleven/:path*",
+      "destination": "/api/eleven?path=:path*"
+    }
   ],
   "headers": [
-    { "source": "/(.*)", "headers": [{ "key": "X-Content-Type-Options", "value": "nosniff" }] }
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
+      ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/outloud-og-v6.png",
+      "destination": "/outloud-og-v10.png",
+      "permanent": true
+    },
+    {
+      "source": "/outloud-og-v7.png",
+      "destination": "/outloud-og-v10.png",
+      "permanent": true
+    },
+    {
+      "source": "/outloud-og-v8.png",
+      "destination": "/outloud-og-v10.png",
+      "permanent": true
+    },
+    {
+      "source": "/outloud-og-v9.png",
+      "destination": "/outloud-og-v10.png",
+      "permanent": true
+    }
   ]
 }
