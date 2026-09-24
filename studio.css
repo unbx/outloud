@@ -900,3 +900,9 @@ body #playbar #playBtn .ic svg{width:29px;height:29px;fill:currentColor;stroke:n
 .cap-copy{width:36px;height:36px;min-width:36px;padding:0;display:inline-flex;align-items:center;justify-content:center}.cap-copy[hidden]{display:none}
 .cap-copy .ic{width:16px;height:16px;margin:0}
 .cap-copied{font:500 12px var(--font);color:#27695F;opacity:0;transition:opacity .15s}.cap-copied.show{opacity:1}
+
+/* Every large button reads in capitals, matching the primary keys (2026-09-24) */
+.btn{text-transform:uppercase;letter-spacing:.035em}
+/* the Captions row (label, two downloads, Copy) stays on one line on a phone */
+@media(max-width:600px){#capExport .foot-link{padding-left:6px;padding-right:6px}}
+@media(max-width:380px){#capExport .cap-export-label{flex-basis:100%;text-align:center}}
