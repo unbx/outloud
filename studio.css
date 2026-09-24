@@ -933,4 +933,3 @@ body[data-plan="free"] #findMoments::after{content:"PRO";margin-left:8px;padding
 .input-key-soon .input-key-label{cursor:default;color:#7A7670}
 .input-key-soon .input-key-hint{font:600 10px/1.35 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:#B4400E}
 @media(max-width:500px){#dropzone #xSpaceBtn{height:80px;border-radius:10px}}
-@media(max-width:500px){.input-key-soon .xs-long{display:none}}
