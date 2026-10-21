@@ -4754,13 +4754,14 @@ import { rewindForExport } from "./export-start.mjs";
     x.restore();
     return (iceCache = { key, shards, still: c, u });
   }
-  // `onTile` draws the same foil over the creator tile: the caller has clipped to the tile, and the
-  // shards are laid in canvas space so they line up with the background's, one sheet over both.
+  // `onTile` draws the foil's sheen over the creator tile: the caller has clipped to the tile, and the
+  // band is laid in canvas space so it crosses the photo in step with the background.
   function paintIce(cw, ch, onTile) {
     const I = theme.ice, S = iceShards(cw, ch);
     ctx.save();
     if (onTile) ctx.setTransform(1, 0, 0, 1, 0, 0); // the clip stays; only the layout inset is undone
-    ctx.drawImage(S.still, 0, 0);
+    // the creator's photo takes only the smooth sheen below: no facets, cracks or shard flashes on a face
+    if (!onTile) ctx.drawImage(S.still, 0, 0);
     // The light model is NANALOG's Cracked Ice, ported from its Foil Sheet shader. Each shard is a
     // tilted mirror that lights only while the light lines up with its own normal, inside a narrow
     // cone, so a scattered few glow at a time and each fades in and out smoothly as the light moves.
@@ -4781,7 +4782,7 @@ import { rewindForExport } from "./export-start.mjs";
     };
     I.flashRGB ||= I.flash.map(c => [1, 3, 5].map(k => parseInt(c.slice(k, k + 2), 16)));
     ctx.globalCompositeOperation = I.light && !onTile ? "source-over" : "screen";
-    for (const sh of S.shards) {
+    for (const sh of onTile ? [] : S.shards) {
       // the same measure the sheen gradients use (projection on the corner-to-corner vector), so the
       // shards and the band agree on every aspect ratio
       const along = (sh.mx * cw + sh.my * ch) / (cw * cw + ch * ch) - band;
@@ -4801,7 +4802,7 @@ import { rewindForExport } from "./export-start.mjs";
     // the satin sheen: one smooth band over the facets, warm white with faint spectral edges
     const C = cardGeom(cw, ch), win = new Path2D(); win.roundRect(C.x, C.y, C.w, C.h, C.r);
     const sg = ctx.createLinearGradient(0, 0, cw, ch), st = (t, col) => { if (t >= 0 && t <= 1) sg.addColorStop(t, col); };
-    const k = I.light ? 0.5 : 1;
+    const k = onTile ? 1.8 : I.light ? 0.5 : 1; // brighter on the photo, where it's the only foil
     st(band - 0.16, "rgba(0,0,0,0)"); st(band - 0.07, `rgba(120,215,255,${0.05 * k})`);
     st(band, `rgba(255,244,214,${0.13 * k})`); st(band + 0.07, `rgba(255,140,220,${0.05 * k})`); st(band + 0.16, "rgba(0,0,0,0)");
     ctx.globalAlpha = 1; ctx.fillStyle = sg; ctx.fill(win);
