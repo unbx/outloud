@@ -1650,27 +1650,33 @@ import { rewindForExport } from "./export-start.mjs";
       fontId: "dseg14", visualizer: "led", swatch: "indiglo",
       ladder: { segs: 14, on: "#62F2BE", off: "#62F2BE14", glow: "#1FE39E" } },
     // — The card family: four themes after the look of a collectible trading card. A black card
-    //   border with an antique-gold keyline, four gold diamonds set into the top border and, in
-    //   layout 1, a gold title plate in the thicker bottom border; a foil sheen sweeps across the
-    //   gold in time with playback (all drawn by `paintCardFrame`). Captions use a flared
-    //   riverboat display serif, descriptions Manrope. Colours only: no card art, names or icons. —
+    //   border with an antique-gold keyline, four gold diamonds set into the top border and the
+    //   mark centred in the thicker bottom border; a foil sheen sweeps across the gold in time
+    //   with playback (all drawn by `paintCardFrame`). Behind the content, `ice` lays a shard
+    //   foil: flat facets split by hairline cracks, a few shards flashing colour at a time.
+    //   Captions use a flared riverboat display serif, descriptions Manrope. Colours only: no
+    //   card art, names or icons. —
     { name: "Gold Card", a: "#C9A64B", b: "#F1E0A9", bg1: "#1A1C15", bg2: "#0B0C09",
       stops: ["#7D6F33", "#C9A64B", "#F1E0A9"], fg: "#F3E9CF", ink: "#14120A", glow: 0,
       nameCol: "#D9B95C", watermark: "#C9A64B", tile: "#2A2C22",
+      ice: { tint: "#C9A64B", flash: ["#F1E0A9", "#FFC85A", "#7FE3FF", "#F49AD8", "#C8F28A"] },
       fontId: "rye", bodyFont: '"Manrope"', decor: "card" },
     // night on the water: sodium-orange lantern light against teal moonlight and a magenta neon sign
     { name: "Dock Night", a: "#FFA347", b: "#3FC1C1", bg1: "#10283A", bg2: "#050F18",
       stops: ["#2FB3B3", "#FFA347", "#E0409A"], glow2: "#E0409A", fg: "#F3E9CF", ink: "#1A0E04",
-      nameCol: "#FFA347", tile: "#16354A", fontId: "rye", bodyFont: '"Manrope"', decor: "card" },
+      nameCol: "#FFA347", tile: "#16354A", fontId: "rye", bodyFont: '"Manrope"', decor: "card",
+      ice: { tint: "#3A5A70", flash: ["#FFA347", "#FF5A3C", "#3FC1C1", "#E0409A", "#FFE08A"] } },
     // acid green on black, with the type glowing like a neon tube
     { name: "Swamp Acid", a: "#7CFF3A", b: "#C7FF9E", bg1: "#0E140A", bg2: "#040603",
       stops: ["#2E6B12", "#7CFF3A", "#D8FFB8"], fg: "#E9FFD9", ink: "#071004", glow: 0,
       fx: "lcd", glowTint: "#5CFF1F", nameCol: "#7CFF3A", tile: "#16240E",
+      ice: { tint: "#2E6B12", flash: ["#7CFF3A", "#D8FFB8", "#3AFFD2", "#E8FF5A", "#9DFF6A"] },
       fontId: "rye", bodyFont: '"Manrope"', decor: "card" },
     // black-and-cream engraving on paper, crosshatched, the active word printed in reverse
     { name: "Arcana Line", a: "#1B1712", b: "#5A4A33", bg1: "#EFE4CC", bg2: "#E0D0AE",
       stops: ["#1B1712", "#5A4A33"], fg: "#1B1712", ink: "#EFE4CC", glow: 0,
       nameCol: "#1B1712", tile: "#D6C49E", hatch: true,
+      ice: { tint: "#B89A5E", flash: ["#C9B6F2", "#A8E8CC", "#F2D488", "#F5A99A", "#9CC8F0"], light: true },
       fontId: "cinzel", bodyFont: '"Manrope"', decor: "card" },
     { name: "Contrast", a: "#ffffff", b: "#d4d4d4", bg1: "#0a0a0a", bg2: "#000000", ink: "#000000" },
     // The one light theme. `fg` flips the canvas text from white to ink; cream is NANA
@@ -4105,7 +4111,7 @@ import { rewindForExport } from "./export-start.mjs";
   // draw the NANA wordmark, small + subtle, bottom-right, tinted with the holo gradient
   // Every theme centres the mark in layout 1. Layout 2 keeps it bottom-right: its footer runs
   // along the bottom-left, and a centred mark would cut the description short.
-  function logoCentred() { return !!nanaLogo && showWatermark && styleByMode[mode] === "cover"; }
+  function logoCentred() { return !!nanaLogo && showWatermark && styleByMode[mode] === "cover" && !isCard(); }
   function logoTop(g) { return g.ch - Math.round(g.ch * 0.03) - g.cap * 1.05 * (NANA_VB.h / NANA_VB.w); }
   function drawLogo(g, inFrame) {
     if (!nanaLogo || !showWatermark) return;
@@ -4114,10 +4120,16 @@ import { rewindForExport } from "./export-start.mjs";
     let Lw = g.cap * 1.05, Lh = Lw * (NANA_VB.h / NANA_VB.w);
     let x0 = logoCentred() ? (g.cw - Lw) / 2 : g.cw - g.pad - Lw, y0 = logoTop(g);
     if (inFrame) {
-      // centred in the bottom border; under the title plate when there is one
-      const C = cardGeom(g.cw, g.ch), under = styleByMode[mode] === "cover" && cardPlateText();
-      Lh = C.bottom * (under ? 0.2 : 0.5); Lw = Lh * (NANA_VB.w / NANA_VB.h);
-      x0 = (g.cw - Lw) / 2; y0 = under ? g.ch - C.bottom * 0.2 - Lh / 2 : g.ch - C.bottom / 2 - Lh / 2;
+      // centred in the bottom border, between two short gold rules
+      const C = cardGeom(g.cw, g.ch), cy = g.ch - C.bottom / 2;
+      Lh = C.bottom * 0.4; Lw = Lh * (NANA_VB.w / NANA_VB.h);
+      x0 = (g.cw - Lw) / 2; y0 = cy - Lh / 2;
+      const gap = Lw * 0.45, len = C.w * 0.09;
+      ctx.save(); ctx.globalAlpha = 0.55; ctx.fillStyle = "#C9A64B";
+      const t = Math.max(1, Math.round(C.B * 0.03));
+      ctx.fillRect(g.cw / 2 - Lw / 2 - gap - len, cy - t / 2, len, t);
+      ctx.fillRect(g.cw / 2 + Lw / 2 + gap, cy - t / 2, len, t);
+      ctx.restore();
     }
     ctx.save();
     ctx.globalAlpha = inFrame ? 0.6 : 0.3;
@@ -4262,6 +4274,7 @@ import { rewindForExport } from "./export-start.mjs";
     }
     if (theme.decor === "starpod") ctx.drawImage(starpodDecor(cw, ch), 0, 0);
     if (theme.hatch) ctx.drawImage(hatchTexture(cw, ch), 0, 0);
+    if (theme.ice) paintIce(cw, ch);
     // Accent glows. `glow` lets a theme dial them back — an emissive look wants its light coming
     // from the type, not from a wash behind it.
     const gm = theme.glow == null ? 1 : theme.glow;
@@ -4642,21 +4655,102 @@ import { rewindForExport } from "./export-start.mjs";
   }
 
   // ---------- Card frame (the card themes) ----------
-  // The border is part of the artwork, so everything else stays inside its window: captions,
-  // the layout 2 footer and the provenance note all stop above the bottom border, and the mark
-  // moves into the border's bottom-right corner like a card's credit line.
+  // The border is part of the artwork, so the whole layout is drawn smaller and centred inside
+  // its window (`cardInset`), with a margin so nothing crowds the keyline. The mark moves into
+  // the thicker bottom border.
   function cardGeom(cw, ch) {
-    const B = Math.round(Math.min(cw, ch) * 0.042);
-    const bottom = styleByMode[mode] === "cover" ? Math.round(ch * 0.085) : B;
+    const B = Math.round(Math.min(cw, ch) * 0.042), bottom = Math.round(B * 1.8);
     return { B, top: B, bottom, x: B, y: B, w: cw - 2 * B, h: ch - B - bottom, r: Math.round(B * 0.55) };
+  }
+  // the scale and offset that fit the full-size layout inside the card window
+  function cardInset(cw, ch) {
+    const C = cardGeom(cw, ch), m = Math.round(C.B * 0.75);
+    const s = Math.min((C.w - 2 * m) / cw, (C.h - 2 * m) / ch);
+    return { s, ox: C.x + (C.w - cw * s) / 2, oy: C.y + (C.h - ch * s) / 2 };
   }
   function isCard() { return theme.decor === "card"; }
   // the foil sheen's place in its sweep: once every four seconds of playback, so a video export
   // loops with the audio; a still poster catches it a third of the way across
   function foilPhase() { return player && !player.paused && !player.ended ? (player.currentTime % 4) / 4 : 0.32; }
-  // The plate is the card's title: the clip's description. With no description there's no plate.
-  function cardPlateText() {
-    return (dubDescTr || dubDesc.value.trim()).replace(/\s+/g, " ");
+  // Shard foil: the window cut into flat triangular facets (a jittered grid, some split again
+  // into slivers) with hairline cracks and a few long fractures. The static facets and cracks
+  // are drawn once per size; each frame lights a scattered handful of shards in the theme's
+  // flash colours, plus the shards the foil sweep is passing over. Quieter in the middle, where
+  // the captions are.
+  let iceCache = null;
+  function iceShards(cw, ch) {
+    const key = cw + "x" + ch + theme.name;
+    if (iceCache && iceCache.key === key) return iceCache;
+    const C = cardGeom(cw, ch), I = theme.ice, cols = 13, cell = C.w / cols, rows = Math.ceil(C.h / cell);
+    let seed = 29; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const pt = [];
+    for (let j = 0; j <= rows; j++) for (let i = 0; i <= cols; i++) {
+      const edgeX = i === 0 || i === cols, edgeY = j === 0 || j === rows;
+      pt.push([C.x + Math.min(C.w, i * cell) + (edgeX ? 0 : (rnd() - 0.5) * cell * 0.8),
+               C.y + Math.min(C.h, j * cell) + (edgeY ? 0 : (rnd() - 0.5) * cell * 0.8)]);
+    }
+    const P = (i, j) => pt[j * (cols + 1) + i], tris = [];
+    const split = (a, b, c) => { // sometimes cut a triangle again, into a sliver and a kite
+      if (rnd() < 0.4) { const t = 0.3 + rnd() * 0.4, m = [b[0] + (c[0] - b[0]) * t, b[1] + (c[1] - b[1]) * t]; tris.push([a, b, m], [a, m, c]); }
+      else tris.push([a, b, c]);
+    };
+    for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+      const a = P(i, j), b = P(i + 1, j), c = P(i + 1, j + 1), d = P(i, j + 1);
+      if (rnd() < 0.5) { split(a, b, c); split(a, c, d); } else { split(a, b, d); split(b, c, d); }
+    }
+    const cx = cw / 2, cy = ch / 2, rx = C.w / 2, ry = C.h / 2;
+    const shards = tris.map(t => {
+      const path = new Path2D(); path.moveTo(...t[0]); path.lineTo(...t[1]); path.lineTo(...t[2]); path.closePath();
+      const mx = (t[0][0] + t[1][0] + t[2][0]) / 3, my = (t[0][1] + t[1][1] + t[2][1]) / 3;
+      const r = Math.min(1, Math.hypot((mx - cx) / rx, (my - cy) / ry));
+      return { path, mx, my, off: rnd(), hue: Math.floor(rnd() * I.flash.length), lift: rnd(),
+        w: 0.3 + 0.7 * Math.min(1, Math.max(0, (r - 0.25) / 0.6)) };
+    });
+    // the still layer: each facet one flat value, then the cracks, then long through-fractures
+    const c = document.createElement("canvas"); c.width = cw; c.height = ch;
+    const x = c.getContext("2d"), u = Math.max(cw, ch) / 1350;
+    x.save(); const win = new Path2D(); win.roundRect(C.x, C.y, C.w, C.h, C.r); x.clip(win);
+    for (const sh of shards) {
+      const v = sh.lift * 2 - 1;
+      x.globalAlpha = (I.light ? 0.05 : 0.07) * Math.abs(v) * sh.w;
+      x.fillStyle = v > 0 ? (I.light ? "#FFFFFF" : I.tint) : "#000000"; x.fill(sh.path);
+    }
+    x.globalAlpha = 1; x.lineWidth = Math.max(0.75, 0.8 * u);
+    x.strokeStyle = I.light ? "rgba(60,45,25,0.06)" : "rgba(0,0,0,0.26)";
+    for (const sh of shards) x.stroke(sh.path);
+    x.strokeStyle = I.light ? "rgba(60,45,25,0.08)" : "rgba(0,0,0,0.34)"; x.lineWidth = Math.max(1, 1.1 * u);
+    for (let k = 0; k < 6; k++) {
+      const a = rnd() * Math.PI, L = Math.max(cw, ch) * 1.5, px = C.x + rnd() * C.w, py = C.y + rnd() * C.h;
+      x.beginPath(); x.moveTo(px - Math.cos(a) * L, py - Math.sin(a) * L); x.lineTo(px + Math.cos(a) * L, py + Math.sin(a) * L); x.stroke();
+    }
+    // a soft centre fade so the facets sit back behind the captions
+    x.globalCompositeOperation = "destination-out";
+    const f = x.createRadialGradient(cx, cy, 0, cx, cy, Math.max(rx, ry));
+    f.addColorStop(0, "rgba(0,0,0,0.55)"); f.addColorStop(0.6, "rgba(0,0,0,0.2)"); f.addColorStop(1, "rgba(0,0,0,0)");
+    x.fillStyle = f; x.fillRect(0, 0, cw, ch);
+    x.restore();
+    return (iceCache = { key, shards, still: c, u });
+  }
+  function paintIce(cw, ch) {
+    const I = theme.ice, S = iceShards(cw, ch), p = foilPhase();
+    ctx.save();
+    ctx.drawImage(S.still, 0, 0);
+    // the sweep runs along the same diagonal as the gold sheen on the frame
+    const band = -0.25 + 1.5 * p;
+    ctx.globalCompositeOperation = I.light ? "source-over" : "screen";
+    for (const sh of S.shards) {
+      const t = (p * 2 + sh.off) % 1, flash = t < 0.045 ? Math.sin((t / 0.045) * Math.PI) : 0;
+      const along = (sh.mx + sh.my) / (cw + ch), near = Math.max(0, 1 - Math.abs(along - band) / 0.05);
+      const lit = Math.max(flash, sh.off > 0.72 ? near : 0);
+      if (lit < 0.02) continue;
+      ctx.globalAlpha = lit * sh.w * (I.light ? 0.2 : 0.26);
+      ctx.fillStyle = I.flash[sh.hue]; ctx.fill(sh.path);
+      if (lit > 0.92 && sh.lift > 0.8 && !I.light) { // a glint at the brightest moment
+        const r = 1.3 * S.u; ctx.globalAlpha = 0.6 * sh.w; ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(sh.mx - r, sh.my - r, r * 2, r * 2);
+      }
+    }
+    ctx.restore();
   }
   function paintCardFrame(g) {
     if (!isCard()) return;
@@ -4680,22 +4774,9 @@ import { rewindForExport } from "./export-start.mjs";
     const dg = ctx.createLinearGradient(0, dy - d, 0, dy + d);
     dg.addColorStop(0, "#F3DD8C"); dg.addColorStop(1, "#A68534");
     ctx.fillStyle = dg; ctx.fill(diamonds);
-    // layout 1: the gold title plate, high in the bottom border with the mark beneath it
-    let plate = null, plateFont = null, plateText = "";
-    if (styleByMode[mode] === "cover" && cardPlateText()) {
-      const ph = Math.round(C.bottom * 0.5), fs = Math.round(ph * 0.58);
-      plateFont = (px) => `600 ${px}px Barlow, ${FB}`;
-      const fit = fitLine(cardPlateText(), C.w * 0.62, fs, Math.round(fs * 0.7), plateFont);
-      plateText = fit.text; ctx.font = plateFont(fit.px);
-      const pw = Math.max(C.w * 0.36, ctx.measureText(plateText).width + ph * 1.3);
-      const px = (cw - pw) / 2, py = ch - C.bottom + Math.round(C.bottom * 0.1);
-      plate = new Path2D(); plate.roundRect(px, py, pw, ph, ph * 0.18);
-      const pg = ctx.createLinearGradient(0, py, 0, py + ph);
-      pg.addColorStop(0, "#EAD58F"); pg.addColorStop(0.55, "#C9A64B"); pg.addColorStop(1, "#8E7533");
-      ctx.fillStyle = pg; ctx.fill(plate);
-      ctx.lineWidth = Math.max(1, k * 0.5); ctx.strokeStyle = "#3B320A"; ctx.stroke(plate);
-      plate.fontPx = fit.px; plate.cy = py + ph / 2;
-    }
+    // a second, finer keyline just inside the first, as on an engraved border
+    const ki = k * 3.2, inner = new Path2D(); inner.roundRect(C.x + ki, C.y + ki, C.w - 2 * ki, C.h - 2 * ki, Math.max(1, C.r - ki));
+    ctx.globalAlpha = 0.55; ctx.lineWidth = Math.max(1, k * 0.4); ctx.stroke(inner); ctx.globalAlpha = 1;
     // the foil sheen: a narrow band of warm light with rainbow edges sliding across the gold
     const p = foilPhase(), c = -0.25 + 1.5 * p;
     const sheen = ctx.createLinearGradient(0, 0, cw, ch);
@@ -4704,13 +4785,8 @@ import { rewindForExport } from "./export-start.mjs";
     stop(c, "rgba(255,246,208,0.95)"); stop(c + 0.045, "rgba(255,120,220,0.55)"); stop(Math.min(1, c + 0.1), "rgba(0,0,0,0)");
     ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = 0.6;
     ctx.lineWidth = k * 1.3; ctx.strokeStyle = sheen; ctx.stroke(win);
-    ctx.fillStyle = sheen; ctx.fill(diamonds); if (plate) ctx.fill(plate);
+    ctx.fillStyle = sheen; ctx.fill(diamonds);
     ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = 1;
-    // plate text goes on after the sheen, so the name stays crisp ink
-    if (plate) {
-      ctx.font = plateFont(plate.fontPx); ctx.fillStyle = "#17130A"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-      ctx.fillText(plateText, cw / 2, plate.cy + plate.fontPx * 0.04);
-    }
     ctx.restore();
     drawLogo(g, true);
   }
@@ -4893,7 +4969,7 @@ import { rewindForExport } from "./export-start.mjs";
     const baseTheme = theme, head = headTheme();
     if (head) theme = head; // the footer block draws on its own panel
     const footTop = g.waveBase + Math.round(g.ch * 0.008);
-    const footBot = isCard() ? g.ch - cardGeom(g.cw, g.ch).bottom - Math.round(g.ch * 0.014) : g.ch - Math.round(g.ch * 0.022);
+    const footBot = g.ch - Math.round(g.ch * 0.022);
     const zone = Math.max(1, footBot - footTop);
     const tile = Math.round(Math.min(zone * 0.92, g.cw * 0.155)); // width clamp keeps 16:9 sane
     const cy = Math.round(footTop + zone / 2);
@@ -5094,7 +5170,7 @@ import { rewindForExport } from "./export-start.mjs";
       const ds = Math.round(tile * (theme.fx === "dot" ? 0.21 : 0.155));
       ctx.font = bodyFont(ds);
       ctx.fillStyle = fgc(0.78);
-      const dline = isCard() ? "" : descLine(); // a card theme sets it on the title plate
+      const dline = descLine();
       const dy = ty + Math.round(hs * 1.2);
       const dw = dline ? ctx.measureText(dline).width : 0;
       if (!dline) {
@@ -5152,9 +5228,7 @@ import { rewindForExport } from "./export-start.mjs";
       lh: Math.round(cap2 * 1.3),
       bandTop: Math.max(ty + tile + Math.round(g.pad * 0.85), bandLimit() || 0),
       // a centred mark sits in the caption column, so the captions end above it
-      bandBottom: Math.min(
-        logoCentred() ? Math.min(g.ch - Math.round(g.ch * 0.085), logoTop(g) - Math.round(g.ch * 0.045)) : g.ch - Math.round(g.ch * 0.085),
-        isCard() ? g.ch - cardGeom(g.cw, g.ch).bottom - Math.round(g.ch * 0.03) : Infinity),
+      bandBottom: logoCentred() ? Math.min(g.ch - Math.round(g.ch * 0.085), logoTop(g) - Math.round(g.ch * 0.045)) : g.ch - Math.round(g.ch * 0.085),
       upper: true,
     });
     paintCaptionBand(g2, activeIdx);
@@ -5170,7 +5244,7 @@ import { rewindForExport } from "./export-start.mjs";
       ctx.textBaseline = "alphabetic";
       ctx.font = bodyFont(Math.max(14, Math.round(g.cw * 0.018)));
       ctx.fillStyle = fgc(0.45);
-      ctx.fillText(note, g.pad, isCard() ? g.ch - cardGeom(g.cw, g.ch).bottom - Math.round(g.ch * 0.012) : g.ch - Math.round(g.ch * 0.028));
+      ctx.fillText(note, g.pad, g.ch - Math.round(g.ch * 0.028));
       ctx.restore();
     }
 
@@ -5190,8 +5264,11 @@ import { rewindForExport } from "./export-start.mjs";
   // one entry point for all three draw sites — poster, playback loop, and video recording
   function paintScene(values, activeIdx) {
     paintBackground();
+    ctx.save();
+    if (isCard()) { const k = cardInset(canvas.width, canvas.height); ctx.translate(k.ox, k.oy); ctx.scale(k.s, k.s); }
     if (styleByMode[mode] === "cover") paintDub(values, activeIdx);
     else { paintText(activeIdx); onHead(() => paintBars(values)); }
+    ctx.restore();
     paintFrameMarks(geo()); // geo() carries cap, so the frame shares the caption dot pitch
     paintCardFrame(geo());
   }
@@ -5271,8 +5348,10 @@ import { rewindForExport } from "./export-start.mjs";
 
   canvas.addEventListener("click", (e) => {
     const r = canvas.getBoundingClientRect();
-    const x = (e.clientX - r.left) * (canvas.width / r.width);
-    const y = (e.clientY - r.top) * (canvas.height / r.height);
+    let x = (e.clientX - r.left) * (canvas.width / r.width);
+    let y = (e.clientY - r.top) * (canvas.height / r.height);
+    // a card theme draws the layout inset in its window, so map the click back into it
+    if (isCard()) { const k = cardInset(canvas.width, canvas.height); x = (x - k.ox) / k.s; y = (y - k.oy) / k.s; }
     const g = geo();
     if (styleByMode[mode] === "cover") {
       // hit zones mirror paintDub's header layout
