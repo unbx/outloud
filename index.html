@@ -1675,7 +1675,7 @@ import { rewindForExport } from "./export-start.mjs";
     // black-and-cream engraving on paper, crosshatched, the active word printed in reverse
     { name: "Arcana Line", a: "#1B1712", b: "#5A4A33", bg1: "#EFE4CC", bg2: "#E0D0AE",
       stops: ["#1B1712", "#5A4A33"], fg: "#1B1712", ink: "#EFE4CC", glow: 0,
-      nameCol: "#1B1712", tile: "#D6C49E", hatch: true,
+      nameCol: "#1B1712", tile: "#D6C49E", hatch: true, watermark: "#C9A64B",
       ice: { tint: "#B89A5E", flash: ["#C9B6F2", "#A8E8CC", "#F2D488", "#F5A99A", "#9CC8F0"], light: true },
       fontId: "cinzel", bodyFont: '"Manrope"', decor: "card" },
     { name: "Contrast", a: "#ffffff", b: "#d4d4d4", bg1: "#0a0a0a", bg2: "#000000", ink: "#000000" },
@@ -4315,6 +4315,21 @@ import { rewindForExport } from "./export-start.mjs";
     return out;
   }
 
+  // The largest size, at most startPx, at which the widest word fits maxW, so a web address or a
+  // long compound shrinks the type onto one line instead of breaking mid-word. Only Latin-script
+  // words count: CJK runs have no spaces and are meant to be split by fitToken. Below minPx the
+  // word is left to fitToken after all.
+  function widestFit(g, maxW, fontAt, startPx, minPx) {
+    ctx.font = fontAt(startPx);
+    let widest = 0;
+    for (const w of captionWords) {
+      const t = capsOn(g) ? w.text.toUpperCase() : w.text;
+      if (/^[\u0000-\u024F\u2000-\u206F]+$/.test(t)) widest = Math.max(widest, ctx.measureText(t).width);
+    }
+    if (widest <= maxW) return startPx;
+    return Math.max(minPx, Math.floor(startPx * maxW / widest * 0.98));
+  }
+
   // wrap ALL words into lines (no cap); returns positioned fragments + total line count
   // A word that closes a sentence, allowing for a trailing quote or bracket. Common
   // abbreviations are excluded so "Dr." or "U.S." doesn't split a line mid-thought.
@@ -4417,8 +4432,8 @@ import { rewindForExport } from "./export-start.mjs";
 
     // Shrink to fit the band. A CJK chunk expands to far more lines than the same chunk in a
     // spaced language, so a fixed size that suits English overflows vertically here.
-    let fCap = Math.round(g.cap * 1.5);
     const minCap = Math.round(g.cap * 0.6);
+    let fCap = widestFit(g, maxW, (px) => `${wt(800)} ${px}px ${face()}`, Math.round(g.cap * 1.5), minCap);
     let fLh = Math.round(fCap * 1.22);
     let lines = wrapAt(fCap);
     while (lines.length * fLh > bandH && fCap > minCap) {
@@ -4730,21 +4745,24 @@ import { rewindForExport } from "./export-start.mjs";
     x.restore();
     return (iceCache = { key, shards, still: c, u });
   }
-  function paintIce(cw, ch) {
+  // `onTile` draws the same foil over the creator tile: the caller has clipped to the tile, and the
+  // shards are laid in canvas space so they line up with the background's, one sheet over both.
+  function paintIce(cw, ch, onTile) {
     const I = theme.ice, S = iceShards(cw, ch), p = foilPhase();
     ctx.save();
+    if (onTile) ctx.setTransform(1, 0, 0, 1, 0, 0); // the clip stays; only the layout inset is undone
     ctx.drawImage(S.still, 0, 0);
     // One soft band of light crossing the shards on the same diagonal as the frame's sheen, so the
     // foil reads as a single tilt of the card rather than scattered flashes. Inside the band the
     // colour runs in order through the theme's flash colours; each shard keeps a fixed brightness.
     const band = -0.25 + 1.5 * p, wide = 0.11, n = I.flash.length;
-    ctx.globalCompositeOperation = I.light ? "source-over" : "screen";
+    ctx.globalCompositeOperation = I.light && !onTile ? "source-over" : "screen";
     for (const sh of S.shards) {
       const dx = ((sh.mx + sh.my) / (cw + ch) - band) / wide;
       if (dx < -1.6 || dx > 1.6) continue;
       const lit = Math.exp(-dx * dx * 1.6) * (0.35 + 0.65 * sh.lift);
       if (lit < 0.03) continue;
-      ctx.globalAlpha = lit * sh.w * (I.light ? 0.18 : 0.24);
+      ctx.globalAlpha = onTile ? lit * 0.7 : lit * sh.w * (I.light ? 0.18 : 0.24);
       ctx.fillStyle = I.flash[Math.min(n - 1, Math.max(0, Math.floor((dx + 1) / 2 * n)))]; ctx.fill(sh.path);
     }
     ctx.restore();
@@ -4839,6 +4857,8 @@ import { rewindForExport } from "./export-start.mjs";
   // its own geometry: bigger type, uppercase, custom band position)
   function paintCaptionBand(g, activeIdx) {
     if (capStyle === "focus") { paintCaptionFocus(g, activeIdx); return; }
+    const fit = widestFit(g, g.cw - g.pad * 2, (px) => `${wt(600)} ${px}px ${face()}`, g.cap, Math.round(g.cap * 0.6));
+    if (fit < g.cap) g = Object.assign({}, g, { cap: fit, lh: Math.round(g.lh * fit / g.cap) });
     const { placed, lines } = layoutCaptionAll(g);
     const visible = Math.floor((g.bandBottom - g.bandTop) / g.lh);
     let activeLine = 0;
@@ -4991,6 +5011,7 @@ import { rewindForExport } from "./export-start.mjs";
       ctx.save();
       roundRect(ctx, g.pad, py, tile, tile, rad); ctx.clip();
       drawCoverBox(pfpImage, g.pad, py, tile, tile);
+      if (theme.ice) paintIce(canvas.width, canvas.height, true);
       ctx.restore();
       tx = g.pad + tile + Math.round(tile * 0.26);
     }
@@ -5152,6 +5173,7 @@ import { rewindForExport } from "./export-start.mjs";
       pg.addColorStop(0, theme.a); pg.addColorStop(1, theme.b);
       ctx.fillStyle = pg; ctx.fillRect(tx, ty, tile, tile);
     }
+    if (theme.ice) paintIce(canvas.width, canvas.height, true);
     ctx.restore();
 
     if (bgImage) { ctx.shadowColor = shadowCol(); ctx.shadowBlur = g.cap * 0.32; ctx.shadowOffsetY = 1; }
