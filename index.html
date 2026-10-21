@@ -4821,7 +4821,7 @@ import { rewindForExport } from "./export-start.mjs";
     gold.addColorStop(0, "#6F6118"); gold.addColorStop(0.5, "#CDB868"); gold.addColorStop(1, "#3B320A");
     ctx.lineWidth = k; ctx.strokeStyle = gold; ctx.stroke(win);
     // four gold diamonds set into the top border
-    const d = C.top * 0.34, gap = d * 2.5, dy = C.top / 2, diamonds = new Path2D();
+    const d = C.top * 0.23, gap = d * 2.8, dy = C.top / 2, diamonds = new Path2D();
     for (let i = 0; i < 4; i++) {
       const x = cw / 2 + (i - 1.5) * gap;
       diamonds.moveTo(x, dy - d); diamonds.lineTo(x + d * 0.72, dy); diamonds.lineTo(x, dy + d); diamonds.lineTo(x - d * 0.72, dy); diamonds.closePath();
