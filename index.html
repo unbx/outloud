@@ -4686,9 +4686,12 @@ import { rewindForExport } from "./export-start.mjs";
     return { s, ox: C.x + (C.w - cw * s) / 2, oy: C.y + (C.h - ch * s) / 2 };
   }
   function isCard() { return theme.decor === "card"; }
-  // the foil sheen's place in its sweep: once every four seconds of playback, so a video export
-  // loops with the audio; a still poster catches it a third of the way across
-  function foilPhase() { return player && !player.paused && !player.ended ? (player.currentTime % 4) / 4 : 0.32; }
+  // the foil sheen's place in its sweep: once every seven seconds of playback, so a video export
+  // loops with the audio; a still poster catches it a third of the way across. `foilBand` is where
+  // the light is along the card's diagonal (0 top-left, 1 bottom-right); it starts and ends off the
+  // card, so each pass is followed by a short rest.
+  function foilPhase() { return player && !player.paused && !player.ended ? (player.currentTime % 7) / 7 : 0.32; }
+  function foilBand() { return -0.3 + 1.6 * foilPhase(); }
   // Shard foil: the window cut into flat triangular facets (a jittered grid, some split again
   // into slivers) with hairline cracks and a few long fractures. The static facets and cracks
   // are drawn once per size; each frame lights the shards whose mirror catches the light (see
@@ -4754,17 +4757,17 @@ import { rewindForExport } from "./export-start.mjs";
   // `onTile` draws the same foil over the creator tile: the caller has clipped to the tile, and the
   // shards are laid in canvas space so they line up with the background's, one sheet over both.
   function paintIce(cw, ch, onTile) {
-    const I = theme.ice, S = iceShards(cw, ch), p = foilPhase();
+    const I = theme.ice, S = iceShards(cw, ch);
     ctx.save();
     if (onTile) ctx.setTransform(1, 0, 0, 1, 0, 0); // the clip stays; only the layout inset is undone
     ctx.drawImage(S.still, 0, 0);
     // The light model is NANALOG's Cracked Ice, ported from its Foil Sheet shader. Each shard is a
     // tilted mirror that lights only while the light lines up with its own normal, inside a narrow
     // cone, so a scattered few glow at a time and each fades in and out smoothly as the light moves.
-    // The light tilts on a smooth loop (seamless in exports) and leans toward the sweep, so the lit
-    // shards gather around the band. Over the facets a broad satin sheen sweeps on the frame's diagonal.
-    const n = I.flash.length, TAU = Math.PI * 2, band = -0.25 + 1.5 * p;
-    const tx = 0.22 * Math.sin(TAU * p), ty = 0.16 * Math.sin(TAU * p + 1.1), cone = 0.16;
+    // The light is the sweep itself: at each shard it tilts with the shard's distance from the band,
+    // so a shard flashes only as the band passes over it, a little ahead or behind by its own angle.
+    // Over the facets the same band is drawn as a broad satin sheen on the frame's diagonal.
+    const n = I.flash.length, band = foilBand(), cone = 0.16;
     const pal = (h) => { // the theme's flash colours as one continuous loop
       const f = ((h % 1) + 1) % 1 * n, i = Math.floor(f), t = f - i, a = I.flashRGB[i], b = I.flashRGB[(i + 1) % n];
       return `rgb(${a[0] + (b[0] - a[0]) * t | 0},${a[1] + (b[1] - a[1]) * t | 0},${a[2] + (b[2] - a[2]) * t | 0})`;
@@ -4772,14 +4775,16 @@ import { rewindForExport } from "./export-start.mjs";
     I.flashRGB ||= I.flash.map(c => [1, 3, 5].map(k => parseInt(c.slice(k, k + 2), 16)));
     ctx.globalCompositeOperation = I.light && !onTile ? "source-over" : "screen";
     for (const sh of S.shards) {
-      const along = (sh.mx + sh.my) / (cw + ch) - band;
+      // the same measure the sheen gradients use (projection on the corner-to-corner vector), so the
+      // shards and the band agree on every aspect ratio
+      const along = (sh.mx * cw + sh.my * ch) / (cw * cw + ch * ch) - band;
       // light direction at this shard: the global tilt, a little parallax by position, and a lean toward the band
-      let hx = tx - sh.u * 0.08 - along * 0.9, hy = ty - sh.v * 0.08 - along * 0.6;
+      const hx = -along * 2.2 - sh.u * 0.04, hy = -along * 1.5 - sh.v * 0.04;
       const hl = Math.hypot(hx, hy, 1), dot = (sh.nx * hx + sh.ny * hy + sh.nz) / hl;
       const ang = Math.acos(Math.min(1, dot)), lit = Math.pow(Math.max(0, 1 - ang / cone), 1.4);
       if (lit < 0.03) continue;
       ctx.globalAlpha = onTile ? lit * 0.8 : lit * sh.w * (I.light ? 0.36 : 0.6);
-      ctx.fillStyle = pal(sh.hue + 0.9 * (sh.nx * tx + sh.ny * ty) * 4); ctx.fill(sh.path);
+      ctx.fillStyle = pal(sh.hue + along * 3); ctx.fill(sh.path);
       if (lit > 0.7 && sh.lift > 0.82 && !I.light) { // a pinpoint glint as a mirror peaks, fading in with it
         const r = 1.3 * S.u; ctx.globalAlpha = (lit - 0.7) * 2.5 * sh.w; ctx.fillStyle = "#FFFFFF";
         ctx.fillRect(sh.mx - r, sh.my - r, r * 2, r * 2);
@@ -4835,7 +4840,7 @@ import { rewindForExport } from "./export-start.mjs";
     ctx.fillStyle = dg; ctx.fill(orn);
     ctx.globalAlpha = 0.7; ctx.lineWidth = Math.max(1, k * 0.35); ctx.strokeStyle = "#B89A4A"; ctx.stroke(ornLine); ctx.globalAlpha = 1;
     // the foil sheen: a narrow band of warm light with rainbow edges sliding across the gold
-    const p = foilPhase(), c = -0.25 + 1.5 * p;
+    const c = foilBand();
     const sheen = ctx.createLinearGradient(0, 0, cw, ch);
     const stop = (t, col) => { if (t >= 0 && t <= 1) sheen.addColorStop(t, col); };
     stop(Math.max(0, c - 0.1), "rgba(0,0,0,0)"); stop(c - 0.045, "rgba(110,220,255,0.55)");
