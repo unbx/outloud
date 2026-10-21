@@ -937,3 +937,6 @@ body[data-plan="free"] #findMoments::after{content:"PRO";margin-left:8px;padding
 /* Text selection: the play key's yellow with dark ink, like a highlighter. Replaces the old
    lavender-on-white, which read poorly on the cream panels (2026-09-24). */
 ::selection{background:#FFDA66;color:#191919}
+
+/* Card themes: each swatch is a tiny card, black border and gold keyline around its colours (2026-10-21) */
+#themes .card-theme-swatch{background:var(--card-face)!important;box-shadow:inset 0 0 0 3px #0B0B09,inset 0 0 0 4.5px #C9A64B,0 2px 0 #AAA59E!important}
