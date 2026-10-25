@@ -84,3 +84,9 @@ test('ANALYZE, whole-recording transcripts and dubbing are Pro, and cost nothing
 });
 test('cross-origin requests are rejected',async()=>{assert.equal((await call('caption',{body:wav(3),origin:'https://evil.test'})).status,403);assert.equal(paid,0);});
 test('missing durable storage fails closed',async()=>{const key=process.env.SUPABASE_SERVICE_KEY;delete process.env.SUPABASE_SERVICE_KEY;try{assert.equal((await caption(wav(3))).status,503);assert.equal(paid,0);}finally{process.env.SUPABASE_SERVICE_KEY=key;}});
+test('an unreachable store (a paused project) says so, and nothing is billed',async()=>{
+ global.fetch=async(url)=>{if(url.startsWith('https://api.elevenlabs.io'))paid++;throw Object.assign(new TypeError('fetch failed'),{cause:{code:'ENOTFOUND'}});};
+ const r=await caption(wav(5));
+ assert.equal(r.status,503);assert.match(r.data.error,/Free captions are down for a moment/);assert.doesNotMatch(r.data.error,/Processing is temporarily/);
+ assert.equal(paid,0);
+});

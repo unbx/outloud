@@ -64,5 +64,9 @@ export default async function handler(req,res){
    }catch(e){if(taken.length)await del(taken).catch(()=>{});throw e;}
   }
   throw fail(PRO_ONLY,403);
- }catch(e){return res.status(e.status||503).json({error:e.status?e.message:'Processing is temporarily unavailable. Please retry shortly.'});}
+ }catch(e){
+  // anything without a status is a bug or an outage we didn't name: log it so it shows in Vercel
+  if(!e.status)console.error('[trial] unexpected:',e?.name||'Error',String(e?.message||e).slice(0,200),e?.cause?.code||'');
+  return res.status(e.status||503).json({error:e.status?e.message:'Processing is temporarily unavailable. Please retry shortly.'});
+ }
 }
