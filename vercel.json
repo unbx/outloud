@@ -39,5 +39,11 @@
       "destination": "/outloud-og-v10.png",
       "permanent": true
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/keepalive",
+      "schedule": "17 15 * * *"
+    }
   ]
 }
